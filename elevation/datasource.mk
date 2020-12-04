@@ -2,11 +2,14 @@
 DATASOURCE_URL := {datasource_url}
 PRODUCT := {product}
 TILE_EXT := {tile_ext}
+FTW_EXT := .tfw
 COMPRESSED_PRE_EXT = {compressed_pre_ext}
 COMPRESSED_EXT := {compressed_ext}
 
 ENSURE_TILE_PATHS := $(foreach n,$(ENSURE_TILES),cache/$n)
 STDERR_SWITCH := 2>/dev/null
+
+$(info  DEM files covered $(ENSURE_TILES))
 
 all: $(PRODUCT).vrt
 
@@ -18,7 +21,8 @@ spool/%$(COMPRESSED_EXT):
 	curl -s -o $@.temp $(DATASOURCE_URL)/$*$(COMPRESSED_EXT) && mv $@.temp $@
 
 spool/%$(TILE_EXT): spool/%$(COMPRESSED_PRE_EXT).zip
-	unzip -qq -d spool $< $*$(TILE_EXT) $(STDERR_SWITCH) || touch $@
+	unzip -qq -d spool $< $*$(TILE_EXT) $*$(FTW_EXT) $(STDERR_SWITCH) || touch $@
+	mv spool/$*$(FTW_EXT) cache/
 
 spool/%$(TILE_EXT): spool/%$(COMPRESSED_PRE_EXT).gz
 	gunzip $< $(STDERR_SWITCH) || touch $@
@@ -43,6 +47,7 @@ info:
 
 clean:
 	find cache -size 0 -name "*.tif" -delete
+	find cache -size 0 -name "*.tfw" -delete
 	$(RM) $(PRODUCT).*.vrt
 	$(RM) -r spool/*
 
