@@ -1,30 +1,63 @@
 [build-system]
 requires = [
-    "setuptools>=42",
-    "wheel",
-    "setuptools_scm[toml]>=3.4",
-    "setuptools_scm_git_archive",
+  "setuptools>=42",
+  "wheel",
+  "setuptools_scm[toml]>=3.4",
+  "setuptools_scm_git_archive"
 ]
 
-[tool.setuptools_scm]
-write_to = "elevation/version.py"
-write_to_template = '''
-# don't change, don't track in version control
-__version__ = "{version}"
-'''
+[project]
+authors = [
+  {name = "B-Open Solutions srl, Alessandro Amici", email = 'info@bopen.eu'}
+]
+classifiers = [
+  'Development Status :: 5 - Production/Stable',
+  'Intended Audience :: Developers',
+  'Intended Audience :: Science/Research',
+  'Programming Language :: Python',
+  'Programming Language :: Python :: 3',
+  'Programming Language :: Python :: 3.6',
+  'Programming Language :: Python :: 3.7',
+  'Programming Language :: Python :: 3.8',
+  'Programming Language :: Python :: 3.9',
+  'Programming Language :: Python :: Implementation :: CPython',
+  'Operating System :: OS Independent',
+  'License :: OSI Approved :: Apache Software License',
+  'Topic :: Scientific/Engineering :: GIS'
+]
+dependencies = ["appdirs", "click", "fasteners"]
+description = "Python script to download global terrain digital elevation models, SRTM 30m DEM and SRTM 90m DEM."
+dynamic = ["version"]
+keywords = ["script", "download", "SRTM", "DEM", "DTM", "global", "digital", "elevation", "terrain", "model"]
+license = {text = "Apache License Version 2.0"}
+name = "elevation"
+readme = "README.rst"
+urls = {documentation = "http://elevation.bopen.eu"}
 
+[project.scripts]
+eio = "elevation.cli:eio"
 
 [tool.black]
 line-length = 105
 skip-string-normalization = true
 
-[tool.pytest.ini_options]
-norecursedirs = [
-    "build",
-    "docs",
-    ".tox",
-]
-
 [tool.coverage.run]
 branch = true
 omit = ["setup.py"]
+
+[tool.pytest.ini_options]
+norecursedirs = [
+  "build",
+  "docs",
+  ".tox"
+]
+
+[tool.setuptools]
+packages = ["elevation"]
+
+[tool.setuptools_scm]
+write_to = "elevation/version.py"
+write_to_template = '''
+# Do not change! Do not track in version control!
+__version__ = "{version}"
+'''
