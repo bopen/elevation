@@ -26,20 +26,20 @@ from . import spatial, util
 click.disable_unicode_literals_warning = True
 
 
-CONTEXT_SETTINGS = dict(auto_envvar_prefix='EIO')
+CONTEXT_SETTINGS = dict(auto_envvar_prefix="EIO")
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
 @click.version_option()
 @click.option(
-    '--product',
+    "--product",
     type=click.Choice(elevation.PRODUCTS),
     default=elevation.DEFAULT_PRODUCT,
     show_default=True,
     help="DEM product choice.",
 )
 @click.option(
-    '--cache_dir',
+    "--cache_dir",
     type=click.Path(resolve_path=True, file_okay=False),
     default=elevation.CACHE_DIR,
     show_default=True,
@@ -72,7 +72,9 @@ def info(**kwargs):
 
 
 @eio.command(short_help="Seed the DEM to given bounds.")
-@click.option('--bounds', nargs=4, type=float, help="Output bounds: left bottom right top.")
+@click.option(
+    "--bounds", nargs=4, type=float, help="Output bounds: left bottom right top."
+)
 @click_merge_parent_params
 def seed(**kwargs):
     elevation.seed(**kwargs)
@@ -80,23 +82,30 @@ def seed(**kwargs):
 
 @eio.command(short_help="Clip the DEM to given bounds.")
 @click.option(
-    '-o',
-    '--output',
+    "-o",
+    "--output",
     type=click.Path(resolve_path=True, dir_okay=False),
     default=elevation.DEFAULT_OUTPUT,
     show_default=True,
     help="Path to output file. Existing files will be overwritten.",
 )
-@click.option('--bounds', type=float, nargs=4, help="Output bounds in 'left bottom right top' order.")
 @click.option(
-    '-m',
-    '--margin',
+    "--bounds",
+    type=float,
+    nargs=4,
+    help="Output bounds in 'left bottom right top' order.",
+)
+@click.option(
+    "-m",
+    "--margin",
     default=elevation.MARGIN,
     show_default=True,
     help="Decimal degree margin added to the bounds. Use '%' for percent margin.",
 )
 @click.option(
-    '-r', '--reference', help="Use the extent of a reference GDAL/OGR data source as output bounds."
+    "-r",
+    "--reference",
+    help="Use the extent of a reference GDAL/OGR data source as output bounds.",
 )
 @click_merge_parent_params
 def clip(bounds, reference, **kwargs):

@@ -1,15 +1,15 @@
 channels:
-  - defaults
-  - conda-forge
+- defaults
+- conda-forge
 dependencies:
-  - appdirs
-  - click
-  - fiona
-  - make
-  - pip
-  - pytest
-  - pytest-cov
-  - pytest-mock
-  - rasterio
-  - pip:
-    - fasteners
+- appdirs
+- click
+- fiona
+- make
+- pip
+- pytest
+- pytest-cov
+- pytest-mock
+- rasterio
+- pip:
+  - fasteners

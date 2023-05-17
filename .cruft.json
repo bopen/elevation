@@ -1,0 +1,18 @@
+{
+  "template": "https://github.com/ecmwf-projects/cookiecutter-conda-package.git",
+  "commit": "a5d6e8a6678af8f61a69af97a78852d0c595fedc",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "project_name": "elevation",
+      "project_slug": "elevation",
+      "project_short_description": "Python script to download global terrain digital elevation models, SRTM 30m DEM and SRTM 90m DEM.",
+      "copyright_holder": "B-Open Solutions srl",
+      "copyright_year": "2016",
+      "mypy_strict": "False",
+      "integration_tests": "True",
+      "_template": "https://github.com/ecmwf-projects/cookiecutter-conda-package.git"
+    }
+  },
+  "directory": null
+}

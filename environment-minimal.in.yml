@@ -1,11 +1,11 @@
 channels:
-  - defaults
-  - conda-forge
+- defaults
+- conda-forge
 dependencies:
-  - appdirs
-  - click
-  - gdal
-  - make
-  - pip
-  - pip:
-    - fasteners
+- appdirs
+- click
+- gdal
+- make
+- pip
+- pip:
+  - fasteners

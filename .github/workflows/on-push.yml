@@ -1,104 +1,196 @@
 name: on-push
 
-on: [push]
+on:
+  push:
+    branches:
+    - main
+    tags:
+    - '*'
+  pull_request:
+    branches:
+    - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -l {0}
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: 3.x
+    - uses: pre-commit/action@v3.0.0
+
+  combine-environments:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install conda-merge
+      run: |
+        $CONDA/bin/python -m pip install conda-merge
+    - name: Combine environments
+      run: |
+        for SUFFIX in ci integration; do
+        $CONDA/bin/conda-merge ci/environment-$SUFFIX.yml environment.yml > ci/combined-environment-$SUFFIX.yml || exit
+        done
+    - name: Archive combined environments
+      uses: actions/upload-artifact@v3
+      with:
+        name: combined-environments
+        path: ci/combined-environment-*.yml
+
   unit-tests:
-    runs-on: ${{ matrix.os }}-latest
+    name: unit-tests (3.10)
+    needs: combine-environments
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download combined environments
+      uses: actions/download-artifact@v3
+      with:
+        name: combined-environments
+        path: ci
+    - name: Install Conda environment with Micromamba
+      uses: mamba-org/provision-with-micromamba@v15
+      with:
+        environment-file: ci/combined-environment-ci.yml
+        environment-name: DEVELOP
+        channels: conda-forge
+        cache-env: true
+        extra-specs: |
+          python=3.10
+    - name: Install package
+      run: |
+        python -m pip install --no-deps -e .
+    - name: Run tests
+      run: |
+        make unit-tests COV_REPORT=xml
+
+  type-check:
+    needs: [combine-environments, unit-tests]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download combined environments
+      uses: actions/download-artifact@v3
+      with:
+        name: combined-environments
+        path: ci
+    - name: Install Conda environment with Micromamba
+      uses: mamba-org/provision-with-micromamba@v15
+      with:
+        environment-file: ci/combined-environment-ci.yml
+        environment-name: DEVELOP
+        channels: conda-forge
+        cache-env: true
+        extra-specs: |
+          python=3.10
+    - name: Install package
+      run: |
+        python -m pip install --no-deps -e .
+    - name: Run code quality checks
+      run: |
+        make type-check
+
+  docs-build:
+    needs: [combine-environments, unit-tests]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download combined environments
+      uses: actions/download-artifact@v3
+      with:
+        name: combined-environments
+        path: ci
+    - name: Install Conda environment with Micromamba
+      uses: mamba-org/provision-with-micromamba@v15
+      with:
+        environment-file: ci/combined-environment-ci.yml
+        environment-name: DEVELOP
+        channels: conda-forge
+        cache-env: true
+        extra-specs: |
+          python=3.10
+    - name: Install package
+      run: |
+        python -m pip install --no-deps -e .
+    - name: Build documentation
+      run: |
+        make docs-build
+
+  integration-tests:
+    needs: [combine-environments, unit-tests]
+    if: |
+      success() && true
+    runs-on: ubuntu-latest
+
     strategy:
-      max-parallel: 5
       matrix:
-        os: [ubuntu]
-        python: [3.6, 3.7, 3.8, 3.9]
-        extras: ['']
         include:
-          - os: macos
-            python: 3.8
-          - os: ubuntu
-            python: 3.8
-          - os: ubuntu
-            python: 3.8
-            extras: -minimal
-          - os: windows
-            python: 3.8
+        - python-version: '3.10'
+          extra: -integration
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: conda-incubator/setup-miniconda@v2
+    - uses: actions/checkout@v3
+    - name: Download combined environments
+      uses: actions/download-artifact@v3
       with:
-        python-version: ${{ matrix.python }}
-        activate-environment: ${{ matrix.os }}-${{ matrix.python }}${{ matrix.extras }}
-        environment-file: tests/environment-${{ matrix.os }}-${{ matrix.python }}${{ matrix.extras }}.yml
-    - name: Test with pytest
-      shell: bash -l {0}
-      run: |
-        conda install pytest pytest-cov pytest-mock
-        pip install --no-deps -e .
-        pytest -v --cov=. --cov-report=xml .
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
-
-  docs:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    - uses: conda-incubator/setup-miniconda@v2
+        name: combined-environments
+        path: ci
+    - name: Install Conda environment with Micromamba
+      uses: mamba-org/provision-with-micromamba@v15
       with:
-        python-version: 3.8
-        activate-environment: ubuntu-3.8
-        environment-file: tests/environment-ubuntu-3.8.yml
-    - name: Build documentation with Sphinx
-      shell: bash -l {0}
+        environment-file: ci/combined-environment${{ matrix.extra }}.yml
+        environment-name: DEVELOP${{ matrix.extra }}
+        channels: conda-forge
+        cache-env: true
+        extra-specs: |
+          python=${{ matrix.python-version }}
+    - name: Install package
       run: |
-        conda install sphinx sphinx_rtd_theme
-        pip install --no-deps -e .
-        python setup.py build_sphinx
-    - name: Test README with pytest
-      shell: bash -l {0}
+        python -m pip install --no-deps -e .
+    - name: Run tests
       run: |
-        conda install pytest pytest-cov
-        pytest -v --cov=. --cov-report=xml --cov-branch README.rst
-
-  code-quality:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Lint with flake8
-      run: |
-        $CONDA/bin/conda install flake8
-        # stop the build if there are Python syntax errors or undefined names
-        $CONDA/bin/flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        $CONDA/bin/flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
-  code-style:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Check code style with black
-      run: |
-        $CONDA/bin/conda install black
-        $CONDA/bin/black --check .
-    - name: Check code style with isort
-      run: |
-        $CONDA/bin/conda install isort
-        $CONDA/bin/isort .
+        make unit-tests COV_REPORT=xml
 
   distribution:
     runs-on: ubuntu-latest
+    needs: [unit-tests, type-check, docs-build, integration-tests]
+    if: |
+      always() &&
+      needs.unit-tests.result == 'success' &&
+      needs.type-check.result == 'success' &&
+      needs.docs-build.result == 'success' &&
+      (needs.integration-tests.result == 'success' || needs.integration-tests.result == 'skipped')
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+    - name: Install packages
+      run: |
+        $CONDA/bin/python -m pip install build twine
     - name: Build distributions
       run: |
-        $CONDA/bin/conda install pip setuptools wheel
-        $CONDA/bin/python setup.py sdist bdist_wheel
+        $CONDA/bin/python -m build
+    - name: Check wheels
+      run: |
+        cd dist || exit
+        $CONDA/bin/python -m pip install elevation*.whl || exit
+        $CONDA/bin/python -m twine check * || exit
+        $CONDA/bin/python -c "import elevation"
     - name: Publish a Python distribution to PyPI
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
-        password: ${{ secrets.pypi_password }}
+        password: ${{ secrets.PYPI_API_TOKEN }}
