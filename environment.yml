@@ -11,6 +11,6 @@ dependencies:
 - appdirs
 - click
 - fasteners
-- gdal
 - fiona
+- gdal
 - rasterio
