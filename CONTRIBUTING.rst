@@ -33,4 +33,3 @@ in order to update the pinned version to the latest version run::
 
     $ pip-compile -U --no-index requirements-tests.in
     $ pip-compile -U --no-index requirements-docs.in
-
