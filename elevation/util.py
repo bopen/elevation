@@ -21,6 +21,7 @@ from contextlib import contextmanager
 
 import fasteners
 
+SUPPRESS_OUTPUT = False
 FOLDER_LOCKFILE_NAME = '.folder_lock'
 
 
@@ -84,6 +85,9 @@ def check_call_make(path, targets=(), variables=()):
     make_targets = ' '.join(targets)
     variables_items = collections.OrderedDict(variables).items()
     make_variables = ' '.join('%s="%s"' % (k.upper(), v) for k, v in variables_items)
-    cmd = 'make -C {path} {make_targets} {make_variables}'.format(**locals())
+    cmd = 'make '
+    if SUPPRESS_OUTPUT:
+        cmd += '-s '
+    cmd += '-C {path} {make_targets} {make_variables}'.format(**locals())
     subprocess.check_call(cmd, shell=True)
     return cmd
