@@ -69,7 +69,7 @@
 
 - Fix clean command.
   Closes issue `#21 <https://github.com/bopen/elevation/issues/21>`_.
-- Add docstrings for all Pyhton API functions.
+- Add docstrings for all Python API functions.
   Closes issue `#15 <https://github.com/bopen/elevation/issues/15>`_.
 
 
@@ -77,7 +77,7 @@
 -------------------
 
 - Revert the default product back to ``SRTM1`` by downloading from the
- `Amazon Terrain Tiles on AWS servcie <https://aws.amazon.com/public-data-sets/terrain>`_.
+ `Amazon Terrain Tiles on AWS service <https://aws.amazon.com/public-data-sets/terrain>`_.
   Closes issue `#18 <https://github.com/bopen/elevation/issues/18>`_.
 
 

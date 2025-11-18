@@ -1,6 +1,6 @@
 
 This project is Free and Open Source Software released under the terms of the
-`Apache License, Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
+`Apache License, Version 2.0 <https://www.apache.org/licenses/LICENSE-2.0>`_.
 Contributions are highly welcomed and appreciated. Every little help counts, so do not hesitate!
 
 .. highlight: console
@@ -25,8 +25,8 @@ Tests can be run with `pytest <https://pytest.org>`_ and `tox <https://tox.readt
 please ensure the coverage at least stays the same before you submit a pull request.
 
 
-Keeping dependencies uptodate
------------------------------
+Keeping dependencies up-to-date
+-------------------------------
 
 Testing in done on version pinned dependencies to ensure reproducibility,
 in order to update the pinned version to the latest version run::

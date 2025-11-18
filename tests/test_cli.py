@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2016-2021 B-Open Solutions srl - http://bopen.eu
-#
+# Copyright (c) 2016-2021 B-Open Solutions srl - https://bopen.eu
 
 import subprocess
 

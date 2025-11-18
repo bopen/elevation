@@ -24,8 +24,8 @@ The following dependencies need to be installed and working:
 - `GNU make <https://www.gnu.org/software/make/>`_
 - `curl <https://curl.haxx.se/>`_
 - unzip
-- `gunzip <http://www.gzip.org/>`_
-- `GDAL command line tools <http://www.gdal.org/>`_
+- `gunzip <https://www.gzip.org/>`_
+- `GDAL command line tools <https://www.gdal.org/>`_
 
 The following command runs some basic checks and reports common issues::
 
@@ -63,7 +63,7 @@ for example if you have a georeference image ``MyImage.tif`` you can clip the co
 
     $ eio clip -o MyImage-DEM.tif --reference MyImage.tif  # enable with: $ pip install rasterio
 
-The ``--reference`` option can take also verctor data as input::
+The ``--reference`` option can take also vector data as input::
 
     $ eio clip -o MyShapefile-DEM.tif --reference MyShapefile.shp  # enable with: $ pip install fiona
 
@@ -138,7 +138,7 @@ Project resources
 -----------------
 
 ============= =========================================================
-Documentation http://elevation.bopen.eu
+Documentation https://elevation.bopen.eu
 Support       https://stackoverflow.com/search?q=python+elevation
 Development   https://github.com/bopen/elevation
 Download      https://pypi.org/project/elevation
@@ -159,7 +159,7 @@ If you encounter any problems, please file an issue along with a detailed descri
 
 Authors:
 
-- B-Open Solutions srl - `@bopen <https://github.com/bopen>`_ - http://bopen.eu
+- B-Open Solutions srl - `@bopen <https://github.com/bopen>`_ - https://bopen.eu
 - Alessandro Amici - `@alexamici <https://github.com/alexamici>`_
 
 
@@ -167,5 +167,5 @@ License
 -------
 
 Elevation is free and open source software
-distributed under the terms of the `Apache License, Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
+distributed under the terms of the `Apache License, Version 2.0 <https://www.apache.org/licenses/LICENSE-2.0>`_.
 

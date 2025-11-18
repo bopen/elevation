@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # elevation documentation build configuration file
 #
@@ -56,9 +55,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'elevation'
-copyright = u'2016-2021 B-Open Solutions srl'
-author = u'B-Open Solutions srl'
+project = 'elevation'
+copyright = '2016-2021 B-Open Solutions srl'
+author = 'B-Open Solutions srl'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
