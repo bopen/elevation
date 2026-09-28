@@ -1,22 +1,77 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel",
-    "setuptools_scm[toml]>=3.4",
-    "setuptools_scm_git_archive",
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+
+[project]
+name = "elevation"
+description = "Python script to download global terrain digital elevation models, SRTM 30m DEM and SRTM 90m DEM."
+readme = "README.rst"
+license = {file = "LICENSE"}
+authors = [
+  {name = "B-Open Solutions srl, Alessandro Amici", email = "info@bopen.eu"},
+]
+requires-python = ">=3.11"
+dynamic = ["version"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Scientific/Engineering :: GIS",
+]
+keywords = [
+  "script",
+  "download",
+  "SRTM",
+  "DEM",
+  "DTM",
+  "global",
+  "digital elevation",
+  "terrain model",
+]
+dependencies = [
+  "appdirs",
+  "click",
+  "fasteners",
 ]
 
+[project.optional-dependencies]
+reference = ["fiona", "rasterio"]
+
+[project.scripts]
+eio = "elevation.cli:eio"
+
+[project.urls]
+Homepage = "http://elevation.bopen.eu"
+
+[tool.setuptools]
+packages = ["elevation"]
+
+[tool.setuptools.package-data]
+elevation = ["datasource.mk", "py.typed"]
+
 [tool.setuptools_scm]
+fallback_version = "999"
 write_to = "elevation/version.py"
 write_to_template = '''
-# don't change, don't track in version control
+# Do not change! Do not track in version control!
 __version__ = "{version}"
 '''
 
+[tool.mypy]
+strict = true
 
-[tool.black]
-line-length = 105
-skip-string-normalization = true
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = ["appdirs", "fasteners", "fiona", "rasterio"]
 
 [tool.pytest.ini_options]
 norecursedirs = [
@@ -27,4 +82,45 @@ norecursedirs = [
 
 [tool.coverage.run]
 branch = true
-omit = ["setup.py"]
+
+[tool.ruff]
+# Same as Black.
+indent-width = 4
+line-length = 88
+
+[tool.ruff.format]
+exclude = ["*.ipynb"]
+
+[tool.ruff.lint]
+exclude = ["*.ipynb"]
+ignore = [
+  # pydocstyle: Missing Docstrings
+  "D1"
+]
+select = [
+  # pyflakes
+  "F",
+  # pycodestyle
+  "E",
+  "W",
+  # isort
+  "I",
+  # pydocstyle
+  "D"
+]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 110
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0",
+    "pre-commit>=4.3.0",
+    "pytest>=9.1.1",
+    "pytest-cov>=5.0",
+    "pytest-mock>=3.16.0",
+    "ruff>=0.15",
+]
