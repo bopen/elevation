@@ -41,7 +41,7 @@ root_doc = "index"
 
 # General information about the project.
 project = "elevation"
-copyright = "2016-2021 B-Open Solutions srl"
+copyright = "2016-2026 B-Open Solutions srl"
 author = "B-Open Solutions srl"
 
 # The version info for the project you're documenting, acts as replacement for

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2021 B-Open Solutions srl - https://bopen.eu
+# Copyright (c) 2016-2026 B-Open Solutions srl - https://bopen.eu
 #
 
 from pathlib import Path
