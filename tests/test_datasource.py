@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2016-2021 B-Open Solutions srl - https://bopen.eu
 #
@@ -75,9 +74,7 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     datasource.seed(cache_dir=str(root), product="SRTM1", bounds=bounds)
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
-    expected_cmd = (
-        'make -C %s download ENSURE_TILES="N43/N43E013.tif"' % datasource_root
-    )
+    expected_cmd = f'make -C {datasource_root} download ENSURE_TILES="N43/N43E013.tif"'
     mock_check_call.assert_any_call(expected_cmd, shell=True)
 
     with pytest.raises(RuntimeError):
@@ -120,10 +117,7 @@ def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     )
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
-    cmd = (
-        'make -C %s clip OUTPUT="out.tif" PROJWIN="13.1 44.9 14.9 43.1" RUN_ID="asd"'
-        % datasource_root
-    )
+    cmd = f'make -C {datasource_root} clip OUTPUT="out.tif" PROJWIN="13.1 44.9 14.9 43.1" RUN_ID="asd"'
     mock_check_call.assert_any_call(cmd, shell=True)
 
 
@@ -133,4 +127,4 @@ def test_clean(mocker: MockerFixture, tmp_path: Path) -> None:
     datasource.clean(cache_dir=str(root), product="SRTM1")
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
-    mock_check_call.assert_any_call("make -C %s clean " % datasource_root, shell=True)
+    mock_check_call.assert_any_call(f"make -C {datasource_root} clean ", shell=True)

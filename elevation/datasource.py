@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2016-2021 B-Open Solutions srl - https://bopen.eu
 #
@@ -27,17 +26,17 @@ from . import util
 
 # declare public all API functions and constants
 __all__ = [
+    "CACHE_DIR",
+    "DEFAULT_OUTPUT",
+    "DEFAULT_PRODUCT",
+    "MARGIN",
+    "PRODUCTS",
+    "TOOLS",
+    "clean",
+    "clip",
+    "distclean",
     "info",
     "seed",
-    "clip",
-    "clean",
-    "distclean",
-    "CACHE_DIR",
-    "DEFAULT_PRODUCT",
-    "PRODUCTS",
-    "DEFAULT_OUTPUT",
-    "MARGIN",
-    "TOOLS",
 ]
 
 CACHE_DIR = appdirs.user_cache_dir("elevation", "bopen")
@@ -46,7 +45,7 @@ MARGIN = "0"
 
 
 def srtm1_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
-    return int(math.floor(lon)), int(math.floor(lat))
+    return math.floor(lon), math.floor(lat)
 
 
 def srtm3_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
@@ -69,9 +68,9 @@ def srtm1_tiles_names(
     if isinstance(right, int) or right.is_integer():
         iright -= 1
     for ilon in range(ileft, iright + 1):
-        slon = "%s%03d" % ("E" if ilon >= 0 else "W", abs(ilon))
+        slon = f"{'E' if ilon >= 0 else 'W'}{abs(ilon):03d}"
         for ilat in range(ibottom, itop + 1):
-            slat = "%s%02d" % ("N" if ilat >= 0 else "S", abs(ilat))
+            slat = f"{'N' if ilat >= 0 else 'S'}{abs(ilat):02d}"
             yield tile_name_template.format(**locals())
 
 
@@ -101,9 +100,9 @@ def srtm_ellip_tiles_names(
     iright, ibottom = srtm1_tile_ilonlat(right, bottom)
 
     for ilon in range(ileft, iright + 1):
-        slon = "%s%03d" % ("E" if ilon >= 0 else "W", abs(ilon))
+        slon = f"{'E' if ilon >= 0 else 'W'}{abs(ilon):03d}"
         for ilat in range(ibottom, itop + 1):
-            slat = "%s%02d" % ("N" if ilat >= 0 else "S", abs(ilat))
+            slat = f"{'N' if ilat >= 0 else 'S'}{abs(ilat):02d}"
             subdir = "North" if ilat >= 0 else "South"
             north_subdir = "North_30_60" if ilat >= 30 else "North_0_29"
             fname = tile_name_template.format(**locals())
@@ -207,7 +206,7 @@ def do_clip(
     with util.lock_vrt(path, product):
         util.check_call_make(path, targets=["copy_vrt"], variables=[("run_id", run_id)])
     left, bottom, right, top = bounds
-    projwin = "%s %s %s %s" % (left, top, right, bottom)
+    projwin = f"{left} {top} {right} {bottom}"
     variables_items = [("output", output), ("projwin", projwin), ("run_id", run_id)]
     return util.check_call_make(path, targets=["clip"], variables=variables_items)
 
@@ -234,8 +233,8 @@ def seed(
     # FIXME: emergency hack to enforce the no-bulk-download policy
     if len(ensure_tiles_names) > max_download_tiles:
         raise RuntimeError(
-            "Too many tiles: %d. Please consult the providers' websites "
-            "for how to bulk download tiles." % len(ensure_tiles_names)
+            f"Too many tiles: {len(ensure_tiles_names)}. Please consult the "
+            "providers' websites for how to bulk download tiles."
         )
 
     with util.lock_tiles(datasource_root, ensure_tiles_names):

@@ -78,6 +78,7 @@ module = ["appdirs", "fasteners", "fiona", "rasterio"]
 # Same as Black.
 indent-width = 4
 line-length = 88
+target-version = "py311"
 
 [tool.ruff.format]
 exclude = ["*.ipynb"]
@@ -86,7 +87,9 @@ exclude = ["*.ipynb"]
 exclude = ["*.ipynb"]
 ignore = [
   # pydocstyle: Missing Docstrings
-  "D1"
+  "D1",
+  # flake8-bugbear: Mutable argument defaults are safe if not mutated
+  "B006"
 ]
 select = [
   # pyflakes
@@ -97,7 +100,17 @@ select = [
   # isort
   "I",
   # pydocstyle
-  "D"
+  "D",
+  # flake8-bugbear
+  "B",
+  # flake8-comprehensions
+  "C4",
+  # flake8-simplify
+  "SIM",
+  # pyupgrade
+  "UP",
+  # Ruff-specific rules
+  "RUF"
 ]
 
 [tool.ruff.lint.pycodestyle]

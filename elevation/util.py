@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2016-2021 B-Open Solutions srl - https://bopen.eu
 #
@@ -35,7 +34,7 @@ def selfcheck(tools: dict[str, str]) -> str:
         try:
             subprocess.check_output(check_cli, shell=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError:
-            msg.append("%r not found or not usable." % tool_name)
+            msg.append(f"{tool_name!r} not found or not usable.")
     return "\n".join(msg) if msg else "Your system is ready."
 
 
@@ -94,7 +93,7 @@ def check_call_make(
 ) -> str:
     make_targets = " ".join(targets)
     variables_items = dict(variables).items()
-    make_variables = " ".join('%s="%s"' % (k.upper(), v) for k, v in variables_items)
+    make_variables = " ".join(f'{k.upper()}="{v}"' for k, v in variables_items)
     cmd = "make -C {path} {make_targets} {make_variables}".format(**locals())
     subprocess.check_call(cmd, shell=True)
     return cmd

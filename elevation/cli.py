@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2016-2021 B-Open Solutions srl - https://bopen.eu
 #
@@ -24,11 +23,7 @@ import elevation
 
 from . import spatial, util
 
-# disable overzealous warning
-click.disable_unicode_literals_warning = True
-
-
-CONTEXT_SETTINGS = dict(auto_envvar_prefix="EIO")
+CONTEXT_SETTINGS = {"auto_envvar_prefix": "EIO"}
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)

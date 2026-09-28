@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2016-2021 B-Open Solutions srl - https://bopen.eu
 #
@@ -44,4 +43,4 @@ def import_bounds(reference: str) -> tuple[float, float, float, float]:
                 return left, bottom, right, top
         except fiona.errors.FionaValueError:
             pass
-    raise RuntimeError("Reference datasource could not be opened %r." % reference)
+    raise RuntimeError(f"Reference datasource could not be opened {reference!r}.")
