@@ -48,7 +48,7 @@ def eio(**kwargs: Any) -> None:
 
 @eio.command(short_help="Audit the system for common issues.")
 def selfcheck() -> None:
-    print(util.selfcheck(tools=elevation.TOOLS))
+    click.echo(util.selfcheck(tools=elevation.TOOLS))
 
 
 def click_merge_parent_params(

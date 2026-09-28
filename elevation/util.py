@@ -94,6 +94,6 @@ def check_call_make(
     make_targets = " ".join(targets)
     variables_items = dict(variables).items()
     make_variables = " ".join(f'{k.upper()}="{v}"' for k, v in variables_items)
-    cmd = "make -C {path} {make_targets} {make_variables}".format(**locals())
+    cmd = f"make -C {path} {make_targets} {make_variables}"
     subprocess.check_call(cmd, shell=True)
     return cmd

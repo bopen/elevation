@@ -108,9 +108,9 @@ def srtm_ellip_tiles_names(
             fname = tile_name_template.format(**locals())
 
             if ilat >= 0:
-                yield ("{subdir}/{north_subdir}/{fname}".format(**locals()))
+                yield f"{subdir}/{north_subdir}/{fname}"
             else:
-                yield ("{subdir}/{fname}".format(**locals()))
+                yield f"{subdir}/{fname}"
 
 
 class DatasourceSpec(TypedDict):
