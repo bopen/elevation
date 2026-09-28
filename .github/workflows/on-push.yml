@@ -79,7 +79,23 @@ jobs:
         enable-cache: true
         python-version: '3.14'
     - name: Build documentation
-      run: uv run --frozen make docs-build
+      run: make docs-build
+
+  minver-tests:
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Install uv and set the python version
+      uses: astral-sh/setup-uv@v7
+      with:
+        version: '0.11.17'
+        enable-cache: true
+        python-version: '3.14'
+    - name: Run tests
+      run: make minver-tests
 
   distribution:
     runs-on: ubuntu-latest
