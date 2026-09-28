@@ -474,14 +474,11 @@ source = {editable = "."}
 
 [package.dev-dependencies]
 dev = [
-  {name = "fiona"},
   {name = "mypy"},
   {name = "pre-commit"},
   {name = "pytest"},
   {name = "pytest-cov"},
   {name = "pytest-mock"},
-  {name = "rasterio", version = "1.4.4", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version < '3.12'"},
-  {name = "rasterio", version = "1.5.1", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version >= '3.12'"},
   {name = "ruff"},
   {name = "sphinx", version = "9.0.4", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version < '3.12'"},
   {name = "sphinx", version = "9.1.0", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version >= '3.12'"},
@@ -500,13 +497,11 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-  {name = "fiona", specifier = ">=1.10.1"},
   {name = "mypy", specifier = ">=1.15.0"},
   {name = "pre-commit", specifier = ">=4.3.0"},
   {name = "pytest", specifier = ">=9.1.1"},
   {name = "pytest-cov", specifier = ">=5.0"},
   {name = "pytest-mock", specifier = ">=3.16.0"},
-  {name = "rasterio", specifier = ">=1.4.4"},
   {name = "ruff", specifier = ">=0.15"},
   {name = "sphinx", specifier = ">=7.2"},
   {name = "sphinx-rtd-theme", specifier = ">=2.0"}
