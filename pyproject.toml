@@ -74,13 +74,6 @@ strict = true
 ignore_missing_imports = true
 module = ["appdirs", "fasteners", "fiona", "rasterio"]
 
-[tool.pytest.ini_options]
-norecursedirs = [
-  "build",
-  "docs",
-  ".tox"
-]
-
 [tool.ruff]
 # Same as Black.
 indent-width = 4
