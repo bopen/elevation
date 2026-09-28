@@ -1,10 +1,10 @@
 Global geographic elevation data made easy.
 Elevation provides easy download, cache and access of the global datasets
 `SRTM 30m Global 1 arc second V003 <https://lpdaac.usgs.gov/products/srtmgl1nv003/>`_
-elaborated by NASA and NGA hosted on `Amazon S3 <https://aws.amazon.com/public-data-sets/terrain>`_
+produced by NASA and NGA hosted on `Amazon S3 <https://aws.amazon.com/public-data-sets/terrain>`_
 and
 `SRTM 90m Digital Elevation Database v4.1 <https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/>`_
-elaborated by CGIAR-CSI.
+produced by CGIAR-CSI.
 
 Note that any download policies of the respective providers apply.
 
@@ -38,7 +38,7 @@ and distributions, please refer to the
 `GDAL install documentation <https://trac.osgeo.org/gdal/wiki/DownloadingGdalBinaries>`_.
 
 Note that starting from *elevation* v1.1 only Python 3 is officially supported.
-To get the last version sporting Python 2 support please use ``pip install elevation=1.0.6``.
+To get the last version supporting Python 2 please use ``pip install "elevation==1.0.6"``.
 
 
 Command line usage
@@ -59,16 +59,16 @@ given as ``left bottom right top`` similarly to the ``rio`` command form ``raste
 
 If you have installed the packages ``rasterio`` and ``fiona``
 you can clip a DEM on the same extent of any other geospatial data source supported by GDAL and OGR,
-for example if you have a georeference image ``MyImage.tif`` you can clip the corresponding DEM with::
+for example if you have a georeferenced image ``MyImage.tif`` you can clip the corresponding DEM with::
 
     $ eio clip -o MyImage-DEM.tif --reference MyImage.tif  # enable with: $ pip install rasterio
 
-The ``--reference`` option can take also verctor data as input::
+The ``--reference`` option can also take vector data as input::
 
     $ eio clip -o MyShapefile-DEM.tif --reference MyShapefile.shp  # enable with: $ pip install fiona
 
 The first time an area is accessed Elevation downloads the data tiles from the USGS or CGIAR-CSI servers and
-caches them in GeoTiff compressed formats,
+caches them in GeoTIFF compressed formats,
 subsequent accesses to the same and nearby areas are much faster.
 
 The ``clip`` sub-command doesn't allow automatic download of a large amount of DEM tiles,
@@ -82,7 +82,7 @@ To clean up stale temporary files and fix the cache in the event of a server err
 Command line reference
 ----------------------
 
-The ``eio`` command as the following sub-commands and options::
+The ``eio`` command has the following sub-commands and options::
 
     $ Usage: eio [OPTIONS] COMMAND [ARGS]...
 
@@ -142,7 +142,7 @@ Documentation http://elevation.bopen.eu
 Support       https://stackoverflow.com/search?q=python+elevation
 Development   https://github.com/bopen/elevation
 Download      https://pypi.org/project/elevation
-Code quality  .. image:: https://codecov.io/gh/bopen/elevation/branch/master/graph/badge.svg
+Code quality  .. image:: https://codecov.io/gh/bopen/elevation/branch/main/graph/badge.svg
                 :target: https://codecov.io/gh/bopen/elevation
                 :alt: Coverage status on Codecov
 ============= =========================================================
@@ -155,7 +155,7 @@ Contributions are very welcome. Please see the `CONTRIBUTING`_ document for
 the best way to help.
 If you encounter any problems, please file an issue along with a detailed description.
 
-.. _`CONTRIBUTING`: https://github.com/bopen/elevation/blob/master/CONTRIBUTING.rst
+.. _`CONTRIBUTING`: https://github.com/bopen/elevation/blob/main/CONTRIBUTING.rst
 
 Authors:
 

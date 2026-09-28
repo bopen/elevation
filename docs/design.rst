@@ -5,7 +5,7 @@ Design
 This chapter documents the high-level design of the product and
 it is intended for developers contributing to the project.
 
-.. note:: **Users of the product need not bother with the following. Unless they are curious :)**
+.. note:: **Users of the product need not bother with the following, unless they are curious :)**
 
 
 Mission and vision

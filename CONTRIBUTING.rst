@@ -1,7 +1,7 @@
 
 This project is Free and Open Source Software released under the terms of the
 `Apache License, Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
-Contributions are highly welcomed and appreciated. Every little help counts, so do not hesitate!
+Contributions are highly welcomed and appreciated. Every little bit of help counts, so do not hesitate!
 
 .. highlight: console
 
@@ -31,8 +31,8 @@ The ``Makefile`` wraps the common development tasks::
 Please ensure the coverage at least stays the same before you submit a pull request.
 
 
-Keeping dependencies uptodate
------------------------------
+Keeping dependencies up to date
+-------------------------------
 
 The ``uv.lock`` file pins all dependencies to ensure reproducibility,
 to upgrade them to the latest allowed versions run::
