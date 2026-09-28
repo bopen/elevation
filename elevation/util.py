@@ -21,7 +21,7 @@ from contextlib import contextmanager
 
 import fasteners
 
-FOLDER_LOCKFILE_NAME = '.folder_lock'
+FOLDER_LOCKFILE_NAME = ".folder_lock"
 
 
 def selfcheck(tools):
@@ -34,15 +34,15 @@ def selfcheck(tools):
         try:
             subprocess.check_output(check_cli, shell=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError:
-            msg.append('%r not found or not usable.' % tool_name)
-    return '\n'.join(msg) if msg else 'Your system is ready.'
+            msg.append("%r not found or not usable." % tool_name)
+    return "\n".join(msg) if msg else "Your system is ready."
 
 
 @contextmanager
 def lock_tiles(datasource_root, tile_names):
     locks = []
     for tile_name in tile_names:
-        lockfile_name = os.path.join(datasource_root, 'cache', tile_name + '.lock')
+        lockfile_name = os.path.join(datasource_root, "cache", tile_name + ".lock")
         locks.append(fasteners.InterProcessLock(lockfile_name))
 
     for lock in locks:
@@ -56,7 +56,9 @@ def lock_tiles(datasource_root, tile_names):
 
 @contextmanager
 def lock_vrt(datasource_root, product):
-    with fasteners.InterProcessLock(os.path.join(datasource_root, product + '.vrt.lock')):
+    with fasteners.InterProcessLock(
+        os.path.join(datasource_root, product + ".vrt.lock")
+    ):
         yield
 
 
@@ -73,7 +75,7 @@ def ensure_setup(root, folders=(), file_templates=(), force=False, **kwargs):
             path = os.path.join(root, relpath)
             if force or not os.path.exists(path):
                 body = template.format(**kwargs)
-                with open(path, 'w') as file:
+                with open(path, "w") as file:
                     file.write(body)
                 created_files[path] = body
 
@@ -81,9 +83,9 @@ def ensure_setup(root, folders=(), file_templates=(), force=False, **kwargs):
 
 
 def check_call_make(path, targets=(), variables=()):
-    make_targets = ' '.join(targets)
+    make_targets = " ".join(targets)
     variables_items = collections.OrderedDict(variables).items()
-    make_variables = ' '.join('%s="%s"' % (k.upper(), v) for k, v in variables_items)
-    cmd = 'make -C {path} {make_targets} {make_variables}'.format(**locals())
+    make_variables = " ".join('%s="%s"' % (k.upper(), v) for k, v in variables_items)
+    cmd = "make -C {path} {make_targets} {make_variables}".format(**locals())
     subprocess.check_call(cmd, shell=True)
     return cmd

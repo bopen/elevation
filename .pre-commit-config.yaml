@@ -1,0 +1,34 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v6.0.0
+  hooks:
+  - id: trailing-whitespace
+  - id: end-of-file-fixer
+  - id: check-json
+  - id: check-yaml
+  - id: check-toml
+  - id: check-added-large-files
+  - id: check-merge-conflict
+  - id: debug-statements
+  - id: mixed-line-ending
+- repo: https://github.com/keewis/blackdoc
+  rev: v0.4.6
+  hooks:
+  - id: blackdoc
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.15.15
+  hooks:
+  - id: ruff
+    args: [--fix, --show-fixes]
+  - id: ruff-format
+- repo: https://github.com/executablebooks/mdformat
+  rev: 1.0.0
+  hooks:
+  - id: mdformat
+- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+  rev: v2.16.0
+  hooks:
+  - id: pretty-format-yaml
+    args: [--autofix, --preserve-quotes]
+  - id: pretty-format-toml
+    args: [--autofix]
