@@ -16,20 +16,6 @@
 # import os
 import importlib.metadata
 
-import sphinx.environment
-from docutils.utils import get_source_line
-
-# "monkey patch" sphinx to omit any warnings of 'nonlocal image URI found'.
-# Now we can `sphinx-build -W` to turn "warnings to errors" in test builds.
-
-
-def _warn_node(self, msg, node, **kwargs):
-    if not msg.startswith("nonlocal image URI found:"):
-        self._warnfunc(msg, "%s:%s" % get_source_line(node), **kwargs)
-
-
-sphinx.environment.BuildEnvironment.warn_node = _warn_node
-
 # -- General configuration ------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -112,7 +98,7 @@ htmlhelp_basename = "elevationdoc"
 
 # -- Options for LaTeX output ---------------------------------------------
 
-latex_elements = {
+latex_elements: dict[str, str] = {
     # The paper size ('letterpaper' or 'a4paper').
     #'papersize': 'letterpaper',
     # The font size ('10pt', '11pt' or '12pt').

@@ -28,18 +28,20 @@ except ImportError:
     SUPPORT_VECTOR_DATA = False
 
 
-def import_bounds(reference):
+def import_bounds(reference: str) -> tuple[float, float, float, float]:
     # ASSUMPTION: rasterio and fiona bounds are given in geodetic WGS84 crs
     if SUPPORT_RASTER_DATA:
         try:
             with rasterio.open(reference) as datasource:
-                return datasource.bounds
+                left, bottom, right, top = datasource.bounds
+                return left, bottom, right, top
         except rasterio.errors.RasterioIOError:
             pass
     if SUPPORT_VECTOR_DATA:
         try:
             with fiona.open(reference) as datasource:
-                return datasource.bounds
+                left, bottom, right, top = datasource.bounds
+                return left, bottom, right, top
         except fiona.errors.FionaValueError:
             pass
     raise RuntimeError("Reference datasource could not be opened %r." % reference)

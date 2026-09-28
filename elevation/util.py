@@ -17,14 +17,16 @@
 import collections
 import os
 import subprocess
+from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
+from typing import Any
 
 import fasteners
 
 FOLDER_LOCKFILE_NAME = ".folder_lock"
 
 
-def selfcheck(tools):
+def selfcheck(tools: Iterable[tuple[str, str]]) -> str:
     """Audit the system for issues.
 
     :param tools: Tools description. Use elevation.TOOLS to test elevation.
@@ -39,7 +41,7 @@ def selfcheck(tools):
 
 
 @contextmanager
-def lock_tiles(datasource_root, tile_names):
+def lock_tiles(datasource_root: str, tile_names: Iterable[str]) -> Iterator[None]:
     locks = []
     for tile_name in tile_names:
         lockfile_name = os.path.join(datasource_root, "cache", tile_name + ".lock")
@@ -55,14 +57,20 @@ def lock_tiles(datasource_root, tile_names):
 
 
 @contextmanager
-def lock_vrt(datasource_root, product):
+def lock_vrt(datasource_root: str, product: str) -> Iterator[None]:
     with fasteners.InterProcessLock(
         os.path.join(datasource_root, product + ".vrt.lock")
     ):
         yield
 
 
-def ensure_setup(root, folders=(), file_templates=(), force=False, **kwargs):
+def ensure_setup(
+    root: str,
+    folders: Iterable[str] = (),
+    file_templates: Iterable[tuple[str, str]] | Mapping[str, str] = (),
+    force: bool = False,
+    **kwargs: Any,
+) -> tuple[list[str], collections.OrderedDict[str, str]]:
     with fasteners.InterProcessLock(os.path.join(root, FOLDER_LOCKFILE_NAME)):
         created_folders = []
         for path in [root] + [os.path.join(root, p) for p in folders]:
@@ -82,7 +90,9 @@ def ensure_setup(root, folders=(), file_templates=(), force=False, **kwargs):
     return created_folders, created_files
 
 
-def check_call_make(path, targets=(), variables=()):
+def check_call_make(
+    path: str, targets: Iterable[str] = (), variables: Iterable[tuple[str, str]] = ()
+) -> str:
     make_targets = " ".join(targets)
     variables_items = collections.OrderedDict(variables).items()
     make_variables = " ".join('%s="%s"' % (k.upper(), v) for k, v in variables_items)
