@@ -19,4 +19,4 @@ doc-tests:
 	$(PYTHON) -m pytest -vv --doctest-glob="*.rst" README.rst
 
 minver-tests:
-	uv run --resolution lowest-direct -p python3.11 --extra reference -m pytest .
+	uv run --resolution lowest-direct -p python3.11 -m pytest .
