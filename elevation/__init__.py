@@ -22,4 +22,30 @@ except ImportError:  # pragma: no cover
     __version__ = "999"
 
 # import all API functions and constants
-from .datasource import *  # noqa: F403
+from .datasource import (
+    CACHE_DIR,
+    DEFAULT_OUTPUT,
+    DEFAULT_PRODUCT,
+    MARGIN,
+    PRODUCTS,
+    TOOLS,
+    clean,
+    clip,
+    distclean,
+    info,
+    seed,
+)
+
+__all__ = [
+    "CACHE_DIR",
+    "DEFAULT_OUTPUT",
+    "DEFAULT_PRODUCT",
+    "MARGIN",
+    "PRODUCTS",
+    "TOOLS",
+    "clean",
+    "clip",
+    "distclean",
+    "info",
+    "seed",
+]

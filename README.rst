@@ -84,11 +84,13 @@ Command line reference
 
 The ``eio`` command has the following sub-commands and options::
 
-    $ Usage: eio [OPTIONS] COMMAND [ARGS]...
+    $ eio --help
+    Usage: eio [OPTIONS] COMMAND [ARGS]...
 
     Options:
       --version                Show the version and exit.
-      --product [SRTM1|SRTM3]  DEM product choice.  [default: SRTM1]
+      --product [SRTM1|SRTM3|SRTM1_ELLIP]
+                               DEM product choice.  [default: SRTM1]
       --cache_dir DIRECTORY    Root of the DEM cache folder.  [default:
                                /Users/amici/Library/Caches/elevation]
       --help                   Show this message and exit.
@@ -107,7 +109,7 @@ The ``clip`` sub-command::
     Usage: eio clip [OPTIONS]
 
     Options:
-      -o, --output PATH     Path to output file. Existing files will be
+      -o, --output FILE     Path to output file. Existing files will be
                             overwritten.  [default: out.tif]
       --bounds FLOAT...     Output bounds in 'left bottom right top' order.
       -m, --margin TEXT     Decimal degree margin added to the bounds. Use '%' for
