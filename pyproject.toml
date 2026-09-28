@@ -62,7 +62,7 @@ reference = ["fiona>=1.8.22", "rasterio>=1.3.4"]
 eio = "elevation.cli:eio"
 
 [project.urls]
-Homepage = "http://elevation.bopen.eu"
+Homepage = "https://elevation.bopen.eu"
 
 [tool.coverage.run]
 branch = true

@@ -37,7 +37,7 @@ Logical components:
 Version goals
 -------------
 
-This project strives to adhere to `semantic versioning <http://semver.org>`_.
+This project strives to adhere to `semantic versioning <https://semver.org>`_.
 
 
 1.1.0 (upcoming release)

@@ -1,6 +1,6 @@
 
 This project is Free and Open Source Software released under the terms of the
-`Apache License, Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
+`Apache License, Version 2.0 <https://www.apache.org/licenses/LICENSE-2.0>`_.
 Contributions are highly welcomed and appreciated. Every little bit of help counts, so do not hesitate!
 
 .. highlight: console

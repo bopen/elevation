@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2016-2021 B-Open Solutions srl - http://bopen.eu
+# Copyright (c) 2016-2021 B-Open Solutions srl - https://bopen.eu
 #
 
 from pathlib import Path
@@ -12,7 +12,7 @@ from elevation import datasource
 
 
 def test_srtm3_tile_ilonlat() -> None:
-    # values from http://srtm.csi.cgiar.org/SELECTION/inputCoord.asp
+    # values from https://srtm.csi.cgiar.org/SELECTION/inputCoord.asp
     assert datasource.srtm3_tile_ilonlat(-177.5, 52.5) == (1, 2)
     assert datasource.srtm3_tile_ilonlat(177.5, -47.5) == (72, 22)
     assert datasource.srtm3_tile_ilonlat(10.1, 44.9) == (39, 4)
