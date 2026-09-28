@@ -13,7 +13,7 @@ check-typing:
 	$(PYTHON) -m mypy .
 
 docs-build:
-	cp README.rst docs/. && cd docs && rm -fr _api && make clean && make html
+	$(PYTHON) -m sphinx -W -b html docs docs/_build/html
 
 doc-tests:
 	$(PYTHON) -m pytest -vv --doctest-glob="*.rst" README.rst

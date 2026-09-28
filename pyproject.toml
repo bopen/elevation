@@ -9,12 +9,14 @@ dev = [
   "pytest>=9.1.1",
   "pytest-cov>=5.0",
   "pytest-mock>=3.16.0",
-  "ruff>=0.15"
+  "ruff>=0.15",
+  "sphinx>=7.2",
+  "sphinx-rtd-theme>=2.0"
 ]
 
 [project]
 authors = [
-  {name = "B-Open Solutions srl, Alessandro Amici", email = "info@bopen.eu"}
+  { name = "B-Open Solutions srl, Alessandro Amici", email = "info@bopen.eu" }
 ]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -48,7 +50,7 @@ keywords = [
   "digital elevation",
   "terrain model"
 ]
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 name = "elevation"
 readme = "README.rst"
 requires-python = ">=3.11"

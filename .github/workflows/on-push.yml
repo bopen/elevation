@@ -66,20 +66,20 @@ jobs:
   #   - name: Run type checks
   #     run: make check-typing
 
-  # TODO: enable with the Sphinx docs migration
-  # docs-build:
-  #   needs: [unit-tests]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v7
-  #   - name: Install uv
-  #     uses: astral-sh/setup-uv@v7
-  #     with:
-  #       version: '0.11.17'
-  #       enable-cache: true
-  #       python-version: '3.14'
-  #   - name: Build documentation
-  #     run: uv run --frozen make docs-build
+  docs-build:
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        version: '0.11.17'
+        enable-cache: true
+        python-version: '3.14'
+    - name: Build documentation
+      run: uv run --frozen make docs-build
 
   distribution:
     runs-on: ubuntu-latest
