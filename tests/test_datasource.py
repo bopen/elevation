@@ -60,7 +60,9 @@ def test_ensure_tiles(mocker: MockerFixture) -> None:
 def test_do_clip(mocker: MockerFixture) -> None:
     bounds = (1, 5, 2, 6)
     mock_check_call = mocker.patch("subprocess.check_call")
-    cmd = datasource.do_clip(path="/tmp", bounds=bounds, output="/out.tif")
+    cmd = datasource.do_clip(
+        path="/tmp", bounds=bounds, output="/out.tif", product="SRTM1"
+    )
     assert cmd.startswith(
         'make -C /tmp clip OUTPUT="/out.tif" PROJWIN="1 6 2 5" RUN_ID="'
     )

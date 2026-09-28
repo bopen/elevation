@@ -37,8 +37,8 @@ templates_path = ["_templates"]
 # source_suffix = ['.rst', '.md']
 source_suffix = ".rst"
 
-# The master toctree document.
-master_doc = "index"
+# The root toctree document.
+root_doc = "index"
 
 # General information about the project.
 project = "elevation"
@@ -113,7 +113,7 @@ latex_elements: dict[str, str] = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (
-        master_doc,
+        root_doc,
         "elevation.tex",
         "elevation Documentation",
         "B-Open Solutions srl",
@@ -125,7 +125,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "elevation", "elevation Documentation", [author], 1)]
+man_pages = [(root_doc, "elevation", "elevation Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -135,7 +135,7 @@ man_pages = [(master_doc, "elevation", "elevation Documentation", [author], 1)]
 #  dir menu entry, description, category)
 texinfo_documents = [
     (
-        master_doc,
+        root_doc,
         "elevation",
         "elevation Documentation",
         author,

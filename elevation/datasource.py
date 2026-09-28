@@ -199,7 +199,7 @@ def do_clip(
     path: str,
     bounds: tuple[float, float, float, float],
     output: str,
-    product: str = DEFAULT_OUTPUT,
+    product: str,
     **kwargs: Any,
 ) -> str:
     run_id = uuid.uuid4().hex
@@ -267,6 +267,8 @@ def clip(
     bounds: tuple[float, float, float, float],
     output: str = DEFAULT_OUTPUT,
     margin: str = MARGIN,
+    cache_dir: str = CACHE_DIR,
+    product: str = DEFAULT_PRODUCT,
     **kwargs: Any,
 ) -> None:
     """Clip the DEM to given bounds.
@@ -276,10 +278,13 @@ def clip(
     :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
+    :param kwargs: Pass additional kwargs to seed.
     """
     bounds = build_bounds(bounds, margin=margin)
-    datasource_root = seed(bounds=bounds, **kwargs)
-    do_clip(datasource_root, bounds, output, **kwargs)
+    datasource_root = seed(
+        cache_dir=cache_dir, product=product, bounds=bounds, **kwargs
+    )
+    do_clip(datasource_root, bounds, output, product=product)
 
 
 def info(cache_dir: str = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
