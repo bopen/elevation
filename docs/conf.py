@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # elevation documentation build configuration file
 #
@@ -38,12 +36,12 @@ templates_path = ["_templates"]
 # source_suffix = ['.rst', '.md']
 source_suffix = ".rst"
 
-# The master toctree document.
-master_doc = "index"
+# The root toctree document.
+root_doc = "index"
 
 # General information about the project.
 project = "elevation"
-copyright = "2016-2021 B-Open Solutions srl"
+copyright = "2016-2026 B-Open Solutions srl"
 author = "B-Open Solutions srl"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -114,7 +112,7 @@ latex_elements: dict[str, str] = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (
-        master_doc,
+        root_doc,
         "elevation.tex",
         "elevation Documentation",
         "B-Open Solutions srl",
@@ -126,7 +124,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "elevation", "elevation Documentation", [author], 1)]
+man_pages = [(root_doc, "elevation", "elevation Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -136,7 +134,7 @@ man_pages = [(master_doc, "elevation", "elevation Documentation", [author], 1)]
 #  dir menu entry, description, category)
 texinfo_documents = [
     (
-        master_doc,
+        root_doc,
         "elevation",
         "elevation Documentation",
         author,

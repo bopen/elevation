@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools>=64", "setuptools_scm>=8"]
+requires = ["setuptools>=77", "setuptools_scm>=8"]
 
 [dependency-groups]
 dev = [
@@ -23,7 +23,6 @@ classifiers = [
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
   "Operating System :: OS Independent",
-  "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
@@ -38,7 +37,7 @@ dependencies = [
   "click>=8.1.3",
   "fasteners>=0.18"
 ]
-description = "Python script to download global terrain digital elevation models, SRTM 30m DEM and SRTM 90m DEM."
+description = "Python script to download global terrain digital elevation models, SRTM 30m DEM, SRTM 90m DEM and SRTM GL1 ellipsoidal DEM."
 dynamic = ["version"]
 keywords = [
   "script",
@@ -50,7 +49,8 @@ keywords = [
   "digital elevation",
   "terrain model"
 ]
-license = { file = "LICENSE" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 name = "elevation"
 readme = "README.rst"
 requires-python = ">=3.11"
@@ -62,7 +62,7 @@ reference = ["fiona>=1.8.22", "rasterio>=1.3.4"]
 eio = "elevation.cli:eio"
 
 [project.urls]
-Homepage = "http://elevation.bopen.eu"
+Homepage = "https://elevation.bopen.eu"
 
 [tool.coverage.run]
 branch = true
@@ -78,6 +78,7 @@ module = ["appdirs", "fasteners", "fiona", "rasterio"]
 # Same as Black.
 indent-width = 4
 line-length = 88
+target-version = "py311"
 
 [tool.ruff.format]
 exclude = ["*.ipynb"]
@@ -86,7 +87,9 @@ exclude = ["*.ipynb"]
 exclude = ["*.ipynb"]
 ignore = [
   # pydocstyle: Missing Docstrings
-  "D1"
+  "D1",
+  # flake8-bugbear: Mutable argument defaults are safe if not mutated
+  "B006"
 ]
 select = [
   # pyflakes
@@ -97,7 +100,19 @@ select = [
   # isort
   "I",
   # pydocstyle
-  "D"
+  "D",
+  # flake8-bugbear
+  "B",
+  # flake8-comprehensions
+  "C4",
+  # flake8-use-pathlib
+  "PTH",
+  # flake8-simplify
+  "SIM",
+  # pyupgrade
+  "UP",
+  # Ruff-specific rules
+  "RUF"
 ]
 
 [tool.ruff.lint.pycodestyle]

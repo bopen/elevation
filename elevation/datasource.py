@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
 #
-# Copyright (c) 2016-2021 B-Open Solutions srl - http://bopen.eu
+# Copyright (c) 2016-2026 B-Open Solutions srl - https://bopen.eu
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#     https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,10 +14,10 @@
 # limitations under the License.
 
 import math
-import os.path
 import pkgutil
 import uuid
 from collections.abc import Callable, Iterator, Sequence
+from pathlib import Path
 from typing import Any, TypedDict
 
 import appdirs
@@ -27,26 +26,25 @@ from . import util
 
 # declare public all API functions and constants
 __all__ = [
+    "CACHE_DIR",
+    "DEFAULT_OUTPUT",
+    "DEFAULT_PRODUCT",
+    "MARGIN",
+    "PRODUCTS",
+    "clean",
+    "clip",
+    "distclean",
     "info",
     "seed",
-    "clip",
-    "clean",
-    "distclean",
-    "CACHE_DIR",
-    "DEFAULT_PRODUCT",
-    "PRODUCTS",
-    "DEFAULT_OUTPUT",
-    "MARGIN",
-    "TOOLS",
 ]
 
-CACHE_DIR = appdirs.user_cache_dir("elevation", "bopen")
+CACHE_DIR = Path(appdirs.user_cache_dir("elevation", "bopen"))
 DEFAULT_OUTPUT = "out.tif"
 MARGIN = "0"
 
 
 def srtm1_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
-    return int(math.floor(lon)), int(math.floor(lat))
+    return math.floor(lon), math.floor(lat)
 
 
 def srtm3_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
@@ -69,9 +67,9 @@ def srtm1_tiles_names(
     if isinstance(right, int) or right.is_integer():
         iright -= 1
     for ilon in range(ileft, iright + 1):
-        slon = "%s%03d" % ("E" if ilon >= 0 else "W", abs(ilon))
+        slon = f"{'E' if ilon >= 0 else 'W'}{abs(ilon):03d}"
         for ilat in range(ibottom, itop + 1):
-            slat = "%s%02d" % ("N" if ilat >= 0 else "S", abs(ilat))
+            slat = f"{'N' if ilat >= 0 else 'S'}{abs(ilat):02d}"
             yield tile_name_template.format(**locals())
 
 
@@ -101,17 +99,17 @@ def srtm_ellip_tiles_names(
     iright, ibottom = srtm1_tile_ilonlat(right, bottom)
 
     for ilon in range(ileft, iright + 1):
-        slon = "%s%03d" % ("E" if ilon >= 0 else "W", abs(ilon))
+        slon = f"{'E' if ilon >= 0 else 'W'}{abs(ilon):03d}"
         for ilat in range(ibottom, itop + 1):
-            slat = "%s%02d" % ("N" if ilat >= 0 else "S", abs(ilat))
+            slat = f"{'N' if ilat >= 0 else 'S'}{abs(ilat):02d}"
             subdir = "North" if ilat >= 0 else "South"
             north_subdir = "North_30_60" if ilat >= 30 else "North_0_29"
             fname = tile_name_template.format(**locals())
 
             if ilat >= 0:
-                yield ("{subdir}/{north_subdir}/{fname}".format(**locals()))
+                yield f"{subdir}/{north_subdir}/{fname}"
             else:
-                yield ("{subdir}/{fname}".format(**locals()))
+                yield f"{subdir}/{fname}"
 
 
 class DatasourceSpec(TypedDict):
@@ -166,18 +164,10 @@ PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
 
 PRODUCTS = list(PRODUCTS_SPECS)
 DEFAULT_PRODUCT = PRODUCTS[0]
-TOOLS: dict[str, str] = {
-    "GNU Make": "make --version",
-    "curl": "curl --help",
-    "unzip": "unzip -v",
-    "gunzip": "gunzip --version",
-    "gdal_translate": "gdal_translate --version",
-    "gdalbuildvrt": "gdalbuildvrt --version",
-}
 
 
 def ensure_tiles(
-    path: str, ensure_tiles_names: Sequence[str] = (), **kwargs: Any
+    path: Path, ensure_tiles_names: Sequence[str] = (), **kwargs: Any
 ) -> str:
     ensure_tiles = " ".join(ensure_tiles_names)
     variables_items = [("ensure_tiles", ensure_tiles)]
@@ -188,37 +178,41 @@ def ensure_tiles(
 
 # FIXME: force=True is an emergency hack to ensure that the file always contains the intended body
 def ensure_setup(
-    cache_dir: str, product: str, force: bool = True
-) -> tuple[str, DatasourceSpec]:
-    datasource_root = os.path.join(cache_dir, product)
+    cache_dir: str | Path, product: str, force: bool = True
+) -> tuple[Path, DatasourceSpec]:
+    datasource_root = Path(cache_dir) / product
     spec = PRODUCTS_SPECS[product]
     util.ensure_setup(datasource_root, product=product, force=force, **spec)
     return datasource_root, spec
 
 
 def do_clip(
-    path: str,
+    path: Path,
     bounds: tuple[float, float, float, float],
-    output: str,
-    product: str = DEFAULT_OUTPUT,
+    output: str | Path,
+    product: str,
     **kwargs: Any,
 ) -> str:
     run_id = uuid.uuid4().hex
     with util.lock_vrt(path, product):
         util.check_call_make(path, targets=["copy_vrt"], variables=[("run_id", run_id)])
     left, bottom, right, top = bounds
-    projwin = "%s %s %s %s" % (left, top, right, bottom)
-    variables_items = [("output", output), ("projwin", projwin), ("run_id", run_id)]
+    projwin = f"{left} {top} {right} {bottom}"
+    variables_items = [
+        ("output", str(output)),
+        ("projwin", projwin),
+        ("run_id", run_id),
+    ]
     return util.check_call_make(path, targets=["clip"], variables=variables_items)
 
 
 def seed(
-    cache_dir: str = CACHE_DIR,
+    cache_dir: str | Path = CACHE_DIR,
     product: str = DEFAULT_PRODUCT,
     bounds: tuple[float, float, float, float] | None = None,
     max_download_tiles: int = 9,
     **kwargs: Any,
-) -> str:
+) -> Path:
     """Seed the DEM to given bounds.
 
     :param cache_dir: Root of the DEM cache folder.
@@ -234,8 +228,8 @@ def seed(
     # FIXME: emergency hack to enforce the no-bulk-download policy
     if len(ensure_tiles_names) > max_download_tiles:
         raise RuntimeError(
-            "Too many tiles: %d. Please consult the providers' websites "
-            "for how to bulk download tiles." % len(ensure_tiles_names)
+            f"Too many tiles: {len(ensure_tiles_names)}. Please consult the "
+            "providers' websites for how to bulk download tiles."
         )
 
     with util.lock_tiles(datasource_root, ensure_tiles_names):
@@ -266,8 +260,10 @@ def build_bounds(
 
 def clip(
     bounds: tuple[float, float, float, float],
-    output: str = DEFAULT_OUTPUT,
+    output: str | Path = DEFAULT_OUTPUT,
     margin: str = MARGIN,
+    cache_dir: str | Path = CACHE_DIR,
+    product: str = DEFAULT_PRODUCT,
     **kwargs: Any,
 ) -> None:
     """Clip the DEM to given bounds.
@@ -277,13 +273,16 @@ def clip(
     :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
+    :param kwargs: Pass additional kwargs to seed.
     """
     bounds = build_bounds(bounds, margin=margin)
-    datasource_root = seed(bounds=bounds, **kwargs)
-    do_clip(datasource_root, bounds, output, **kwargs)
+    datasource_root = seed(
+        cache_dir=cache_dir, product=product, bounds=bounds, **kwargs
+    )
+    do_clip(datasource_root, bounds, output, product=product)
 
 
-def info(cache_dir: str = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
+def info(cache_dir: str | Path = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
     """Show info about the product cache.
 
     :param cache_dir: Root of the DEM cache folder.
@@ -293,7 +292,7 @@ def info(cache_dir: str = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
     util.check_call_make(datasource_root, targets=["info"])
 
 
-def clean(cache_dir: str = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
+def clean(cache_dir: str | Path = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
     """Clean up the product cache from temporary files.
 
     :param cache_dir: Root of the DEM cache folder.
@@ -303,7 +302,9 @@ def clean(cache_dir: str = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
     util.check_call_make(datasource_root, targets=["clean"])
 
 
-def distclean(cache_dir: str = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
+def distclean(
+    cache_dir: str | Path = CACHE_DIR, product: str = DEFAULT_PRODUCT
+) -> None:
     """Remove the product cache entirely.
 
     :param cache_dir: Root of the DEM cache folder.

@@ -1,4 +1,10 @@
 
+2.0.0rc2 (unreleased)
+---------------------
+
+- Accept ``str`` or ``Path`` for all path-valued arguments.
+
+
 2.0.0rc1 (2026-09-28)
 ---------------------
 
@@ -33,7 +39,7 @@
 ------------------
 
 - Drop Python 2 support. Sorry it is not possible to test it anymore.
-- Drop support for python 3.4 and 3.5 add support for 3.7 and 3.8.
+- Drop support for python 3.4 and 3.5; add support for 3.7 and 3.8.
 - Add support for SRTM1_ELLIP dataset, thanks to `kxtells <https://github.com/kxtells>`_.
   See `#42 <https://github.com/bopen/elevation/pull/42>`_.
 
@@ -80,7 +86,7 @@
 
 - Fix clean command.
   Closes issue `#21 <https://github.com/bopen/elevation/issues/21>`_.
-- Add docstrings for all Pyhton API functions.
+- Add docstrings for all Python API functions.
   Closes issue `#15 <https://github.com/bopen/elevation/issues/15>`_.
 
 
@@ -88,7 +94,7 @@
 -------------------
 
 - Revert the default product back to ``SRTM1`` by downloading from the
- `Amazon Terrain Tiles on AWS servcie <https://aws.amazon.com/public-data-sets/terrain>`_.
+ `Amazon Terrain Tiles on AWS service <https://aws.amazon.com/public-data-sets/terrain>`_.
   Closes issue `#18 <https://github.com/bopen/elevation/issues/18>`_.
 
 

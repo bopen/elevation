@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
 #
-# Copyright (c) 2016-2021 B-Open Solutions srl - http://bopen.eu
+# Copyright (c) 2016-2026 B-Open Solutions srl - https://bopen.eu
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#     https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,19 +15,16 @@
 
 import functools
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 import click
 
 import elevation
 
-from . import spatial, util
+from . import spatial
 
-# disable overzealous warning
-click.disable_unicode_literals_warning = True
-
-
-CONTEXT_SETTINGS = dict(auto_envvar_prefix="EIO")
+CONTEXT_SETTINGS = {"auto_envvar_prefix": "EIO"}
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
@@ -42,7 +38,7 @@ CONTEXT_SETTINGS = dict(auto_envvar_prefix="EIO")
 )
 @click.option(
     "--cache_dir",
-    type=click.Path(resolve_path=True, file_okay=False),
+    type=click.Path(resolve_path=True, file_okay=False, path_type=Path),
     default=elevation.CACHE_DIR,
     show_default=True,
     help="Root of the DEM cache folder.",
@@ -53,7 +49,7 @@ def eio(**kwargs: Any) -> None:
 
 @eio.command(short_help="Audit the system for common issues.")
 def selfcheck() -> None:
-    print(util.selfcheck(tools=elevation.TOOLS))
+    click.echo(elevation.selfcheck())
 
 
 def click_merge_parent_params(
@@ -88,7 +84,7 @@ def seed(**kwargs: Any) -> None:
 @click.option(
     "-o",
     "--output",
-    type=click.Path(resolve_path=True, dir_okay=False),
+    type=click.Path(resolve_path=True, dir_okay=False, path_type=Path),
     default=elevation.DEFAULT_OUTPUT,
     show_default=True,
     help="Path to output file. Existing files will be overwritten.",
@@ -109,6 +105,7 @@ def seed(**kwargs: Any) -> None:
 @click.option(
     "-r",
     "--reference",
+    type=click.Path(exists=True, path_type=Path),
     help="Use the extent of a reference GDAL/OGR data source as output bounds.",
 )
 @click_merge_parent_params

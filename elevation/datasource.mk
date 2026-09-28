@@ -47,7 +47,7 @@ clean:
 	$(RM) -r spool/*
 
 distclean: clean
-	$(RM) cache/* $(PRODUCT).vrt Makefile
+	$(RM) -r cache/* $(PRODUCT).vrt Makefile
 
 .DELETE_ON_ERROR:
 .PHONY: all info download clip clean distclean

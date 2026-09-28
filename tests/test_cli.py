@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 #
-# Copyright (c) 2016-2021 B-Open Solutions srl - http://bopen.eu
+# Copyright (c) 2016-2026 B-Open Solutions srl - https://bopen.eu
 #
 
 from pathlib import Path
@@ -29,7 +28,7 @@ def test_click_merge_parent_params() -> None:
     def return_kwargs(**kwargs: Any) -> None:
         print(kwargs)
 
-    result = runner.invoke(cli.eio, "return_kwargs".split())
+    result = runner.invoke(cli.eio, ["return_kwargs"])
     assert not result.exception
     assert "product" in result.output and "cache_dir" in result.output
 
@@ -41,7 +40,7 @@ def test_click_merge_parent_params() -> None:
 def test_eio_info(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = click.testing.CliRunner()
-    options = "--cache_dir %s info" % str(root)
+    options = f"--cache_dir {root!s} info"
     mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(cli.eio, options.split())
     assert not result.exception
@@ -51,7 +50,7 @@ def test_eio_info(mocker: MockerFixture, tmp_path: Path) -> None:
 def test_eio_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = click.testing.CliRunner()
-    options = "--cache_dir %s seed --bounds 12.5 42 12.5 42" % str(root)
+    options = f"--cache_dir {root!s} seed --bounds 12.5 42 12.5 42"
     mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(cli.eio, options.split())
     assert not result.exception
@@ -61,7 +60,7 @@ def test_eio_seed(mocker: MockerFixture, tmp_path: Path) -> None:
 def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = click.testing.CliRunner()
-    options = "--cache_dir %s clip --bounds 12.5 42 12.5 42" % str(root)
+    options = f"--cache_dir {root!s} clip --bounds 12.5 42 12.5 42"
     mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(cli.eio, options.split())
     assert not result.exception
@@ -73,7 +72,7 @@ def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     assert mock_check_call.call_count == 0
 
     mock_check_call = mocker.patch("subprocess.check_call")
-    result = runner.invoke(cli.eio, "clip --reference .".split())
+    result = runner.invoke(cli.eio, ["clip", "--reference", "."])
     assert result.exception
     assert mock_check_call.call_count == 0
 
@@ -81,7 +80,7 @@ def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
 def test_eio_clean(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = click.testing.CliRunner()
-    options = "--cache_dir %s clean" % str(root)
+    options = f"--cache_dir {root!s} clean"
     mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(cli.eio, options.split())
     assert not result.exception
@@ -91,7 +90,7 @@ def test_eio_clean(mocker: MockerFixture, tmp_path: Path) -> None:
 def test_eio_distclean(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = click.testing.CliRunner()
-    options = "--cache_dir %s distclean" % str(root)
+    options = f"--cache_dir {root!s} distclean"
     mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(cli.eio, options.split())
     assert not result.exception
@@ -101,7 +100,7 @@ def test_eio_distclean(mocker: MockerFixture, tmp_path: Path) -> None:
 def test_eio(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = click.testing.CliRunner()
-    options = "--cache_dir %s seed --bounds 12.5 42 12.5 42" % str(root)
+    options = f"--cache_dir {root!s} seed --bounds 12.5 42 12.5 42"
     mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(cli.eio, options.split())
     assert not result.exception

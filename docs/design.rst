@@ -5,7 +5,7 @@ Design
 This chapter documents the high-level design of the product and
 it is intended for developers contributing to the project.
 
-.. note:: **Users of the product need not bother with the following. Unless they are curious :)**
+.. note:: **Users of the product need not bother with the following, unless they are curious :)**
 
 
 Mission and vision
@@ -37,7 +37,7 @@ Logical components:
 Version goals
 -------------
 
-This project strives to adhere to `semantic versioning <http://semver.org>`_.
+This project strives to adhere to `semantic versioning <https://semver.org>`_.
 
 
 1.1.0 (upcoming release)

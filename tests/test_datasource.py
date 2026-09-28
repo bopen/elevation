@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 #
-# Copyright (c) 2016-2021 B-Open Solutions srl - http://bopen.eu
+# Copyright (c) 2016-2026 B-Open Solutions srl - https://bopen.eu
 #
 
 from pathlib import Path
@@ -12,7 +11,7 @@ from elevation import datasource
 
 
 def test_srtm3_tile_ilonlat() -> None:
-    # values from http://srtm.csi.cgiar.org/SELECTION/inputCoord.asp
+    # values from https://srtm.csi.cgiar.org/SELECTION/inputCoord.asp
     assert datasource.srtm3_tile_ilonlat(-177.5, 52.5) == (1, 2)
     assert datasource.srtm3_tile_ilonlat(177.5, -47.5) == (72, 22)
     assert datasource.srtm3_tile_ilonlat(10.1, 44.9) == (39, 4)
@@ -53,7 +52,7 @@ def test_srtm_ellip_tiles_names() -> None:
 
 def test_ensure_tiles(mocker: MockerFixture) -> None:
     mock_check_call = mocker.patch("subprocess.check_call")
-    cmd = datasource.ensure_tiles("/tmp", ["a", "b"])
+    cmd = datasource.ensure_tiles(Path("/tmp"), ["a", "b"])
     assert cmd == 'make -C /tmp download ENSURE_TILES="a b"'
     mock_check_call.assert_called_once_with(cmd, shell=True)
 
@@ -61,7 +60,9 @@ def test_ensure_tiles(mocker: MockerFixture) -> None:
 def test_do_clip(mocker: MockerFixture) -> None:
     bounds = (1, 5, 2, 6)
     mock_check_call = mocker.patch("subprocess.check_call")
-    cmd = datasource.do_clip(path="/tmp", bounds=bounds, output="/out.tif")
+    cmd = datasource.do_clip(
+        path=Path("/tmp"), bounds=bounds, output="/out.tif", product="SRTM1"
+    )
     assert cmd.startswith(
         'make -C /tmp clip OUTPUT="/out.tif" PROJWIN="1 6 2 5" RUN_ID="'
     )
@@ -72,18 +73,14 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 13.9, 43.9)
     mock_check_call = mocker.patch("subprocess.check_call")
-    datasource.seed(cache_dir=str(root), product="SRTM1", bounds=bounds)
+    datasource.seed(cache_dir=root, product="SRTM1", bounds=bounds)
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
-    expected_cmd = (
-        'make -C %s download ENSURE_TILES="N43/N43E013.tif"' % datasource_root
-    )
+    expected_cmd = f'make -C {datasource_root} download ENSURE_TILES="N43/N43E013.tif"'
     mock_check_call.assert_any_call(expected_cmd, shell=True)
 
     with pytest.raises(RuntimeError):
-        datasource.seed(
-            cache_dir=str(root), product="SRTM1", bounds=(-180, -90, 180, 90)
-        )
+        datasource.seed(cache_dir=root, product="SRTM1", bounds=(-180, -90, 180, 90))
 
 
 def test_build_bounds() -> None:
@@ -115,22 +112,17 @@ def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     uuid_mock.return_value = UUID
     mocker.patch("uuid.uuid4", uuid_mock)
     mock_check_call = mocker.patch("subprocess.check_call")
-    datasource.clip(
-        cache_dir=str(root), product="SRTM1", bounds=bounds, output="out.tif"
-    )
+    datasource.clip(cache_dir=root, product="SRTM1", bounds=bounds, output="out.tif")
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
-    cmd = (
-        'make -C %s clip OUTPUT="out.tif" PROJWIN="13.1 44.9 14.9 43.1" RUN_ID="asd"'
-        % datasource_root
-    )
+    cmd = f'make -C {datasource_root} clip OUTPUT="out.tif" PROJWIN="13.1 44.9 14.9 43.1" RUN_ID="asd"'
     mock_check_call.assert_any_call(cmd, shell=True)
 
 
 def test_clean(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     mock_check_call = mocker.patch("subprocess.check_call")
-    datasource.clean(cache_dir=str(root), product="SRTM1")
+    datasource.clean(cache_dir=root, product="SRTM1")
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
-    mock_check_call.assert_any_call("make -C %s clean " % datasource_root, shell=True)
+    mock_check_call.assert_any_call(f"make -C {datasource_root} clean ", shell=True)
