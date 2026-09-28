@@ -31,7 +31,6 @@ __all__ = [
     "DEFAULT_PRODUCT",
     "MARGIN",
     "PRODUCTS",
-    "TOOLS",
     "clean",
     "clip",
     "distclean",
@@ -165,14 +164,6 @@ PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
 
 PRODUCTS = list(PRODUCTS_SPECS)
 DEFAULT_PRODUCT = PRODUCTS[0]
-TOOLS: dict[str, str] = {
-    "GNU Make": "make --version",
-    "curl": "curl --help",
-    "unzip": "unzip -v",
-    "gunzip": "gunzip --version",
-    "gdal_translate": "gdal_translate --version",
-    "gdalbuildvrt": "gdalbuildvrt --version",
-}
 
 
 def ensure_tiles(

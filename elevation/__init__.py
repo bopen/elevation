@@ -28,13 +28,13 @@ from .datasource import (
     DEFAULT_PRODUCT,
     MARGIN,
     PRODUCTS,
-    TOOLS,
     clean,
     clip,
     distclean,
     info,
     seed,
 )
+from .util import TOOLS, selfcheck
 
 __all__ = [
     "CACHE_DIR",
@@ -48,4 +48,5 @@ __all__ = [
     "distclean",
     "info",
     "seed",
+    "selfcheck",
 ]

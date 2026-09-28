@@ -37,7 +37,7 @@ dependencies = [
   "click>=8.1.3",
   "fasteners>=0.18"
 ]
-description = "Python script to download global terrain digital elevation models, SRTM 30m DEM and SRTM 90m DEM."
+description = "Python script to download global terrain digital elevation models, SRTM 30m DEM, SRTM 90m DEM and SRTM GL1 ellipsoidal DEM."
 dynamic = ["version"]
 keywords = [
   "script",

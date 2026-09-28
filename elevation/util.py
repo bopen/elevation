@@ -22,12 +22,20 @@ from typing import Any
 import fasteners
 
 FOLDER_LOCKFILE_NAME = ".folder_lock"
+TOOLS: dict[str, str] = {
+    "GNU Make": "make --version",
+    "curl": "curl --help",
+    "unzip": "unzip -v",
+    "gunzip": "gunzip --version",
+    "gdal_translate": "gdal_translate --version",
+    "gdalbuildvrt": "gdalbuildvrt --version",
+}
 
 
-def selfcheck(tools: dict[str, str]) -> str:
+def selfcheck(tools: dict[str, str] = TOOLS) -> str:
     """Audit the system for issues.
 
-    :param tools: Tools description. Use elevation.TOOLS to test elevation.
+    :param tools: Tools description, defaults to TOOLS.
     """
     msg = []
     for tool_name, check_cli in tools.items():

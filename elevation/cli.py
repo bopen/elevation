@@ -22,7 +22,7 @@ import click
 
 import elevation
 
-from . import spatial, util
+from . import spatial
 
 CONTEXT_SETTINGS = {"auto_envvar_prefix": "EIO"}
 
@@ -49,7 +49,7 @@ def eio(**kwargs: Any) -> None:
 
 @eio.command(short_help="Audit the system for common issues.")
 def selfcheck() -> None:
-    click.echo(util.selfcheck(tools=elevation.TOOLS))
+    click.echo(elevation.selfcheck())
 
 
 def click_merge_parent_params(

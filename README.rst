@@ -4,7 +4,10 @@ Elevation provides easy download, cache and access of the global datasets
 produced by NASA and NGA hosted on `Amazon S3 <https://aws.amazon.com/public-data-sets/terrain>`_
 and
 `SRTM 90m Digital Elevation Database v4.1 <https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/>`_
-produced by CGIAR-CSI.
+produced by CGIAR-CSI
+and
+`SRTM GL1 Ellipsoidal (30m heights on the WGS84 ellipsoid) <https://portal.opentopography.org/raster?opentopoID=OTSRTM.082015.4326.1>`_
+hosted on OpenTopography.
 
 Note that any download policies of the respective providers apply.
 
@@ -37,7 +40,7 @@ The best way to install GDAL command line tools varies across operating systems
 and distributions, please refer to the
 `GDAL install documentation <https://trac.osgeo.org/gdal/wiki/DownloadingGdalBinaries>`_.
 
-Note that starting from *elevation* v1.1 only Python 3 is officially supported.
+Note that *elevation* v2.0 requires Python 3.11 or later.
 To get the last version supporting Python 2 please use ``pip install "elevation==1.0.6"``.
 
 
@@ -57,7 +60,8 @@ The ``--bounds`` option accepts latitude and longitude coordinates
 (more precisely in geodetic coordinates in the WGS84 reference system EPSG:4326 for those who care)
 given as ``left bottom right top`` similarly to the ``rio`` command form ``rasterio``.
 
-If you have installed the packages ``rasterio`` and ``fiona``
+If you have installed the optional ``reference`` dependencies ``rasterio`` and ``fiona``
+(``pip install "elevation[reference]"``)
 you can clip a DEM on the same extent of any other geospatial data source supported by GDAL and OGR,
 for example if you have a georeferenced image ``MyImage.tif`` you can clip the corresponding DEM with::
 
@@ -67,7 +71,8 @@ The ``--reference`` option can also take vector data as input::
 
     $ eio clip -o MyShapefile-DEM.tif --reference MyShapefile.shp  # enable with: $ pip install fiona
 
-The first time an area is accessed Elevation downloads the data tiles from the USGS or CGIAR-CSI servers and
+The first time an area is accessed Elevation downloads the data tiles from
+the AWS S3, CGIAR-CSI or OpenTopography servers and
 caches them in GeoTIFF compressed formats,
 subsequent accesses to the same and nearby areas are much faster.
 
