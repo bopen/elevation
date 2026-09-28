@@ -17,20 +17,25 @@ along with a detailed description.
 Submit a pull request
 ---------------------
 
-Development dependencies are installed by::
+Development dependencies are installed and the environment kept up to date by
+`uv <https://docs.astral.sh/uv/>`_::
 
-    $ pip install -r requirements-tests.txt -r requirements-docs.txt -r requirements-dev.txt
+    $ uv sync
 
-Tests can be run with `pytest <https://pytest.org>`_ and `tox <https://tox.readthedocs.org>`_,
-please ensure the coverage at least stays the same before you submit a pull request.
+The ``Makefile`` wraps the common development tasks::
+
+    $ make              # qa + unit-tests + check-typing
+    $ make qa           # run all pre-commit hooks
+    $ make unit-tests   # run the tests with coverage
+
+Please ensure the coverage at least stays the same before you submit a pull request.
 
 
 Keeping dependencies uptodate
 -----------------------------
 
-Testing in done on version pinned dependencies to ensure reproducibility,
-in order to update the pinned version to the latest version run::
+The ``uv.lock`` file pins all dependencies to ensure reproducibility,
+to upgrade them to the latest allowed versions run::
 
-    $ pip-compile -U --no-index requirements-tests.in
-    $ pip-compile -U --no-index requirements-docs.in
-
+    $ uv lock --upgrade
+    $ uv sync

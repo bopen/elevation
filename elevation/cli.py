@@ -15,6 +15,8 @@
 # limitations under the License.
 
 import functools
+from collections.abc import Callable
+from typing import Any
 
 import click
 
@@ -26,38 +28,40 @@ from . import spatial, util
 click.disable_unicode_literals_warning = True
 
 
-CONTEXT_SETTINGS = dict(auto_envvar_prefix='EIO')
+CONTEXT_SETTINGS = dict(auto_envvar_prefix="EIO")
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
 @click.version_option()
 @click.option(
-    '--product',
+    "--product",
     type=click.Choice(elevation.PRODUCTS),
     default=elevation.DEFAULT_PRODUCT,
     show_default=True,
     help="DEM product choice.",
 )
 @click.option(
-    '--cache_dir',
+    "--cache_dir",
     type=click.Path(resolve_path=True, file_okay=False),
     default=elevation.CACHE_DIR,
     show_default=True,
     help="Root of the DEM cache folder.",
 )
-def eio(**kwargs):
+def eio(**kwargs: Any) -> None:
     pass
 
 
 @eio.command(short_help="Audit the system for common issues.")
-def selfcheck():
+def selfcheck() -> None:
     print(util.selfcheck(tools=elevation.TOOLS))
 
 
-def click_merge_parent_params(wrapped):
+def click_merge_parent_params(
+    wrapped: Callable[..., Any],
+) -> Callable[..., Any]:
     @click.pass_context
     @functools.wraps(wrapped)
-    def wrapper(ctx, **kwargs):
+    def wrapper(ctx: click.Context, /, **kwargs: Any) -> Any:
         if ctx.parent and ctx.parent.params:
             kwargs.update(ctx.parent.params)
         return wrapped(**kwargs)
@@ -67,53 +71,69 @@ def click_merge_parent_params(wrapped):
 
 @eio.command(short_help="Show info about the product cache.")
 @click_merge_parent_params
-def info(**kwargs):
+def info(**kwargs: Any) -> None:
     elevation.info(**kwargs)
 
 
 @eio.command(short_help="Seed the DEM to given bounds.")
-@click.option('--bounds', nargs=4, type=float, help="Output bounds: left bottom right top.")
+@click.option(
+    "--bounds", nargs=4, type=float, help="Output bounds: left bottom right top."
+)
 @click_merge_parent_params
-def seed(**kwargs):
+def seed(**kwargs: Any) -> None:
     elevation.seed(**kwargs)
 
 
 @eio.command(short_help="Clip the DEM to given bounds.")
 @click.option(
-    '-o',
-    '--output',
+    "-o",
+    "--output",
     type=click.Path(resolve_path=True, dir_okay=False),
     default=elevation.DEFAULT_OUTPUT,
     show_default=True,
     help="Path to output file. Existing files will be overwritten.",
 )
-@click.option('--bounds', type=float, nargs=4, help="Output bounds in 'left bottom right top' order.")
 @click.option(
-    '-m',
-    '--margin',
+    "--bounds",
+    type=float,
+    nargs=4,
+    help="Output bounds in 'left bottom right top' order.",
+)
+@click.option(
+    "-m",
+    "--margin",
     default=elevation.MARGIN,
     show_default=True,
     help="Decimal degree margin added to the bounds. Use '%' for percent margin.",
 )
 @click.option(
-    '-r', '--reference', help="Use the extent of a reference GDAL/OGR data source as output bounds."
+    "-r",
+    "--reference",
+    help="Use the extent of a reference GDAL/OGR data source as output bounds.",
 )
 @click_merge_parent_params
-def clip(bounds, reference, **kwargs):
+def clip(
+    bounds: tuple[float, float, float, float] | None,
+    reference: str | None,
+    **kwargs: Any,
+) -> None:
     if not bounds and not reference:
-        raise click.BadOptionUsage("One of --bounds or --reference must be supplied.")
+        raise click.BadOptionUsage(
+            "--bounds", "One of --bounds or --reference must be supplied."
+        )
     if not bounds:
+        assert reference is not None
         bounds = spatial.import_bounds(reference)
     elevation.clip(bounds, **kwargs)
 
 
 @eio.command(short_help="Clean up the product cache from temporary files.")
 @click_merge_parent_params
-def clean(**kwargs):
+def clean(**kwargs: Any) -> None:
     elevation.clean(**kwargs)
 
 
 @eio.command(short_help="Remove the product cache entirely.")
 @click_merge_parent_params
-def distclean(**kwargs):
+def distclean(**kwargs: Any) -> None:
     elevation.distclean(**kwargs)

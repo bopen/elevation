@@ -1,8 +1,19 @@
 
-1.1.4 (unreleased)
-------------------
+2.0.0rc1 (2026-09-28)
+---------------------
 
-- Nothing changed yet.
+- Drop support for Python 3.6-3.10: only Python >= 3.11 is supported.
+- Move the packaging metadata to ``pyproject.toml`` and remove ``setup.py``
+  and ``setup.cfg``.
+- Manage the development environment and dependencies with ``uv`` and add a
+  ``Makefile`` with ``qa``, ``unit-tests``, ``check-typing``, ``docs-build``
+  and ``minver-tests`` targets.
+- Replace ``black``, ``isort`` and ``flake8`` with ``ruff`` and add ``mypy``
+  strict type checking.
+- Add lower bounds to the dependencies, pinned to versions available in 2022.
+- Build the documentation with Sphinx through ``make docs-build``.
+- Modernise the CI with uv-based jobs, pre-commit checks and a PyPI
+  trusted-publishing release job.
 
 
 1.1.3 (2021-04-08)
