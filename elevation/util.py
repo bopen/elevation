@@ -14,10 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
 import os
 import subprocess
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from typing import Any
 
@@ -26,13 +25,13 @@ import fasteners
 FOLDER_LOCKFILE_NAME = ".folder_lock"
 
 
-def selfcheck(tools: Iterable[tuple[str, str]]) -> str:
+def selfcheck(tools: dict[str, str]) -> str:
     """Audit the system for issues.
 
     :param tools: Tools description. Use elevation.TOOLS to test elevation.
     """
     msg = []
-    for tool_name, check_cli in collections.OrderedDict(tools).items():
+    for tool_name, check_cli in tools.items():
         try:
             subprocess.check_output(check_cli, shell=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError:
@@ -67,10 +66,10 @@ def lock_vrt(datasource_root: str, product: str) -> Iterator[None]:
 def ensure_setup(
     root: str,
     folders: Iterable[str] = (),
-    file_templates: Iterable[tuple[str, str]] | Mapping[str, str] = (),
+    file_templates: dict[str, str] = {},
     force: bool = False,
     **kwargs: Any,
-) -> tuple[list[str], collections.OrderedDict[str, str]]:
+) -> tuple[list[str], dict[str, str]]:
     with fasteners.InterProcessLock(os.path.join(root, FOLDER_LOCKFILE_NAME)):
         created_folders = []
         for path in [root] + [os.path.join(root, p) for p in folders]:
@@ -78,8 +77,8 @@ def ensure_setup(
                 os.makedirs(path)
                 created_folders.append(path)
 
-        created_files = collections.OrderedDict()
-        for relpath, template in collections.OrderedDict(file_templates).items():
+        created_files = {}
+        for relpath, template in file_templates.items():
             path = os.path.join(root, relpath)
             if force or not os.path.exists(path):
                 body = template.format(**kwargs)
@@ -94,7 +93,7 @@ def check_call_make(
     path: str, targets: Iterable[str] = (), variables: Iterable[tuple[str, str]] = ()
 ) -> str:
     make_targets = " ".join(targets)
-    variables_items = collections.OrderedDict(variables).items()
+    variables_items = dict(variables).items()
     make_variables = " ".join('%s="%s"' % (k.upper(), v) for k, v in variables_items)
     cmd = "make -C {path} {make_targets} {make_variables}".format(**locals())
     subprocess.check_call(cmd, shell=True)

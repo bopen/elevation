@@ -12,8 +12,8 @@ from elevation import util
 
 
 def test_selfcheck() -> None:
-    assert "NAME" not in util.selfcheck([("NAME", "true")])
-    assert "NAME" in util.selfcheck([("NAME", "false")])
+    assert "NAME" not in util.selfcheck({"NAME": "true"})
+    assert "NAME" in util.selfcheck({"NAME": "false"})
 
 
 def test_lock_tiles(tmp_path: Path) -> None:
@@ -43,7 +43,7 @@ def test_ensure_setup(tmp_path: Path) -> None:
     assert created_folders[1].endswith("lib")
     assert len(list(root.iterdir())) == 3
 
-    file_templates = [("Makefile", "all: {target}")]
+    file_templates = {"Makefile": "all: {target}"}
     created_folders, created_files = util.ensure_setup(
         root_path, folders=folders, file_templates=file_templates, target="file.txt"
     )

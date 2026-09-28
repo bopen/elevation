@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
 import math
 import os.path
 import pkgutil
@@ -159,24 +158,22 @@ SRTM3_SPEC: DatasourceSpec = {
     "tile_names": srtm3_tiles_names,
 }
 
-PRODUCTS_SPECS: collections.OrderedDict[str, DatasourceSpec] = collections.OrderedDict(
-    [
-        ("SRTM1", SRTM1_SPEC),
-        ("SRTM3", SRTM3_SPEC),
-        ("SRTM1_ELLIP", SRTM1_ELLIP_SPEC),
-    ]
-)
+PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
+    "SRTM1": SRTM1_SPEC,
+    "SRTM3": SRTM3_SPEC,
+    "SRTM1_ELLIP": SRTM1_ELLIP_SPEC,
+}
 
 PRODUCTS = list(PRODUCTS_SPECS)
 DEFAULT_PRODUCT = PRODUCTS[0]
-TOOLS: list[tuple[str, str]] = [
-    ("GNU Make", "make --version"),
-    ("curl", "curl --help"),
-    ("unzip", "unzip -v"),
-    ("gunzip", "gunzip --version"),
-    ("gdal_translate", "gdal_translate --version"),
-    ("gdalbuildvrt", "gdalbuildvrt --version"),
-]
+TOOLS: dict[str, str] = {
+    "GNU Make": "make --version",
+    "curl": "curl --help",
+    "unzip": "unzip -v",
+    "gunzip": "gunzip --version",
+    "gdal_translate": "gdal_translate --version",
+    "gdalbuildvrt": "gdalbuildvrt --version",
+}
 
 
 def ensure_tiles(
