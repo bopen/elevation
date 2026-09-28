@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+
 try:
     import rasterio
 
@@ -27,8 +29,9 @@ except ImportError:
     SUPPORT_VECTOR_DATA = False
 
 
-def import_bounds(reference: str) -> tuple[float, float, float, float]:
+def import_bounds(reference: str | Path) -> tuple[float, float, float, float]:
     # ASSUMPTION: rasterio and fiona bounds are given in geodetic WGS84 crs
+    reference = str(reference)
     if SUPPORT_RASTER_DATA:
         try:
             with rasterio.open(reference) as datasource:

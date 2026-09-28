@@ -105,6 +105,8 @@ select = [
   "B",
   # flake8-comprehensions
   "C4",
+  # flake8-use-pathlib
+  "PTH",
   # flake8-simplify
   "SIM",
   # pyupgrade

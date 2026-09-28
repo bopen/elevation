@@ -114,7 +114,7 @@ The ``clip`` sub-command::
       --bounds FLOAT...     Output bounds in 'left bottom right top' order.
       -m, --margin TEXT     Decimal degree margin added to the bounds. Use '%' for
                             percent margin.  [default: 0]
-      -r, --reference TEXT  Use the extent of a reference GDAL/OGR data source as
+      -r, --reference PATH  Use the extent of a reference GDAL/OGR data source as
                             output bounds.
       --help                Show this message and exit.
 

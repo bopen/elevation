@@ -1,4 +1,10 @@
 
+2.0.0rc2 (unreleased)
+---------------------
+
+- Accept ``str`` or ``Path`` for all path-valued arguments.
+
+
 2.0.0rc1 (2026-09-28)
 ---------------------
 

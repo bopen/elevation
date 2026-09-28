@@ -15,6 +15,7 @@
 
 import functools
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 import click
@@ -37,7 +38,7 @@ CONTEXT_SETTINGS = {"auto_envvar_prefix": "EIO"}
 )
 @click.option(
     "--cache_dir",
-    type=click.Path(resolve_path=True, file_okay=False),
+    type=click.Path(resolve_path=True, file_okay=False, path_type=Path),
     default=elevation.CACHE_DIR,
     show_default=True,
     help="Root of the DEM cache folder.",
@@ -83,7 +84,7 @@ def seed(**kwargs: Any) -> None:
 @click.option(
     "-o",
     "--output",
-    type=click.Path(resolve_path=True, dir_okay=False),
+    type=click.Path(resolve_path=True, dir_okay=False, path_type=Path),
     default=elevation.DEFAULT_OUTPUT,
     show_default=True,
     help="Path to output file. Existing files will be overwritten.",
@@ -104,6 +105,7 @@ def seed(**kwargs: Any) -> None:
 @click.option(
     "-r",
     "--reference",
+    type=click.Path(exists=True, path_type=Path),
     help="Use the extent of a reference GDAL/OGR data source as output bounds.",
 )
 @click_merge_parent_params

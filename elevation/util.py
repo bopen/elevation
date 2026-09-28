@@ -13,10 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import subprocess
 from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any
 
 import fasteners
@@ -39,11 +39,11 @@ def selfcheck(tools: dict[str, str]) -> str:
 
 
 @contextmanager
-def lock_tiles(datasource_root: str, tile_names: Iterable[str]) -> Iterator[None]:
+def lock_tiles(datasource_root: Path, tile_names: Iterable[str]) -> Iterator[None]:
     locks = []
     for tile_name in tile_names:
-        lockfile_name = os.path.join(datasource_root, "cache", tile_name + ".lock")
-        locks.append(fasteners.InterProcessLock(lockfile_name))
+        lockfile = datasource_root / "cache" / f"{tile_name}.lock"
+        locks.append(fasteners.InterProcessLock(lockfile))
 
     for lock in locks:
         lock.acquire(blocking=True)
@@ -55,33 +55,31 @@ def lock_tiles(datasource_root: str, tile_names: Iterable[str]) -> Iterator[None
 
 
 @contextmanager
-def lock_vrt(datasource_root: str, product: str) -> Iterator[None]:
-    with fasteners.InterProcessLock(
-        os.path.join(datasource_root, product + ".vrt.lock")
-    ):
+def lock_vrt(datasource_root: Path, product: str) -> Iterator[None]:
+    with fasteners.InterProcessLock(datasource_root / f"{product}.vrt.lock"):
         yield
 
 
 def ensure_setup(
-    root: str,
+    root: Path,
     folders: Iterable[str] = (),
     file_templates: dict[str, str] = {},
     force: bool = False,
     **kwargs: Any,
-) -> tuple[list[str], dict[str, str]]:
-    with fasteners.InterProcessLock(os.path.join(root, FOLDER_LOCKFILE_NAME)):
+) -> tuple[list[Path], dict[Path, str]]:
+    with fasteners.InterProcessLock(root / FOLDER_LOCKFILE_NAME):
         created_folders = []
-        for path in [root] + [os.path.join(root, p) for p in folders]:
-            if not os.path.exists(path):
-                os.makedirs(path)
+        for path in [root] + [root / p for p in folders]:
+            if not path.exists():
+                path.mkdir(parents=True)
                 created_folders.append(path)
 
         created_files = {}
         for relpath, template in file_templates.items():
-            path = os.path.join(root, relpath)
-            if force or not os.path.exists(path):
+            path = root / relpath
+            if force or not path.exists():
                 body = template.format(**kwargs)
-                with open(path, "w") as file:
+                with path.open("w") as file:
                     file.write(body)
                 created_files[path] = body
 
@@ -89,7 +87,7 @@ def ensure_setup(
 
 
 def check_call_make(
-    path: str, targets: Iterable[str] = (), variables: Iterable[tuple[str, str]] = ()
+    path: Path, targets: Iterable[str] = (), variables: Iterable[tuple[str, str]] = ()
 ) -> str:
     make_targets = " ".join(targets)
     variables_items = dict(variables).items()

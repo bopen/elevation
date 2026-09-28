@@ -14,10 +14,10 @@
 # limitations under the License.
 
 import math
-import os.path
 import pkgutil
 import uuid
 from collections.abc import Callable, Iterator, Sequence
+from pathlib import Path
 from typing import Any, TypedDict
 
 import appdirs
@@ -39,7 +39,7 @@ __all__ = [
     "seed",
 ]
 
-CACHE_DIR = appdirs.user_cache_dir("elevation", "bopen")
+CACHE_DIR = Path(appdirs.user_cache_dir("elevation", "bopen"))
 DEFAULT_OUTPUT = "out.tif"
 MARGIN = "0"
 
@@ -176,7 +176,7 @@ TOOLS: dict[str, str] = {
 
 
 def ensure_tiles(
-    path: str, ensure_tiles_names: Sequence[str] = (), **kwargs: Any
+    path: Path, ensure_tiles_names: Sequence[str] = (), **kwargs: Any
 ) -> str:
     ensure_tiles = " ".join(ensure_tiles_names)
     variables_items = [("ensure_tiles", ensure_tiles)]
@@ -187,18 +187,18 @@ def ensure_tiles(
 
 # FIXME: force=True is an emergency hack to ensure that the file always contains the intended body
 def ensure_setup(
-    cache_dir: str, product: str, force: bool = True
-) -> tuple[str, DatasourceSpec]:
-    datasource_root = os.path.join(cache_dir, product)
+    cache_dir: str | Path, product: str, force: bool = True
+) -> tuple[Path, DatasourceSpec]:
+    datasource_root = Path(cache_dir) / product
     spec = PRODUCTS_SPECS[product]
     util.ensure_setup(datasource_root, product=product, force=force, **spec)
     return datasource_root, spec
 
 
 def do_clip(
-    path: str,
+    path: Path,
     bounds: tuple[float, float, float, float],
-    output: str,
+    output: str | Path,
     product: str,
     **kwargs: Any,
 ) -> str:
@@ -207,17 +207,21 @@ def do_clip(
         util.check_call_make(path, targets=["copy_vrt"], variables=[("run_id", run_id)])
     left, bottom, right, top = bounds
     projwin = f"{left} {top} {right} {bottom}"
-    variables_items = [("output", output), ("projwin", projwin), ("run_id", run_id)]
+    variables_items = [
+        ("output", str(output)),
+        ("projwin", projwin),
+        ("run_id", run_id),
+    ]
     return util.check_call_make(path, targets=["clip"], variables=variables_items)
 
 
 def seed(
-    cache_dir: str = CACHE_DIR,
+    cache_dir: str | Path = CACHE_DIR,
     product: str = DEFAULT_PRODUCT,
     bounds: tuple[float, float, float, float] | None = None,
     max_download_tiles: int = 9,
     **kwargs: Any,
-) -> str:
+) -> Path:
     """Seed the DEM to given bounds.
 
     :param cache_dir: Root of the DEM cache folder.
@@ -265,9 +269,9 @@ def build_bounds(
 
 def clip(
     bounds: tuple[float, float, float, float],
-    output: str = DEFAULT_OUTPUT,
+    output: str | Path = DEFAULT_OUTPUT,
     margin: str = MARGIN,
-    cache_dir: str = CACHE_DIR,
+    cache_dir: str | Path = CACHE_DIR,
     product: str = DEFAULT_PRODUCT,
     **kwargs: Any,
 ) -> None:
@@ -287,7 +291,7 @@ def clip(
     do_clip(datasource_root, bounds, output, product=product)
 
 
-def info(cache_dir: str = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
+def info(cache_dir: str | Path = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
     """Show info about the product cache.
 
     :param cache_dir: Root of the DEM cache folder.
@@ -297,7 +301,7 @@ def info(cache_dir: str = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
     util.check_call_make(datasource_root, targets=["info"])
 
 
-def clean(cache_dir: str = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
+def clean(cache_dir: str | Path = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
     """Clean up the product cache from temporary files.
 
     :param cache_dir: Root of the DEM cache folder.
@@ -307,7 +311,9 @@ def clean(cache_dir: str = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
     util.check_call_make(datasource_root, targets=["clean"])
 
 
-def distclean(cache_dir: str = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
+def distclean(
+    cache_dir: str | Path = CACHE_DIR, product: str = DEFAULT_PRODUCT
+) -> None:
     """Remove the product cache entirely.
 
     :param cache_dir: Root of the DEM cache folder.
