@@ -1,5 +1,8 @@
 # project specific
 
+# GDAL PAM sidecar files, e.g. written by `gdalinfo -stats`
+*.aux.xml
+
 # setuptools-scm
 version.py
 

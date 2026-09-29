@@ -45,7 +45,6 @@ and distributions, please refer to the
 `GDAL install documentation <https://trac.osgeo.org/gdal/wiki/DownloadingGdalBinaries>`_.
 
 Note that *elevation* v2.0 requires Python 3.11 or later.
-To get the last version supporting Python 2 please use ``pip install "elevation==1.0.6"``.
 
 
 Command line usage
