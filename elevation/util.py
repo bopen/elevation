@@ -14,7 +14,7 @@
 # limitations under the License.
 
 import subprocess
-from collections.abc import Iterable, Iterator
+from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -47,7 +47,7 @@ def selfcheck(tools: dict[str, str] = TOOLS) -> str:
 
 
 @contextmanager
-def lock_tiles(datasource_root: Path, tile_names: Iterable[str]) -> Iterator[None]:
+def lock_tiles(datasource_root: Path, tile_names: Iterable[str]) -> Generator[None]:
     locks = []
     for tile_name in tile_names:
         lockfile = datasource_root / "cache" / f"{tile_name}.lock"
@@ -63,7 +63,7 @@ def lock_tiles(datasource_root: Path, tile_names: Iterable[str]) -> Iterator[Non
 
 
 @contextmanager
-def lock_vrt(datasource_root: Path, product: str) -> Iterator[None]:
+def lock_vrt(datasource_root: Path, product: str) -> Generator[None]:
     with fasteners.InterProcessLock(datasource_root / f"{product}.vrt.lock"):
         yield
 

@@ -21,11 +21,17 @@ def test_srtm3_tile_ilonlat() -> None:
 
 
 def test_srtm1_tiles_names() -> None:
-    assert list(datasource.srtm1_tiles_names(10.1, 44.9, 10.1, 44.9)) == [
+    assert list(datasource.srtm1_tiles_names(10.1, 44.9, 10.1, 44.9)) == ["N44E010.tif"]
+    # NOTE this also tests int (not float) input
+    assert list(datasource.srtm1_tiles_names(10, 44, 11, 45)) == ["N44E010.tif"]
+
+
+def test_terrain_tiles_names() -> None:
+    assert list(datasource.terrain_tiles_names(10.1, 44.9, 10.1, 44.9)) == [
         "N44/N44E010.tif"
     ]
     # NOTE this also tests int (not float) input
-    assert list(datasource.srtm1_tiles_names(10, 44, 11, 45)) == ["N44/N44E010.tif"]
+    assert list(datasource.terrain_tiles_names(10, 44, 11, 45)) == ["N44/N44E010.tif"]
 
 
 def test_srtm3_tiles_names() -> None:
@@ -76,7 +82,7 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     datasource.seed(cache_dir=root, product="SRTM1", bounds=bounds)
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
-    expected_cmd = f'make -C {datasource_root} download ENSURE_TILES="N43/N43E013.tif"'
+    expected_cmd = f'make -C {datasource_root} download ENSURE_TILES="N43E013.tif"'
     mock_check_call.assert_any_call(expected_cmd, shell=True)
 
     with pytest.raises(RuntimeError):

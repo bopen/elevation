@@ -1,15 +1,19 @@
 Global geographic elevation data made easy.
-Elevation provides easy download, cache and access of the global datasets
-`SRTM 30m Global 1 arc second V003 <https://lpdaac.usgs.gov/products/srtmgl1nv003/>`_
-produced by NASA and NGA hosted on `Amazon S3 <https://aws.amazon.com/public-data-sets/terrain>`_
-and
-`SRTM 90m Digital Elevation Database v4.1 <https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/>`_
-produced by CGIAR-CSI
-and
-`SRTM GL1 Ellipsoidal (30m heights on the WGS84 ellipsoid) <https://portal.opentopography.org/raster?opentopoID=OTSRTM.082015.4326.1>`_
-hosted on OpenTopography.
+Elevation provides easy download, cache and access of the global datasets:
 
-Note that any download policies of the respective providers apply.
+- ``TERRAIN_TILES``: `Terrain Tiles <https://registry.opendata.aws/terrain-tiles/>`_
+  hosted on `Amazon S3 <https://aws.amazon.com/public-data-sets/terrain>`_,
+  global 1 arc second (30m) DEMs in the SRTM HGT format
+  assembled by Mapzen from several open data providers,
+  including NASA/NGA SRTM, USGS 3DEP, EUDEM, ArcticDEM, GMTED2010 and ETOPO1.
+- ``SRTM1``: `SRTM 30m Global 1 arc second V003 <https://lpdaac.usgs.gov/products/srtmgl1nv003/>`_
+  produced by NASA and NGA hosted on `OpenTopography <https://portal.opentopography.org/raster?opentopoID=OTSRTM.082015.4326.1>`_.
+- ``SRTM3``: `SRTM 90m Digital Elevation Database v4.1 <https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/>`_
+  produced by CGIAR-CSI.
+- ``SRTM1_ELLIP``: `SRTM GL1 Ellipsoidal (30m heights on the WGS84 ellipsoid) <https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1>`_
+  hosted on OpenTopography.
+
+Note that any download policies and attribution requirements of the respective providers apply.
 
 .. highlight: console
 
@@ -48,9 +52,14 @@ Command line usage
 ------------------
 
 Identify the geographic bounds of the area of interest and fetch the DEM with the ``eio`` command.
-For example to clip the SRTM 30m DEM of Rome, around 41.9N 12.5E, to the ``Rome-30m-DEM.tif`` file::
+For example to clip the 30m DEM of Rome, around 41.9N 12.5E, to the ``Rome-30m-DEM.tif`` file
+using the default ``TERRAIN_TILES`` product::
 
     $ eio clip -o Rome-30m-DEM.tif --bounds 12.35 41.8 12.65 42
+
+For the SRTM 30m DEM use::
+
+    $ eio --product SRTM1 clip -o Rome-SRTM1-30m-DEM.tif --bounds 12.35 41.8 12.65 42
 
 For the SRTM 90m DEM use::
 
@@ -94,10 +103,11 @@ The ``eio`` command has the following sub-commands and options::
 
     Options:
       --version                Show the version and exit.
-      --product [SRTM1|SRTM3|SRTM1_ELLIP]
-                               DEM product choice.  [default: SRTM1]
+      --product [TERRAIN_TILES|SRTM1|SRTM3|SRTM1_ELLIP]
+                               DEM product choice.  [default:
+                               TERRAIN_TILES]
       --cache_dir DIRECTORY    Root of the DEM cache folder.  [default:
-                               /Users/amici/Library/Caches/elevation]
+                               /Users/amici/Library/Caches/elevation2]
       --help                   Show this message and exit.
 
     Commands:

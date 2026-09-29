@@ -38,7 +38,7 @@ __all__ = [
     "seed",
 ]
 
-CACHE_DIR = Path(appdirs.user_cache_dir("elevation", "bopen"))
+CACHE_DIR = Path(appdirs.user_cache_dir("elevation2", "bopen"))
 DEFAULT_OUTPUT = "out.tif"
 MARGIN = "0"
 
@@ -57,7 +57,7 @@ def srtm1_tiles_names(
     bottom: float,
     right: float,
     top: float,
-    tile_name_template: str = "{slat}/{slat}{slon}.tif",
+    tile_name_template: str = "{slat}{slon}.tif",
 ) -> Iterator[str]:
     ileft, itop = srtm1_tile_ilonlat(left, top)
     iright, ibottom = srtm1_tile_ilonlat(right, bottom)
@@ -112,6 +112,12 @@ def srtm_ellip_tiles_names(
                 yield f"{subdir}/{fname}"
 
 
+def terrain_tiles_names(
+    left: float, bottom: float, right: float, top: float
+) -> Iterator[str]:
+    yield from srtm1_tiles_names(left, bottom, right, top, "{slat}/{slat}{slon}.tif")
+
+
 class DatasourceSpec(TypedDict):
     folders: tuple[str, ...]
     file_templates: dict[str, str]
@@ -126,23 +132,23 @@ _datasource_makefile = pkgutil.get_data("elevation", "datasource.mk")
 assert _datasource_makefile is not None
 DATASOURCE_MAKEFILE = _datasource_makefile.decode("utf-8")
 
-SRTM1_ELLIP_SPEC: DatasourceSpec = {
-    "folders": ("spool", "cache"),
-    "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
-    "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
-    "tile_ext": ".tif",
-    "compressed_pre_ext": "",
-    "compressed_ext": "",
-    "tile_names": srtm_ellip_tiles_names,
-}
-
-SRTM1_SPEC: DatasourceSpec = {
+TERRAIN_TILES_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
     "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
     "tile_ext": ".hgt",
     "compressed_pre_ext": ".hgt",
     "compressed_ext": ".hgt.gz",
+    "tile_names": terrain_tiles_names,
+}
+
+SRTM1_SPEC: DatasourceSpec = {
+    "folders": ("spool", "cache"),
+    "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
+    "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
+    "tile_ext": ".tif",
+    "compressed_pre_ext": "",
+    "compressed_ext": "",
     "tile_names": srtm1_tiles_names,
 }
 
@@ -156,7 +162,18 @@ SRTM3_SPEC: DatasourceSpec = {
     "tile_names": srtm3_tiles_names,
 }
 
+SRTM1_ELLIP_SPEC: DatasourceSpec = {
+    "folders": ("spool", "cache"),
+    "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
+    "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
+    "tile_ext": ".tif",
+    "compressed_pre_ext": "",
+    "compressed_ext": "",
+    "tile_names": srtm_ellip_tiles_names,
+}
+
 PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
+    "TERRAIN_TILES": TERRAIN_TILES_SPEC,
     "SRTM1": SRTM1_SPEC,
     "SRTM3": SRTM3_SPEC,
     "SRTM1_ELLIP": SRTM1_ELLIP_SPEC,
