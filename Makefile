@@ -9,6 +9,9 @@ qa:
 unit-tests:
 	$(PYTHON) -m pytest -vv --cov=. --cov-report=$(COV_REPORT)
 
+integration-tests:
+	$(PYTHON) -m pytest -vv tests/integration*.py
+
 check-typing:
 	$(PYTHON) -m mypy .
 

@@ -45,7 +45,6 @@ and distributions, please refer to the
 `GDAL install documentation <https://trac.osgeo.org/gdal/wiki/DownloadingGdalBinaries>`_.
 
 Note that *elevation* v2.0 requires Python 3.11 or later.
-To get the last version supporting Python 2 please use ``pip install "elevation==1.0.6"``.
 
 
 Command line usage
@@ -134,7 +133,8 @@ The ``clip`` sub-command::
       --help                Show this message and exit.
 
 Defaults can be defined by setting environment variables prefixed with ``EIO``,
-e.g. ``EIO_PRODUCT=SRTM3`` and ``EIO_CLIP_MARGIN=10%``.
+e.g. ``EIO_PRODUCT=SRTM3``, ``EIO_CLIP_MARGIN=10%`` and ``EIO_CACHE_DIR=/tmp/elevation2``.
+``EIO_CACHE_DIR`` selects the DEM cache folder and is honoured by the Python API as well.
 
 
 Python API

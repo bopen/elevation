@@ -32,6 +32,7 @@ from .datasource import (
     clip,
     distclean,
     info,
+    resolve_cache_dir,
     seed,
 )
 from .util import TOOLS, selfcheck
@@ -47,6 +48,7 @@ __all__ = [
     "clip",
     "distclean",
     "info",
+    "resolve_cache_dir",
     "seed",
     "selfcheck",
 ]

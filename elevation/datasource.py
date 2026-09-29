@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import math
+import os
 import pkgutil
 import uuid
 from collections.abc import Callable, Iterator, Sequence
@@ -35,12 +36,25 @@ __all__ = [
     "clip",
     "distclean",
     "info",
+    "resolve_cache_dir",
     "seed",
 ]
 
 CACHE_DIR = Path(appdirs.user_cache_dir("elevation2", "bopen"))
 DEFAULT_OUTPUT = "out.tif"
 MARGIN = "0"
+
+
+def resolve_cache_dir(cache_dir: str | Path | None) -> Path:
+    """Return the DEM cache folder to use.
+
+    The ``cache_dir`` argument takes precedence over the ``EIO_CACHE_DIR`` environment
+    variable, that takes precedence over the ``CACHE_DIR`` default.
+    """
+    if cache_dir is not None:
+        return Path(cache_dir)
+    override = os.environ.get("EIO_CACHE_DIR")
+    return Path(override) if override else CACHE_DIR
 
 
 def srtm1_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
@@ -195,9 +209,9 @@ def ensure_tiles(
 
 # FIXME: force=True is an emergency hack to ensure that the file always contains the intended body
 def ensure_setup(
-    cache_dir: str | Path, product: str, force: bool = True
+    cache_dir: str | Path | None, product: str, force: bool = True
 ) -> tuple[Path, DatasourceSpec]:
-    datasource_root = Path(cache_dir) / product
+    datasource_root = resolve_cache_dir(cache_dir) / product
     spec = PRODUCTS_SPECS[product]
     util.ensure_setup(datasource_root, product=product, force=force, **spec)
     return datasource_root, spec
@@ -224,7 +238,7 @@ def do_clip(
 
 
 def seed(
-    cache_dir: str | Path = CACHE_DIR,
+    cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
     bounds: tuple[float, float, float, float] | None = None,
     max_download_tiles: int = 9,
@@ -279,7 +293,7 @@ def clip(
     bounds: tuple[float, float, float, float],
     output: str | Path = DEFAULT_OUTPUT,
     margin: str = MARGIN,
-    cache_dir: str | Path = CACHE_DIR,
+    cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
     **kwargs: Any,
 ) -> None:
@@ -299,7 +313,7 @@ def clip(
     do_clip(datasource_root, bounds, output, product=product)
 
 
-def info(cache_dir: str | Path = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
+def info(cache_dir: str | Path | None = None, product: str = DEFAULT_PRODUCT) -> None:
     """Show info about the product cache.
 
     :param cache_dir: Root of the DEM cache folder.
@@ -309,7 +323,7 @@ def info(cache_dir: str | Path = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> N
     util.check_call_make(datasource_root, targets=["info"])
 
 
-def clean(cache_dir: str | Path = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> None:
+def clean(cache_dir: str | Path | None = None, product: str = DEFAULT_PRODUCT) -> None:
     """Clean up the product cache from temporary files.
 
     :param cache_dir: Root of the DEM cache folder.
@@ -320,7 +334,7 @@ def clean(cache_dir: str | Path = CACHE_DIR, product: str = DEFAULT_PRODUCT) -> 
 
 
 def distclean(
-    cache_dir: str | Path = CACHE_DIR, product: str = DEFAULT_PRODUCT
+    cache_dir: str | Path | None = None, product: str = DEFAULT_PRODUCT
 ) -> None:
     """Remove the product cache entirely.
 
