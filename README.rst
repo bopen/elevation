@@ -51,18 +51,18 @@ Command line usage
 ------------------
 
 Identify the geographic bounds of the area of interest and fetch the DEM with the ``eio`` command.
-For example to clip the 30m DEM of Rome, around 41.9N 12.5E, to the ``Rome-30m-DEM.tif`` file
+For example to clip the 30m DEM of Rome, around 41.9N 12.5E, to the ``Rome-TERRAIN_TILES-DEM.tif`` file
 using the default ``TERRAIN_TILES`` product::
 
-    $ eio clip -o Rome-30m-DEM.tif --bounds 12.35 41.8 12.65 42
+    $ eio clip -o Rome-TERRAIN_TILES-DEM.tif --bounds 12.35 41.8 12.65 42
 
 For the SRTM 30m DEM use::
 
-    $ eio --product SRTM1 clip -o Rome-SRTM1-30m-DEM.tif --bounds 12.35 41.8 12.65 42
+    $ eio --product SRTM1 clip -o Rome-SRTM1-DEM.tif --bounds 12.35 41.8 12.65 42
 
 For the SRTM 90m DEM use::
 
-    $ eio --product SRTM3 clip -o Rome-90m-DEM.tif --bounds 12.35 41.8 12.65 42
+    $ eio --product SRTM3 clip -o Rome-SRTM3-DEM.tif --bounds 12.35 41.8 12.65 42
 
 The ``--bounds`` option accepts latitude and longitude coordinates
 (more precisely in geodetic coordinates in the WGS84 reference system EPSG:4326 for those who care)
@@ -95,42 +95,65 @@ To clean up stale temporary files and fix the cache in the event of a server err
 Command line reference
 ----------------------
 
-The ``eio`` command has the following sub-commands and options::
+The ``eio`` command has the following sub-commands and options:
+
+.. code-block:: text
 
     $ eio --help
-    Usage: eio [OPTIONS] COMMAND [ARGS]...
 
-    Options:
-      --version                Show the version and exit.
-      --product [TERRAIN_TILES|SRTM1|SRTM3|SRTM1_ELLIP]
-                               DEM product choice.  [default:
-                               TERRAIN_TILES]
-      --cache_dir DIRECTORY    Root of the DEM cache folder.  [default:
-                               /Users/amici/Library/Caches/elevation2]
-      --help                   Show this message and exit.
+     Usage: eio [OPTIONS] COMMAND [ARGS]...
 
-    Commands:
-      clean      Clean up the product cache from temporary files.
-      clip       Clip the DEM to given bounds.
-      distclean  Remove the product cache entirely.
-      info       Show info about the product cache.
-      seed       Seed the DEM to given bounds.
-      selfcheck  Audit the system for common issues.
+    ╭─ Options ────────────────────────────────────────────────────────────────────╮
+    │ --version                                       Show the version and exit.   │
+    │                                                 [env var: EIO_VERSION]       │
+    │ --product          [TERRAIN_TILES|SRTM1|SRTM3|  DEM product choice.          │
+    │                    SRTM1_ELLIP]                 [env var: EIO_PRODUCT]       │
+    │                                                 [default: TERRAIN_TILES]     │
+    │ --cache_dir        <directory>                  Root of the DEM cache        │
+    │                                                 folder.                      │
+    │                                                 [env var: EIO_CACHE_DIR]     │
+    │                                                 [default:                    │
+    │                                                 /Users/amici/Library/Caches… │
+    │ --help                                          Show this message and exit.  │
+    ╰──────────────────────────────────────────────────────────────────────────────╯
+    ╭─ Commands ───────────────────────────────────────────────────────────────────╮
+    │ selfcheck  Audit the system for common issues.                               │
+    │ info       Show info about the product cache.                                │
+    │ seed       Seed the DEM to given bounds.                                     │
+    │ clip       Clip the DEM to given bounds.                                     │
+    │ clean      Clean up the product cache from temporary files.                  │
+    │ distclean  Remove the product cache entirely.                                │
+    ╰──────────────────────────────────────────────────────────────────────────────╯
 
-The ``clip`` sub-command::
+The ``clip`` sub-command:
+
+.. code-block:: text
 
     $ eio clip --help
-    Usage: eio clip [OPTIONS]
 
-    Options:
-      -o, --output FILE     Path to output file. Existing files will be
-                            overwritten.  [default: out.tif]
-      --bounds FLOAT...     Output bounds in 'left bottom right top' order.
-      -m, --margin TEXT     Decimal degree margin added to the bounds. Use '%' for
-                            percent margin.  [default: 0]
-      -r, --reference PATH  Use the extent of a reference GDAL/OGR data source as
-                            output bounds.
-      --help                Show this message and exit.
+     Usage: eio clip [OPTIONS]
+
+    ╭─ Options ────────────────────────────────────────────────────────────────────╮
+    │ --output     -o      <file>                      Path to output file.        │
+    │                                                  Existing files will be      │
+    │                                                  overwritten.                │
+    │                                                  [env var: EIO_CLIP_OUTPUT]  │
+    │                                                  [default: out.tif]          │
+    │ --bounds             <float float float          Output bounds in 'left      │
+    │                      float>...                   bottom right top' order.    │
+    │                                                  [env var: EIO_CLIP_BOUNDS]  │
+    │ --margin     -m      <str>                       Decimal degree margin added │
+    │                                                  to the bounds. Use '%' for  │
+    │                                                  percent margin.             │
+    │                                                  [env var: EIO_CLIP_MARGIN]  │
+    │                                                  [default: 0]                │
+    │ --reference  -r      <path>                      Use the extent of a         │
+    │                                                  reference GDAL/OGR data     │
+    │                                                  source as output bounds.    │
+    │                                                  [env var:                   │
+    │                                                  EIO_CLIP_REFERENCE]         │
+    │ --help                                           Show this message and exit. │
+    ╰──────────────────────────────────────────────────────────────────────────────╯
 
 Defaults can be defined by setting environment variables prefixed with ``EIO``,
 e.g. ``EIO_PRODUCT=SRTM3``, ``EIO_CLIP_MARGIN=10%`` and ``EIO_CACHE_DIR=/tmp/elevation2``.
