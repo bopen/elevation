@@ -44,6 +44,7 @@ __all__ = [
     "MARGIN",
     "PRODUCTS",
     "TOOLS",
+    "__version__",
     "clean",
     "clip",
     "distclean",
