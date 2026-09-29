@@ -16,7 +16,7 @@ dev = [
 
 [project]
 authors = [
-  { name = "B-Open Solutions srl, Alessandro Amici", email = "info@bopen.eu" }
+  {name = "B-Open Solutions srl, Alessandro Amici", email = "info@bopen.eu"}
 ]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
