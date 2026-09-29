@@ -1,0 +1,4 @@
+# Quickstart
+
+```{include} ../README.md
+```

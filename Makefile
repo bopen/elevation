@@ -19,7 +19,7 @@ docs-build:
 	$(PYTHON) -m sphinx -W -b html docs docs/_build/html
 
 doc-tests:
-	$(PYTHON) -m pytest -vv --doctest-glob="*.rst" README.rst
+	$(PYTHON) -m pytest -vv --doctest-glob="*.md" README.md
 
 minver-tests:
 	uv run --resolution lowest-direct -p python3.11 -m pytest .
