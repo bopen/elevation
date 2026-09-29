@@ -17,6 +17,8 @@ Elevation provides easy download, cache and access of the global datasets:
 
 Note that any download policies and attribution requirements of the respective providers apply.
 
+This Open Source project is sponsored by B-Open - <https://www.bopen.eu>.
+
 ## Installation
 
 Install the [latest version of Elevation](https://pypi.org/project/elevation)
@@ -194,16 +196,36 @@ Every command has a corresponding API function in the `elevation` module:
 
 ## Contributing
 
-Contributions are very welcome. Please see the [CONTRIBUTING](https://github.com/bopen/elevation/blob/main/CONTRIBUTING.rst) document for
-the best way to help.
-If you encounter any problems, please file an issue along with a detailed description.
+The main repository is hosted on GitHub.
+Testing, bug reports and contributions are highly welcomed and appreciated:
 
-Authors:
+https://github.com/bopen/elevation
 
-- B-Open Solutions srl - [@bopen](https://github.com/bopen) - <https://bopen.eu>
-- Alessandro Amici - [@alexamici](https://github.com/alexamici) - <https://github.com/alexamici>
+Lead developer:
+
+- [Alessandro Amici](https://github.com/alexamici) - [B-Open](https://bopen.eu)
+
+See also the list of [contributors](https://github.com/bopen/elevation/contributors) who participated in this project.
+
+## Sponsoring
+
+[B-Open](https://bopen.eu) commits to maintain the project long term and we are
+happy to accept sponsorships to develop new features.
 
 ## License
 
-Elevation is free and open source software
-distributed under the terms of the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+```
+Copyright 2016-2026 B-Open Solutions srl
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
