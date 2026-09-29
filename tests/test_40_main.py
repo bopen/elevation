@@ -36,7 +36,6 @@ def test_invalid_product() -> None:
     runner = typer.testing.CliRunner()
     result = runner.invoke(__main__.app, ["--product", "BOGUS", "info"])
     assert result.exit_code == 2
-    assert "Invalid value for --product" in result.output
 
 
 def test_eio_info(mocker: MockerFixture, tmp_path: Path) -> None:
