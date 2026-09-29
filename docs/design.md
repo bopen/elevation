@@ -1,53 +1,43 @@
-
-Design
-======
+# Design
 
 This chapter documents the high-level design of the product and
 it is intended for developers contributing to the project.
 
-.. note:: **Users of the product need not bother with the following, unless they are curious :)**
+```{note}
+**Users of the product need not bother with the following, unless they are curious :)**
+```
 
-
-Mission and vision
-------------------
+## Mission and vision
 
 The project mission is to enable easy management of global digital elevation data.
 
 Target use cases:
 
-#. access DEM data on-demand from well-known repositories
-#. download and store efficiently elevation data on large areas
+1. access DEM data on-demand from well-known repositories
+1. download and store efficiently elevation data on large areas
 
 Project goals:
 
-#. data download from well-known repositories
-#. compact storage of local data
+1. data download from well-known repositories
+1. compact storage of local data
 
-
-Software architecture
----------------------
+## Software architecture
 
 Logical components:
 
 - the datasource Makefile
 - the Python API
-- the ``eio`` CLI
+- the `eio` CLI
 
+## Version goals
 
-Version goals
--------------
+This project strives to adhere to [semantic versioning](https://semver.org).
 
-This project strives to adhere to `semantic versioning <https://semver.org>`_.
-
-
-1.1.0 (upcoming release)
-~~~~~~~~~~~~~~~~~~~~~~~~
+### 2.0.0 (upcoming release)
 
 To be defined.
 
-
-1.0.0
-~~~~~
+### 1.0.0
 
 Minimal set of features to be operationally useful.
 No completeness and no performance guarantees.
