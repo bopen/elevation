@@ -14,17 +14,24 @@ import os
 import re
 import shutil
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
+import appdirs
 import pytest
 
 import elevation
 
 REFERENCE_DATA_DIR = Path(__file__).parent / "data"
+INTEGRATION_CACHE_DIR = Path(appdirs.user_cache_dir("elevation2-integration", "bopen"))
 EPSG_PATTERN = re.compile(r'ID\["EPSG",(\d+)\]')
-SYSTEM_READY = "Your system is ready."
+
+
+def integration_cache_dir() -> Path:
+    """Cache folder of the integration tests, i.e. ``EIO_CACHE_DIR`` or its default."""
+    override = os.environ.get("EIO_CACHE_DIR")
+    return Path(override).expanduser() if override else INTEGRATION_CACHE_DIR
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -33,6 +40,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         action="store_true",
         help="Regenerate the reference data of the integration tests.",
     )
+
+
+def pytest_report_header(config: pytest.Config) -> str | None:
+    """Show the cache folder used by the integration tests."""
+    if any("integration" in argument for argument in config.args):
+        return f"elevation integration cache: {integration_cache_dir()}"
+    return None
 
 
 def gdalinfo_json(path: Path) -> dict[str, Any]:
@@ -74,27 +88,17 @@ def assert_same_raster(produced: Path, reference: Path) -> None:
 
 
 @pytest.fixture(scope="session")
-def integration_cache_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Cache folder of the downloaded tiles, override with ELEVATION_INTEGRATION_CACHE."""
-    override = os.environ.get("ELEVATION_INTEGRATION_CACHE")
-    if override:
-        return Path(override).expanduser()
-    return tmp_path_factory.mktemp("elevation-integration")
-
-
-@pytest.fixture(scope="session")
-def integration_tools() -> None:
-    """Fail early if the external tools used by the datasource Makefile are missing."""
-    message = elevation.selfcheck()
-    if message != SYSTEM_READY:
-        pytest.fail(f"Integration tests need a working toolchain:\n{message}")
+def integration_cache() -> Iterator[None]:
+    """Select the integration tests cache through the ``EIO_CACHE_DIR`` override."""
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setenv("EIO_CACHE_DIR", str(integration_cache_dir()))
+        yield
 
 
 @pytest.fixture
 def integration_data(
     request: pytest.FixtureRequest,
-    integration_tools: None,
-    integration_cache_dir: Path,
+    integration_cache: None,
     tmp_path: Path,
 ) -> Callable[[str, str, tuple[float, float, float, float]], None]:
     """Clip a DEM and compare it with the reference data committed in ``tests/data``."""
@@ -107,12 +111,7 @@ def integration_data(
         if not update and not reference.exists():
             pytest.skip(f"missing {reference}: run --update-integration-data")
         output = tmp_path / f"{name}.tif"
-        elevation.clip(
-            bounds=bounds,
-            output=output,
-            product=product,
-            cache_dir=integration_cache_dir,
-        )
+        elevation.clip(bounds=bounds, output=output, product=product)
         if update:
             reference.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(output, reference)

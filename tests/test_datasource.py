@@ -132,3 +132,23 @@ def test_clean(mocker: MockerFixture, tmp_path: Path) -> None:
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
     mock_check_call.assert_any_call(f"make -C {datasource_root} clean ", shell=True)
+
+
+def test_cache_dir(
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    default = tmp_path / "default"
+    override = tmp_path / "override"
+    argument = tmp_path / "argument"
+    monkeypatch.setattr(datasource, "CACHE_DIR", default)
+    mock_check_call = mocker.patch("subprocess.check_call")
+
+    datasource.info(product="SRTM1")
+    assert mock_check_call.call_args[0][0] == f"make -C {default / 'SRTM1'} info "
+
+    monkeypatch.setenv("EIO_CACHE_DIR", str(override))
+    datasource.info(product="SRTM1")
+    assert mock_check_call.call_args[0][0] == f"make -C {override / 'SRTM1'} info "
+
+    datasource.info(cache_dir=argument, product="SRTM1")
+    assert mock_check_call.call_args[0][0] == f"make -C {argument / 'SRTM1'} info "

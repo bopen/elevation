@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import click.testing
+import pytest
 from pytest_mock import MockerFixture
 
 import elevation
@@ -105,3 +106,15 @@ def test_eio(mocker: MockerFixture, tmp_path: Path) -> None:
     result = runner.invoke(cli.eio, options.split())
     assert not result.exception
     assert mock_check_call.call_count == 2
+
+
+def test_eio_cache_dir_env(
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    root = tmp_path / "root"
+    monkeypatch.setenv("EIO_CACHE_DIR", str(root))
+    runner = click.testing.CliRunner()
+    mock_check_call = mocker.patch("subprocess.check_call")
+    result = runner.invoke(cli.eio, ["--product", "SRTM1", "info"])
+    assert not result.exception
+    assert mock_check_call.call_args[0][0] == f"make -C {root / 'SRTM1'} info "
