@@ -11,10 +11,10 @@ Elevation provides easy download, cache and access of the global datasets:
 - `SRTM1_GEOID`: [SRTM 30m Global 1 arc second V003](https://lpdaac.usgs.gov/products/srtmgl1nv003/)
   produced by NASA and NGA hosted on [OpenTopography](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082015.4326.1),
   with 30m heights on the EGM96 geoid.
-- `SRTM3`: [SRTM 90m Digital Elevation Database v4.1](https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/)
-  produced by CGIAR-CSI.
 - `SRTM1_ELLIP`: [SRTM GL1 Ellipsoidal (30m heights on the WGS84 ellipsoid)](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1)
   hosted on OpenTopography.
+- `SRTM3`: [SRTM 90m Digital Elevation Database v4.1](https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/)
+  produced by CGIAR-CSI.
 
 Note that any download policies and attribution requirements of the respective providers apply.
 
@@ -115,30 +115,29 @@ $ eio --help
 
  Usage: eio [OPTIONS] COMMAND [ARGS]...
 
-╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --version                                        Show the version and exit.  │
-│                                                  [env var: EIO_VERSION]      │
-│ --product             [TERRAIN_TILES|SRTM1_GEOI  DEM product choice.         │
-│                       D|SRTM3|SRTM1_ELLIP]       [env var: EIO_PRODUCT]      │
-│                                                  [default: TERRAIN_TILES]    │
-│ --cache_dir           <directory>                Root of the DEM cache       │
-│                                                  folder.                     │
-│                                                  [env var: EIO_CACHE_DIR]    │
-│                                                  [default:                   │
-│                                                  /Users/amici/Library/Cache… │
-│ --make_options        <str>                      Options passed through to   │
-│                                                  every GNU make invocation.  │
-│                                                  [env var: EIO_MAKE_OPTIONS] │
-│ --help                                           Show this message and exit. │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────╮
-│ selfcheck  Audit the system for common issues.                               │
-│ info       Show info about the product cache.                                │
-│ seed       Seed the DEM to given bounds.                                     │
-│ clip       Clip the DEM to given bounds.                                     │
-│ clean      Clean up the product cache from temporary files.                  │
-│ distclean  Remove the product cache entirely.                                │
-╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --version                                                  Show the version and exit.            │
+│                                                            [env var: EIO_VERSION]                │
+│ --product             [TERRAIN_TILES|SRTM1_GEOID|SRTM1_EL  DEM product choice.                   │
+│                       LIP|SRTM3]                           [env var: EIO_PRODUCT]                │
+│                                                            [default: TERRAIN_TILES]              │
+│ --cache_dir           <directory>                          Root of the DEM cache folder.         │
+│                                                            [env var: EIO_CACHE_DIR]              │
+│                                                            [default:                             │
+│                                                            /Users/amici/Library/Caches/elevatio… │
+│ --make_options        <str>                                Options passed through to every GNU   │
+│                                                            make invocation.                      │
+│                                                            [env var: EIO_MAKE_OPTIONS]           │
+│ --help                                                     Show this message and exit.           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
+│ selfcheck  Audit the system for common issues.                                                   │
+│ info       Show info about the product cache.                                                    │
+│ seed       Seed the DEM to given bounds.                                                         │
+│ clip       Clip the DEM to given bounds.                                                         │
+│ clean      Clean up the product cache from temporary files.                                      │
+│ distclean  Remove the product cache entirely.                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 The `clip` sub-command:
@@ -148,27 +147,23 @@ $ eio clip --help
 
  Usage: eio clip [OPTIONS]
 
-╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --output     -o      <file>                      Path to output file.        │
-│                                                  Existing files will be      │
-│                                                  overwritten.                │
-│                                                  [env var: EIO_CLIP_OUTPUT]  │
-│                                                  [default: out.tif]          │
-│ --bounds             <float float float          Output bounds in 'left      │
-│                      float>...                   bottom right top' order.    │
-│                                                  [env var: EIO_CLIP_BOUNDS]  │
-│ --margin     -m      <str>                       Decimal degree margin added │
-│                                                  to the bounds. Use '%' for  │
-│                                                  percent margin.             │
-│                                                  [env var: EIO_CLIP_MARGIN]  │
-│                                                  [default: 0]                │
-│ --reference  -r      <path>                      Use the extent of a         │
-│                                                  reference GDAL/OGR data     │
-│                                                  source as output bounds.    │
-│                                                  [env var:                   │
-│                                                  EIO_CLIP_REFERENCE]         │
-│ --help                                           Show this message and exit. │
-╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --output     -o      <file>                        Path to output file. Existing files will be   │
+│                                                    overwritten.                                  │
+│                                                    [env var: EIO_CLIP_OUTPUT]                    │
+│                                                    [default: out.tif]                            │
+│ --bounds             <float float float float>...  Output bounds in 'left bottom right top'      │
+│                                                    order.                                        │
+│                                                    [env var: EIO_CLIP_BOUNDS]                    │
+│ --margin     -m      <str>                         Decimal degree margin added to the bounds.    │
+│                                                    Use '%' for percent margin.                   │
+│                                                    [env var: EIO_CLIP_MARGIN]                    │
+│                                                    [default: 0]                                  │
+│ --reference  -r      <path>                        Use the extent of a reference GDAL/OGR data   │
+│                                                    source as output bounds.                      │
+│                                                    [env var: EIO_CLIP_REFERENCE]                 │
+│ --help                                             Show this message and exit.                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 Defaults can be defined by setting environment variables prefixed with `EIO`,

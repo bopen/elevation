@@ -167,16 +167,6 @@ SRTM1_GEOID_SPEC: DatasourceSpec = {
     "tile_names": srtm1_tiles_names,
 }
 
-SRTM3_SPEC: DatasourceSpec = {
-    "folders": ("spool", "cache"),
-    "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
-    "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
-    "tile_ext": ".tif",
-    "compressed_pre_ext": "",
-    "compressed_ext": ".zip",
-    "tile_names": srtm3_tiles_names,
-}
-
 SRTM1_ELLIP_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
     "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
@@ -187,11 +177,21 @@ SRTM1_ELLIP_SPEC: DatasourceSpec = {
     "tile_names": srtm_ellip_tiles_names,
 }
 
+SRTM3_SPEC: DatasourceSpec = {
+    "folders": ("spool", "cache"),
+    "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
+    "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
+    "tile_ext": ".tif",
+    "compressed_pre_ext": "",
+    "compressed_ext": ".zip",
+    "tile_names": srtm3_tiles_names,
+}
+
 PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
     "TERRAIN_TILES": TERRAIN_TILES_SPEC,
     "SRTM1_GEOID": SRTM1_GEOID_SPEC,
-    "SRTM3": SRTM3_SPEC,
     "SRTM1_ELLIP": SRTM1_ELLIP_SPEC,
+    "SRTM3": SRTM3_SPEC,
 }
 
 PRODUCTS = list(PRODUCTS_SPECS)

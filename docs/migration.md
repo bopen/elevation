@@ -37,7 +37,7 @@ mv <cache>/SRTM1 <cache>/TERRAIN_TILES
 ## Python API
 
 - `elevation.CACHE_DIR` is a `str` and points to the user cache folder.
-- `elevation.PRODUCTS` is `["TERRAIN_TILES", "SRTM1_GEOID", "SRTM3", "SRTM1_ELLIP"]`.
+- `elevation.PRODUCTS` is `["TERRAIN_TILES", "SRTM1_GEOID", "SRTM1_ELLIP", "SRTM3"]`.
 - Path-valued arguments accept `str` or `Path`, and relative paths are resolved against the
   current working directory; `elevation.seed()` returns a `Path`.
 - `elevation.TOOLS` is a list of `(name, command)` pairs and `elevation.selfcheck()` accepts
