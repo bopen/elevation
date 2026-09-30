@@ -11,6 +11,8 @@
 - Add the ``TERRAIN_TILES`` product for the global Mapzen terrain tiles mosaic and make
   it the default product.
 - Accept ``str`` or ``Path`` for all path-valued arguments.
+- Resolve relative ``output`` and cache folder paths against the current working
+  directory.
 
 
 2.0.0rc1 (2026-09-28)

@@ -67,7 +67,7 @@ def test_do_clip(mocker: MockerFixture) -> None:
     bounds = (1, 5, 2, 6)
     mock_check_call = mocker.patch("subprocess.check_call")
     cmd = datasource.do_clip(
-        path=Path("/tmp"), bounds=bounds, output="/out.tif", product="SRTM1"
+        path=Path("/tmp"), bounds=bounds, output=Path("/out.tif"), product="SRTM1"
     )
     expected_cmd = ["make", "-C", "/tmp", "clip", "OUTPUT=/out.tif", "PROJWIN=1 6 2 5"]
     assert cmd[:-1] == expected_cmd
@@ -124,7 +124,7 @@ def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
         "-C",
         str(datasource_root),
         "clip",
-        "OUTPUT=out.tif",
+        f"OUTPUT={Path('out.tif').resolve()}",
         "PROJWIN=13.1 44.9 14.9 43.1",
     ]
     assert mock_check_call.call_args[0][0][:-1] == expected_cmd

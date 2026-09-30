@@ -46,15 +46,14 @@ MARGIN = "0"
 
 
 def resolve_cache_dir(cache_dir: str | Path | None) -> Path:
-    """Return the DEM cache folder to use.
+    """Return the DEM cache folder to use, as an absolute path.
 
     The ``cache_dir`` argument takes precedence over the ``EIO_CACHE_DIR`` environment
     variable, that takes precedence over the ``CACHE_DIR`` default.
     """
-    if cache_dir is not None:
-        return Path(cache_dir)
-    override = os.environ.get("EIO_CACHE_DIR")
-    return Path(override) if override else CACHE_DIR
+    if cache_dir is None:
+        cache_dir = os.environ.get("EIO_CACHE_DIR") or CACHE_DIR
+    return Path(cache_dir).resolve()
 
 
 def srtm1_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
@@ -220,7 +219,7 @@ def ensure_setup(
 def do_clip(
     path: Path,
     bounds: tuple[float, float, float, float],
-    output: str | Path,
+    output: Path,
     product: str,
     **kwargs: Any,
 ) -> list[str]:
@@ -310,6 +309,7 @@ def clip(
     :param product: DEM product choice.
     :param kwargs: Pass additional kwargs to check_call_make.
     """
+    output = Path(output).resolve()
     bounds = build_bounds(bounds, margin=margin)
     datasource_root = seed(
         cache_dir=cache_dir, product=product, bounds=bounds, **kwargs

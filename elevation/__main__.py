@@ -57,7 +57,6 @@ def main(
     cache_dir: Path = typer.Option(
         elevation.CACHE_DIR,
         "--cache_dir",
-        resolve_path=True,
         file_okay=False,
         # typer annotates path_type as "type[str] | type[bytes] | None" while
         # TyperPath accepts any type at runtime.
@@ -112,7 +111,6 @@ def clip(
         elevation.DEFAULT_OUTPUT,
         "-o",
         "--output",
-        resolve_path=True,
         dir_okay=False,
         path_type=Path,  # type: ignore[arg-type]
         help="Path to output file. Existing files will be overwritten.",
