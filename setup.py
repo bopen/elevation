@@ -31,9 +31,12 @@ setup(
     author='B-Open Solutions srl, Alessandro Amici',
     author_email='info@bopen.eu',
     license='Apache License Version 2.0',
-    url='http://elevation.bopen.eu',
-    description="Python script to download global terrain digital elevation models, "
-    "SRTM 30m DEM and SRTM 90m DEM.",
+    url='https://elevation.bopen.eu',
+    project_urls={
+        'Sponsor': 'https://bopen.eu',
+    },
+    description="Download, cache and clip global terrain digital elevation models: "
+    "Terrain Tiles, SRTM GL1 ellipsoidal and SRTM 90m DEMs.",
     long_description=read('README.rst'),
     long_description_content_type="text/x-rst",
     packages=find_packages(),
