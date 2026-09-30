@@ -61,7 +61,7 @@ and distributions, please refer to the
 `GDAL install documentation <https://trac.osgeo.org/gdal/wiki/DownloadingGdalBinaries>`_.
 
 Note that starting from *elevation* v1.1 only Python 3 is officially supported.
-To get the last version sporting Python 2 support please use ``pip install elevation=1.0.6``.
+To get the last version sporting Python 2 support please use ``pip install elevation==1.0.6``.
 
 
 Command line usage
@@ -86,7 +86,7 @@ for example if you have a georeference image ``MyImage.tif`` you can clip the co
 
     $ eio clip -o MyImage-DEM.tif --reference MyImage.tif  # enable with: $ pip install rasterio
 
-The ``--reference`` option can take also verctor data as input::
+The ``--reference`` option can take also vector data as input::
 
     $ eio clip -o MyShapefile-DEM.tif --reference MyShapefile.shp  # enable with: $ pip install fiona
 
