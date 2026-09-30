@@ -53,9 +53,12 @@ def test_ensure_tiles(mocker):
 def test_do_clip(mocker):
     bounds = (1, 5, 2, 6)
     mocker.patch('subprocess.check_call')
-    cmd = datasource.do_clip(path='/tmp', bounds=bounds, output='/out.tif')
+    cmd = datasource.do_clip(path='/tmp', bounds=bounds, output='/out.tif', product='SRTM3')
     assert cmd.startswith('make -C /tmp clip OUTPUT="/out.tif" PROJWIN="1 6 2 5" RUN_ID="')
     subprocess.check_call.assert_called_with(cmd, shell=True)
+
+    with pytest.raises(TypeError):
+        datasource.do_clip(path='/tmp', bounds=bounds, output='/out.tif')
 
 
 def test_seed(mocker, tmpdir):
