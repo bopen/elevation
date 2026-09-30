@@ -40,7 +40,7 @@ __all__ = [
     "seed",
 ]
 
-CACHE_DIR = Path(appdirs.user_cache_dir("elevation2", "bopen"))
+CACHE_DIR: str = appdirs.user_cache_dir("elevation2", "bopen")
 DEFAULT_OUTPUT = "out.tif"
 MARGIN = "0"
 
