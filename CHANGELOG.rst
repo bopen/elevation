@@ -2,7 +2,7 @@
 1.1.4 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fix the ``eio distclean`` crash when the cache holds sub-folders.
 
 
 1.1.3 (2021-04-08)
