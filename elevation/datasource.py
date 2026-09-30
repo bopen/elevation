@@ -32,6 +32,8 @@ __all__ = [
     "DEFAULT_PRODUCT",
     "MARGIN",
     "PRODUCTS",
+    "RETIRED_PRODUCTS",
+    "ProductRetiredError",
     "clean",
     "clip",
     "distclean",
@@ -40,7 +42,7 @@ __all__ = [
     "seed",
 ]
 
-CACHE_DIR: str = appdirs.user_cache_dir("elevation2", "bopen")
+CACHE_DIR: str = appdirs.user_cache_dir("elevation", "bopen")
 DEFAULT_OUTPUT = "out.tif"
 MARGIN = "0"
 
@@ -155,7 +157,7 @@ TERRAIN_TILES_SPEC: DatasourceSpec = {
     "tile_names": terrain_tiles_names,
 }
 
-SRTM1_SPEC: DatasourceSpec = {
+SRTM1_GEOID_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
     "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
@@ -187,13 +189,34 @@ SRTM1_ELLIP_SPEC: DatasourceSpec = {
 
 PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
     "TERRAIN_TILES": TERRAIN_TILES_SPEC,
-    "SRTM1": SRTM1_SPEC,
+    "SRTM1_GEOID": SRTM1_GEOID_SPEC,
     "SRTM3": SRTM3_SPEC,
     "SRTM1_ELLIP": SRTM1_ELLIP_SPEC,
 }
 
 PRODUCTS = list(PRODUCTS_SPECS)
 DEFAULT_PRODUCT = PRODUCTS[0]
+
+
+class ProductRetiredError(KeyError):
+    """Raised when a product label retired in elevation 2.0 is requested.
+
+    Subclasses ``KeyError``, like an unknown product label, but renders the migration
+    message without the ``repr`` quoting that ``KeyError`` adds.
+    """
+
+    def __str__(self) -> str:
+        return str(self.args[0])
+
+
+RETIRED_PRODUCTS: dict[str, str] = {
+    "SRTM1": (
+        "The 'SRTM1' product was renamed in elevation 2.0: the global terrain tiles "
+        "mosaic it used to download is now the 'TERRAIN_TILES' product (the default) and "
+        "the OpenTopography SRTM GL1 product is now 'SRTM1_GEOID'. See "
+        "https://elevation.bopen.eu/migration.html"
+    ),
+}
 
 
 def ensure_tiles(
@@ -210,6 +233,8 @@ def ensure_tiles(
 def ensure_setup(
     cache_dir: str | Path | None, product: str, force: bool = True
 ) -> tuple[Path, DatasourceSpec]:
+    if product in RETIRED_PRODUCTS:
+        raise ProductRetiredError(RETIRED_PRODUCTS[product])
     datasource_root = resolve_cache_dir(cache_dir) / product
     spec = PRODUCTS_SPECS[product]
     util.ensure_setup(datasource_root, product=product, force=force, **spec)

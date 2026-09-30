@@ -8,8 +8,9 @@ Elevation provides easy download, cache and access of the global datasets:
   global 1 arc second (30m) DEMs in the SRTM HGT format
   assembled by Mapzen from several open data providers,
   including NASA/NGA SRTM, USGS 3DEP, EUDEM, ArcticDEM, GMTED2010 and ETOPO1.
-- `SRTM1`: [SRTM 30m Global 1 arc second V003](https://lpdaac.usgs.gov/products/srtmgl1nv003/)
-  produced by NASA and NGA hosted on [OpenTopography](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082015.4326.1).
+- `SRTM1_GEOID`: [SRTM 30m Global 1 arc second V003](https://lpdaac.usgs.gov/products/srtmgl1nv003/)
+  produced by NASA and NGA hosted on [OpenTopography](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082015.4326.1),
+  with 30m heights on the EGM96 geoid.
 - `SRTM3`: [SRTM 90m Digital Elevation Database v4.1](https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/)
   produced by CGIAR-CSI.
 - `SRTM1_ELLIP`: [SRTM GL1 Ellipsoidal (30m heights on the WGS84 ellipsoid)](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1)
@@ -63,7 +64,7 @@ $ eio clip -o Rome-TERRAIN_TILES-DEM.tif --bounds 12.35 41.8 12.65 42
 For the SRTM 30m DEM use:
 
 ```console
-$ eio --product SRTM1 clip -o Rome-SRTM1-DEM.tif --bounds 12.35 41.8 12.65 42
+$ eio --product SRTM1_GEOID clip -o Rome-SRTM1_GEOID-DEM.tif --bounds 12.35 41.8 12.65 42
 ```
 
 For the SRTM 90m DEM use:
@@ -117,8 +118,8 @@ $ eio --help
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --version                                        Show the version and exit.  │
 │                                                  [env var: EIO_VERSION]      │
-│ --product             [TERRAIN_TILES|SRTM1|SRTM  DEM product choice.         │
-│                       3|SRTM1_ELLIP]             [env var: EIO_PRODUCT]      │
+│ --product             [TERRAIN_TILES|SRTM1_GEOI  DEM product choice.         │
+│                       D|SRTM3|SRTM1_ELLIP]       [env var: EIO_PRODUCT]      │
 │                                                  [default: TERRAIN_TILES]    │
 │ --cache_dir           <directory>                Root of the DEM cache       │
 │                                                  folder.                     │
@@ -171,7 +172,7 @@ $ eio clip --help
 ```
 
 Defaults can be defined by setting environment variables prefixed with `EIO`,
-e.g. `EIO_PRODUCT=SRTM3`, `EIO_CLIP_MARGIN=10%` and `EIO_CACHE_DIR=/tmp/elevation2`.
+e.g. `EIO_PRODUCT=SRTM3`, `EIO_CLIP_MARGIN=10%` and `EIO_CACHE_DIR=/tmp/elevation`.
 `EIO_CACHE_DIR` selects the DEM cache folder and is honoured by the Python API as well.
 `EIO_MAKE_OPTIONS` is passed through to every `make` invocation, e.g. `EIO_MAKE_OPTIONS=-s`
 silences make; the Python API takes the same value as the `make_options` keyword argument.
@@ -182,7 +183,7 @@ Every command has a corresponding API function in the `elevation` module:
 
 ```python
 >>> import elevation
->>> # clip the SRTM1 30m DEM of Rome and save it to Rome-DEM.tif
+>>> # clip the 30m DEM of Rome and save it to Rome-DEM.tif
 >>> elevation.clip(bounds=(12.35, 41.8, 12.65, 42), output="Rome-DEM.tif")
 >>> # clean up stale temporary files and fix the cache in the event of a server error
 >>> elevation.clean()

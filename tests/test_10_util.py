@@ -23,8 +23,8 @@ def test_lock_tiles(tmp_path: Path) -> None:
 def test_lock_vrt(tmp_path: Path) -> None:
     root = tmp_path / "root"
 
-    with util.lock_vrt(root, "SRTM1"):
-        assert (root / "SRTM1.vrt.lock").exists()
+    with util.lock_vrt(root, "SRTM1_GEOID"):
+        assert (root / "SRTM1_GEOID.vrt.lock").exists()
 
 
 def test_ensure_setup(tmp_path: Path) -> None:

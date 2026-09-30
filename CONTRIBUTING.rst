@@ -40,8 +40,8 @@ and compares ~100x100 pixel clips with the reference data committed in ``tests/d
 
     $ make integration-tests
 
-The downloaded tiles are kept in the ``elevation2-integration`` user cache folder, next
-to the ``elevation2`` one used by ``eio``, and the tests select it with the
+The downloaded tiles are kept in the ``elevation-integration`` user cache folder, next
+to the ``elevation`` one used by ``eio``, and the tests select it with the
 ``EIO_CACHE_DIR`` environment variable.
 
 After an intentional change of the produced data, review the new raster with

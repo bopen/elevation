@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from pytest_mock import MockerFixture
 
+import elevation
 from elevation import datasource
 
 
@@ -67,7 +68,7 @@ def test_do_clip(mocker: MockerFixture) -> None:
     bounds = (1, 5, 2, 6)
     mock_check_call = mocker.patch("subprocess.check_call")
     cmd = datasource.do_clip(
-        path=Path("/tmp"), bounds=bounds, output=Path("/out.tif"), product="SRTM1"
+        path=Path("/tmp"), bounds=bounds, output=Path("/out.tif"), product="SRTM3"
     )
     expected_cmd = ["make", "-C", "/tmp", "clip", "OUTPUT=/out.tif", "PROJWIN=1 6 2 5"]
     assert cmd[:-1] == expected_cmd
@@ -78,7 +79,7 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 13.9, 43.9)
     mock_check_call = mocker.patch("subprocess.check_call")
-    datasource.seed(cache_dir=root, product="SRTM1", bounds=bounds)
+    datasource.seed(cache_dir=root, product="SRTM1_GEOID", bounds=bounds)
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
     expected_cmd = [
@@ -91,7 +92,7 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_check_call.assert_any_call(expected_cmd)
 
     with pytest.raises(RuntimeError):
-        datasource.seed(cache_dir=root, product="SRTM1", bounds=(-180, -90, 180, 90))
+        datasource.seed(cache_dir=root, bounds=(-180, -90, 180, 90))
 
 
 def test_build_bounds() -> None:
@@ -116,7 +117,7 @@ def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 14.9, 44.9)
     mock_check_call = mocker.patch("subprocess.check_call")
-    datasource.clip(cache_dir=root, product="SRTM1", bounds=bounds, output="out.tif")
+    datasource.clip(cache_dir=root, bounds=bounds, output="out.tif")
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
     expected_cmd = [
@@ -133,10 +134,17 @@ def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
 def test_clean(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     mock_check_call = mocker.patch("subprocess.check_call")
-    datasource.clean(cache_dir=root, product="SRTM1")
+    datasource.clean(cache_dir=root)
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
     mock_check_call.assert_any_call(["make", "-C", str(datasource_root), "clean"])
+
+
+def test_retired_product() -> None:
+    assert issubclass(elevation.ProductRetiredError, KeyError)
+    with pytest.raises(elevation.ProductRetiredError) as excinfo:
+        datasource.info(product="SRTM1")
+    assert str(excinfo.value) == elevation.RETIRED_PRODUCTS["SRTM1"]
 
 
 def test_cache_dir(
@@ -148,17 +156,17 @@ def test_cache_dir(
     monkeypatch.setattr(datasource, "CACHE_DIR", default)
     mock_check_call = mocker.patch("subprocess.check_call")
 
-    datasource.info(product="SRTM1")
-    expected_cmd = ["make", "-C", str(default / "SRTM1"), "info"]
+    datasource.info()
+    expected_cmd = ["make", "-C", str(default / "TERRAIN_TILES"), "info"]
     assert mock_check_call.call_args[0][0] == expected_cmd
 
     monkeypatch.setenv("EIO_CACHE_DIR", str(override))
-    datasource.info(product="SRTM1")
-    expected_cmd = ["make", "-C", str(override / "SRTM1"), "info"]
+    datasource.info()
+    expected_cmd = ["make", "-C", str(override / "TERRAIN_TILES"), "info"]
     assert mock_check_call.call_args[0][0] == expected_cmd
 
-    datasource.info(cache_dir=argument, product="SRTM1")
-    expected_cmd = ["make", "-C", str(argument / "SRTM1"), "info"]
+    datasource.info(cache_dir=argument)
+    expected_cmd = ["make", "-C", str(argument / "TERRAIN_TILES"), "info"]
     assert mock_check_call.call_args[0][0] == expected_cmd
 
 
@@ -167,19 +175,13 @@ def test_make_options(mocker: MockerFixture, tmp_path: Path) -> None:
     bounds = (13.1, 43.1, 14.9, 44.9)
     mock_check_call = mocker.patch("subprocess.check_call")
 
-    datasource.info(cache_dir=root, product="SRTM1", make_options="-s")
-    expected_cmd = ["make", "-C", str(root / "SRTM1"), "-s", "info"]
+    datasource.info(cache_dir=root, make_options="-s")
+    expected_cmd = ["make", "-C", str(root / "TERRAIN_TILES"), "-s", "info"]
     assert mock_check_call.call_args[0][0] == expected_cmd
 
     mock_check_call.reset_mock()
-    datasource.clip(
-        cache_dir=root,
-        product="SRTM1",
-        bounds=bounds,
-        output="out.tif",
-        make_options="-s",
-    )
-    expected_cmd = ["make", "-C", str(root / "SRTM1"), "-s"]
+    datasource.clip(cache_dir=root, bounds=bounds, output="out.tif", make_options="-s")
+    expected_cmd = ["make", "-C", str(root / "TERRAIN_TILES"), "-s"]
     assert mock_check_call.call_count == 4
     for call in mock_check_call.call_args_list:
         assert call[0][0][:4] == expected_cmd

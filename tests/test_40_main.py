@@ -39,6 +39,16 @@ def test_invalid_product() -> None:
     assert result.exit_code == 2
 
 
+def test_retired_product(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    runner = typer.testing.CliRunner()
+    result = runner.invoke(
+        __main__.app, ["--product", "SRTM1", "--cache_dir", str(root), "info"]
+    )
+    assert result.exit_code == 2
+    assert not root.exists()
+
+
 def test_eio_info(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = typer.testing.CliRunner()
@@ -116,9 +126,9 @@ def test_eio_cache_dir_env(
     monkeypatch.setenv("EIO_CACHE_DIR", str(root))
     runner = typer.testing.CliRunner()
     mock_check_call = mocker.patch("subprocess.check_call")
-    result = runner.invoke(__main__.app, ["--product", "SRTM1", "info"])
+    result = runner.invoke(__main__.app, ["info"])
     assert not result.exception
-    expected_cmd = ["make", "-C", str(root / "SRTM1"), "info"]
+    expected_cmd = ["make", "-C", str(root / "TERRAIN_TILES"), "info"]
     assert mock_check_call.call_args[0][0] == expected_cmd
 
 
@@ -127,9 +137,8 @@ def test_eio_make_options(mocker: MockerFixture, tmp_path: Path) -> None:
     runner = typer.testing.CliRunner()
     mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(
-        __main__.app,
-        ["--product", "SRTM1", "--cache_dir", str(root), "--make_options=-s", "info"],
+        __main__.app, ["--cache_dir", str(root), "--make_options=-s", "info"]
     )
     assert not result.exception
-    expected_cmd = ["make", "-C", str(root / "SRTM1"), "-s", "info"]
+    expected_cmd = ["make", "-C", str(root / "TERRAIN_TILES"), "-s", "info"]
     assert mock_check_call.call_args[0][0] == expected_cmd

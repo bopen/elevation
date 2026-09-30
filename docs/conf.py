@@ -66,6 +66,9 @@ source_suffix = {".md": "markdown", ".rst": "restructuredtext"}
 # The theme to use for HTML and HTML Help pages.
 html_theme = "pydata_sphinx_theme"
 
+# The base URL of the published documentation, used in the canonical URLs.
+html_baseurl = "https://elevation.bopen.eu/"
+
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".

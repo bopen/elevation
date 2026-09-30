@@ -24,7 +24,7 @@ import pytest
 import elevation
 
 REFERENCE_DATA_DIR = Path(__file__).parent / "data"
-INTEGRATION_CACHE_DIR = Path(appdirs.user_cache_dir("elevation2-integration", "bopen"))
+INTEGRATION_CACHE_DIR = Path(appdirs.user_cache_dir("elevation-integration", "bopen"))
 EPSG_PATTERN = re.compile(r'ID\["EPSG",(\d+)\]')
 
 

@@ -11,6 +11,7 @@ https://github.com/bopen/elevation
 :caption: Table of Contents
 
 quickstart
+migration
 design
 API Reference <_api/elevation/index>
 ```

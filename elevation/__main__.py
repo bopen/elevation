@@ -69,6 +69,10 @@ def main(
         help="Options passed through to every GNU make invocation.",
     ),
 ) -> None:
+    if product in elevation.RETIRED_PRODUCTS:
+        raise typer.BadParameter(
+            elevation.RETIRED_PRODUCTS[product], param_hint="--product"
+        )
     if product not in elevation.PRODUCTS:
         raise typer.BadParameter(
             f"{product!r} is not one of "
