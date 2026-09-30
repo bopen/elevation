@@ -128,7 +128,11 @@ SRTM3_SPEC = {
 }
 
 PRODUCTS_SPECS = collections.OrderedDict(
-    [('SRTM1', SRTM1_SPEC), ('SRTM3', SRTM3_SPEC), ('SRTM1_ELLIP', SRTM1_ELLIP_SPEC),]
+    [
+        ('SRTM1', SRTM1_SPEC),
+        ('SRTM3', SRTM3_SPEC),
+        ('SRTM1_ELLIP', SRTM1_ELLIP_SPEC),
+    ]
 )
 
 PRODUCTS = list(PRODUCTS_SPECS)

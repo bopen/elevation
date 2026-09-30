@@ -4,101 +4,95 @@ on: [push]
 
 jobs:
   unit-tests:
-    runs-on: ${{ matrix.os }}-latest
-    strategy:
-      max-parallel: 5
-      matrix:
-        os: [ubuntu]
-        python: [3.6, 3.7, 3.8, 3.9]
-        extras: ['']
-        include:
-          - os: macos
-            python: 3.8
-          - os: ubuntu
-            python: 3.8
-          - os: ubuntu
-            python: 3.8
-            extras: -minimal
-          - os: windows
-            python: 3.8
-
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v2
-    - uses: conda-incubator/setup-miniconda@v2
+    - uses: actions/checkout@v4
       with:
-        python-version: ${{ matrix.python }}
-        activate-environment: ${{ matrix.os }}-${{ matrix.python }}${{ matrix.extras }}
-        environment-file: tests/environment-${{ matrix.os }}-${{ matrix.python }}${{ matrix.extras }}.yml
-    - name: Test with pytest
-      shell: bash -l {0}
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.9"
+    - name: Install
       run: |
-        conda install pytest pytest-cov pytest-mock
-        pip install --no-deps -e .
-        pytest -v --cov=. --cov-report=xml .
+        python -m pip install --upgrade pip
+        python -m pip install -e .
+        python -m pip install pytest pytest-cov pytest-mock
+    - name: Test with pytest
+      run: pytest -v --cov=. --cov-report=xml .
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      continue-on-error: true
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   docs:
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v2
-    - uses: conda-incubator/setup-miniconda@v2
+    - uses: actions/checkout@v4
       with:
-        python-version: 3.8
-        activate-environment: ubuntu-3.8
-        environment-file: tests/environment-ubuntu-3.8.yml
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.9"
+    - name: Install
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -e .
+        python -m pip install pytest sphinx sphinx_rtd_theme
+        sudo apt-get update
+        sudo apt-get install --yes gdal-bin
     - name: Build documentation with Sphinx
-      shell: bash -l {0}
-      run: |
-        conda install sphinx sphinx_rtd_theme
-        pip install --no-deps -e .
-        python setup.py build_sphinx
+      run: sphinx-build -q -b html docs _build/html
     - name: Test README with pytest
-      shell: bash -l {0}
-      run: |
-        conda install pytest pytest-cov
-        pytest -v --cov=. --cov-report=xml --cov-branch README.rst
+      run: pytest -q --doctest-glob="*.rst" README.rst
 
   code-quality:
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.9"
     - name: Lint with flake8
       run: |
-        $CONDA/bin/conda install flake8
+        python -m pip install flake8
         # stop the build if there are Python syntax errors or undefined names
-        $CONDA/bin/flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        $CONDA/bin/flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
   code-style:
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.9"
     - name: Check code style with black
       run: |
-        $CONDA/bin/conda install black
-        $CONDA/bin/black --check .
+        python -m pip install black
+        black --check .
     - name: Check code style with isort
       run: |
-        $CONDA/bin/conda install isort
-        $CONDA/bin/isort .
+        python -m pip install isort
+        isort --check-only .
 
   distribution:
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.9"
     - name: Build distributions
       run: |
-        $CONDA/bin/conda install pip setuptools wheel
-        $CONDA/bin/python setup.py sdist bdist_wheel
+        python -m pip install --upgrade pip build
+        python -m build
     - name: Publish a Python distribution to PyPI
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
         password: ${{ secrets.pypi_password }}

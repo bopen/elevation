@@ -14,7 +14,8 @@
 
 # import sys
 # import os
-import pkg_resources
+import importlib.metadata
+
 import sphinx.environment
 import sphinx_rtd_theme
 from docutils.utils import get_source_line
@@ -65,7 +66,7 @@ author = u'B-Open Solutions srl'
 # built documents.
 #
 # The full version, including alpha/beta/rc tags.
-release = pkg_resources.get_distribution("elevation").version
+release = importlib.metadata.version("elevation")
 # The short X.Y version.
 version = '.'.join(release.split('.')[:2])
 
