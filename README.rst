@@ -1,12 +1,33 @@
 Global geographic elevation data made easy.
-Elevation provides easy download, cache and access of the global datasets
-`SRTM 30m Global 1 arc second V003 <https://lpdaac.usgs.gov/products/srtmgl1nv003/>`_
-elaborated by NASA and NGA hosted on `Amazon S3 <https://aws.amazon.com/public-data-sets/terrain>`_
-and
-`SRTM 90m Digital Elevation Database v4.1 <https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/>`_
-elaborated by CGIAR-CSI.
+Elevation provides easy download, cache and access of the global datasets:
 
-Note that any download policies of the respective providers apply.
+- ``SRTM1`` (default):
+  the SRTM HGT tiles of the
+  `Terrain Tiles <https://registry.opendata.aws/terrain-tiles/>`_ dataset,
+  global 1 arc second (30m) DEMs assembled by Mapzen from several open data providers,
+  including NASA/NGA SRTM, USGS 3DEP, EUDEM, ArcticDEM, GMTED2010 and ETOPO1,
+  hosted on `Amazon S3 <https://aws.amazon.com/public-data-sets/terrain>`_,
+- ``SRTM1_ELLIP``:
+  `SRTM GL1 Ellipsoidal <https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1>`_
+  hosted on OpenTopography,
+- ``SRTM3``:
+  `SRTM 90m Digital Elevation Database v4.1 <https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/>`_
+  elaborated by CGIAR-CSI.
+
+.. warning::
+
+   The ``SRTM1`` name is a misnomer kept for backward compatibility:
+   it does not download the
+   `SRTM 30m Global 1 arc second V003 <https://lpdaac.usgs.gov/products/srtmgl1nv003/>`_
+   product elaborated by NASA and NGA,
+   but the Terrain Tiles dataset,
+   i.e. the SRTM HGT tiles assembled by Mapzen from several open data providers.
+   Use ``SRTM1_ELLIP`` if you need the official SRTM GL1 tiles,
+   on the WGS84 ellipsoid.
+   In elevation 2.0 the Terrain Tiles dataset is named ``TERRAIN_TILES``
+   and the official SRTM 30m product, on the EGM96 geoid, is named ``SRTM1_GEOID``.
+
+Note that any download policies and attribution requirements of the respective providers apply.
 
 .. highlight: console
 
@@ -45,7 +66,7 @@ Command line usage
 ------------------
 
 Identify the geographic bounds of the area of interest and fetch the DEM with the ``eio`` command.
-For example to clip the SRTM 30m DEM of Rome, around 41.9N 12.5E, to the ``Rome-30m-DEM.tif`` file::
+For example to clip the 30m DEM of Rome, around 41.9N 12.5E, to the ``Rome-30m-DEM.tif`` file::
 
     $ eio clip -o Rome-30m-DEM.tif --bounds 12.35 41.8 12.65 42
 
@@ -67,7 +88,7 @@ The ``--reference`` option can take also verctor data as input::
 
     $ eio clip -o MyShapefile-DEM.tif --reference MyShapefile.shp  # enable with: $ pip install fiona
 
-The first time an area is accessed Elevation downloads the data tiles from the USGS or CGIAR-CSI servers and
+The first time an area is accessed Elevation downloads the data tiles from the Amazon S3 or CGIAR-CSI servers and
 caches them in GeoTiff compressed formats,
 subsequent accesses to the same and nearby areas are much faster.
 
@@ -128,7 +149,7 @@ Every command has a corresponding API function in the ``elevation`` module:
 .. highlight: python
 
 >>> import elevation
->>> # clip the SRTM1 30m DEM of Rome and save it to Rome-DEM.tif
+>>> # clip the default 30m DEM of Rome and save it to Rome-DEM.tif
 >>> elevation.clip(bounds=(12.35, 41.8, 12.65, 42), output='Rome-DEM.tif')
 >>> # clean up stale temporary files and fix the cache in the event of a server error
 >>> elevation.clean()
