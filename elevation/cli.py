@@ -101,7 +101,7 @@ def seed(**kwargs):
 @click_merge_parent_params
 def clip(bounds, reference, **kwargs):
     if not bounds and not reference:
-        raise click.BadOptionUsage("One of --bounds or --reference must be supplied.")
+        raise click.UsageError("One of --bounds or --reference must be supplied.")
     if not bounds:
         bounds = spatial.import_bounds(reference)
     elevation.clip(bounds, **kwargs)

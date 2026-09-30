@@ -3,6 +3,7 @@
 ------------------
 
 - Fix the ``eio distclean`` crash when the cache holds sub-folders.
+- Fix the ``eio clip`` crash when neither ``--bounds`` nor ``--reference`` is given.
 
 
 1.1.3 (2021-04-08)

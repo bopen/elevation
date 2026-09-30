@@ -66,7 +66,8 @@ def test_eio_clip(mocker, tmpdir):
 
     mocker.patch('subprocess.check_call')
     result = runner.invoke(cli.eio, ['clip'])
-    assert result.exception
+    assert result.exit_code == 2
+    assert 'must be supplied' in result.output
     assert subprocess.check_call.call_count == 0
 
     mocker.patch('subprocess.check_call')
