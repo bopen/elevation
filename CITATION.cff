@@ -11,6 +11,8 @@ authors:
     website: "https://linkedin.com/in/alexamici"
   - name: "B-Open"
     website: "https://bopen.eu"
+version: 1.1.4
+date-released: 2026-09-30
 repository-code: "https://github.com/bopen/elevation"
 url: "https://elevation.bopen.eu"
 license: Apache-2.0

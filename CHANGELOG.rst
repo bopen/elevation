@@ -1,5 +1,5 @@
 
-1.1.4 (unreleased)
+1.1.4 (2026-09-30)
 ------------------
 
 - Document that the ``SRTM1`` product name is a misnomer and that it downloads

@@ -43,6 +43,7 @@ setup(
     include_package_data=True,
     install_requires=['appdirs', 'click', 'fasteners'],
     extras_require={'reference': ['fiona', 'rasterio']},
+    python_requires='>=3.6',
     zip_safe=True,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
