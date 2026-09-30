@@ -1,0 +1,64 @@
+type: Collection
+stac_version: 1.1.0
+stac_extensions:
+- https://stac-extensions.github.io/projection/v2.1.0/schema.json
+- https://stac-extensions.github.io/scientific/v1.0.0/schema.json
+- https://stac-extensions.github.io/version/v1.2.0/schema.json
+id: srtm1-ellip
+title: SRTM global 30m v3 ellipsoidal
+description: 'Shuttle Radar Topography Mission (SRTM) 1 arc second (30 m) surface heights on the WGS84 ellipsoid, over land between 60°N and 56°S. A non-standard SRTM GL1 variant produced by OpenTopography by converting the orthometric SRTM GL1 (EGM96 geoid) to ellipsoidal heights; mostly used for InSAR analysis. The heights are a surface model: vegetation and buildings contribute to them.'
+license: other
+extent:
+  spatial:
+    bbox:
+    - - -180
+      - -56
+      - 180
+      - 60
+  temporal:
+    interval:
+    - - '2000-02-11T00:00:00Z'
+      - '2000-02-22T00:00:00Z'
+version: '003'
+sci:doi: 10.5069/G9445JDF
+sci:citation: NASA Shuttle Radar Topography Mission (SRTM). (2013). Shuttle Radar Topography Mission (SRTM) Global. Distributed by OpenTopography. https://doi.org/10.5069/G9445JDF
+summaries:
+  gsd:
+  - 30
+  proj:code:
+  - EPSG:4979
+providers:
+- name: OpenTopography
+  roles:
+  - processor
+  - host
+  url: https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1
+- name: NASA and NGA (SRTM mission STS-99, 2000)
+  roles:
+  - producer
+  url: https://www.earthdata.nasa.gov/data/instruments/srtm
+links:
+- rel: self
+  href: ./srtm1-ellip.yaml
+  type: application/yaml
+  title: SRTM global 30m ellipsoidal STAC Collection
+- rel: root
+  href: ./catalog.yaml
+  type: application/yaml
+  title: elevation datasets STAC Catalog
+- rel: parent
+  href: ./catalog.yaml
+  type: application/yaml
+  title: elevation datasets STAC Catalog
+- rel: license
+  href: https://www.usgs.gov/centers/eros/science/usgs-eros-archive-digital-elevation-shuttle-radar-topography-mission-srtm
+  type: text/html
+  title: SRTM data distribution policy (US Government public domain)
+- rel: describedby
+  href: https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1
+  type: text/html
+  title: OpenTopography dataset page
+- rel: cite-as
+  href: https://doi.org/10.5069/G9445JDF
+  type: text/html
+  title: Shuttle Radar Topography Mission (SRTM) Global, OpenTopography

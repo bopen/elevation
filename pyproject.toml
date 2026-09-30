@@ -134,7 +134,7 @@ convention = "numpy"
 packages = ["elevation"]
 
 [tool.setuptools.package-data]
-elevation = ["datasource.mk", "py.typed"]
+elevation = ["datasource.mk", "datasets/*.yaml", "py.typed"]
 
 [tool.setuptools_scm]
 fallback_version = "999"
