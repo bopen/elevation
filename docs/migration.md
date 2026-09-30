@@ -1,6 +1,20 @@
 # Migrating from 1.x to 2.0
 
+This guide describes the backward-incompatible changes in elevation 2.0 and the steps
+needed to migrate an existing 1.x setup.
+New features and the current usage are documented in the README.
+
 ## Datasets
+
+The default 1.x dataset was the Terrain Tiles mosaic, erroneously called `SRTM1`: it is
+still the default dataset but is now called `TERRAIN_TILES`, a more fitting name. A plain
+`eio clip` keeps downloading the same data as in 1.x.
+
+The `SRTM1` name is retired: requesting it raises `elevation.ProductRetiredError`, a
+subclass of `KeyError`, from the Python API and an `Invalid value for --product` usage
+error from the `eio` command line, in both cases with a pointer to this page.
+
+Correspondence between the 1.x and 2.0 datasets:
 
 | elevation 1.x | elevation 2.0 | Data |
 | --- | --- | --- |
@@ -9,49 +23,21 @@
 | `SRTM1_ELLIP` | `SRTM1_ELLIP` | SRTM GL1, 30m heights on the WGS84 ellipsoid |
 | `SRTM3` | `SRTM3` | SRTM 90m, CGIAR-CSI |
 
-The 1.x `SRTM1` product was the Terrain Tiles mosaic and is now called `TERRAIN_TILES`.
-
-The `SRTM1` name is retired: requesting it raises `elevation.ProductRetiredError`, a
-subclass of `KeyError`, from the Python API and an `Invalid value for --product` usage
-error from the `eio` command line, in both cases with a pointer to this page.
-
-`TERRAIN_TILES` is the default product, so a plain `eio clip` keeps downloading the same
-data that `eio --product SRTM1 clip` downloaded in 1.x.
-
 ## Cache
 
-The DEM cache is back in the `elevation` user cache folder, for example
-`~/Library/Caches/elevation` on macOS, and only the products whose data changed need a new
-download:
+The DEM tiles downloaded from the data providers are kept in the elevation cache folder,
+in a sub-folder named after the dataset, for example `~/Library/Caches/elevation` on macOS.
+Run `eio info` to print the folder of the current dataset (the cache folder is its parent).
 
-- the 1.x `SRTM1` folder holds exactly the `TERRAIN_TILES` data, so it can be renamed
-  instead of downloaded again:
+A 1.x installation keeps the Terrain Tiles data in the old `SRTM1` sub-folder, so to avoid
+downloading it again move the tiles into the new folder:
 
 ```text
-mv <cache>/SRTM1 <cache>/TERRAIN_TILES
+mv <cache_folder>/SRTM1/cache/* <cache_folder>/TERRAIN_TILES/cache/
 ```
 
-- `SRTM3` and `SRTM1_ELLIP` are reused as they are;
-- `SRTM1_GEOID` is a new product and is downloaded from scratch.
-
-## Python API
-
-- `elevation.CACHE_DIR` is a `str` and points to the user cache folder.
-- `elevation.PRODUCTS` is `["TERRAIN_TILES", "SRTM1_GEOID", "SRTM1_ELLIP", "SRTM3"]`.
-- Path-valued arguments accept `str` or `Path`, and relative paths are resolved against the
-  current working directory; `elevation.seed()` returns a `Path`.
-- `elevation.TOOLS` is a list of `(name, command)` pairs and `elevation.selfcheck()` accepts
-  a mapping or a list of pairs.
-
-## Command line
-
-- `--product` takes the new product names and `--reference` must point to an existing
-  file.
-- `--make_options`, and the `EIO_MAKE_OPTIONS` environment variable, pass options through
-  to every `make` invocation.
-- The other `EIO_*` environment variables are unchanged.
+The `SRTM3` and `SRTM1_ELLIP` datasets are reused as they are.
 
 ## Packaging
 
-- elevation 2.0 requires Python 3.11 or later; the `eio` command line entry point is
-  unchanged.
+- elevation 2.0 requires Python 3.11 or later.
