@@ -23,23 +23,23 @@ from typing import Any
 import fasteners
 
 FOLDER_LOCKFILE_NAME = ".folder_lock"
-TOOLS: dict[str, str] = {
-    "GNU Make": "make --version",
-    "curl": "curl --help",
-    "unzip": "unzip -v",
-    "gunzip": "gunzip --version",
-    "gdal_translate": "gdal_translate --version",
-    "gdalbuildvrt": "gdalbuildvrt --version",
-}
+TOOLS: list[tuple[str, str]] = [
+    ("GNU Make", "make --version"),
+    ("curl", "curl --help"),
+    ("unzip", "unzip -v"),
+    ("gunzip", "gunzip --version"),
+    ("gdal_translate", "gdal_translate --version"),
+    ("gdalbuildvrt", "gdalbuildvrt --version"),
+]
 
 
-def selfcheck(tools: dict[str, str] = TOOLS) -> str:
+def selfcheck(tools: dict[str, str] | Iterable[tuple[str, str]] = TOOLS) -> str:
     """Audit the system for issues.
 
     :param tools: Tools description, defaults to TOOLS.
     """
     msg = []
-    for tool_name, check_cli in tools.items():
+    for tool_name, check_cli in dict(tools).items():
         try:
             subprocess.check_output(check_cli, shell=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError:
