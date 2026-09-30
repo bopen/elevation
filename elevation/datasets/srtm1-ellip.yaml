@@ -41,7 +41,7 @@ links:
 - rel: self
   href: ./srtm1-ellip.yaml
   type: application/yaml
-  title: SRTM global 30m ellipsoidal STAC Collection
+  title: SRTM global 30m v3 ellipsoidal STAC Collection
 - rel: root
   href: ./catalog.yaml
   type: application/yaml

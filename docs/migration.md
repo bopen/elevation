@@ -18,10 +18,10 @@ Correspondence between the 1.x and 2.0 datasets:
 
 | elevation 1.x | elevation 2.0 | Data |
 | --- | --- | --- |
-| `SRTM1` | `TERRAIN_TILES` (default) | Terrain Tiles, the global mosaic of 30m DEMs assembled by Mapzen |
-| — | `SRTM1_GEOID` | SRTM GL1 hosted on OpenTopography, 30m heights on the EGM96 geoid |
-| `SRTM1_ELLIP` | `SRTM1_ELLIP` | SRTM GL1, 30m heights on the WGS84 ellipsoid |
-| `SRTM3` | `SRTM3` | SRTM 90m, CGIAR-CSI |
+| `SRTM1` | `TERRAIN_TILES` (default) | Terrain Tiles global 30m v1, the mosaic of 30m DEMs assembled by Mapzen |
+| — | `SRTM1_GEOID` | SRTM global 30m v3 hosted on OpenTopography, 30m heights on the EGM96 geoid |
+| `SRTM1_ELLIP` | `SRTM1_ELLIP` | SRTM global 30m v3 ellipsoidal, 30m heights on the WGS84 ellipsoid |
+| `SRTM3` | `SRTM3` | SRTM global 90m v4.1, CGIAR-CSI |
 
 ## Cache
 

@@ -5,7 +5,7 @@ stac_extensions:
 - https://stac-extensions.github.io/scientific/v1.0.0/schema.json
 - https://stac-extensions.github.io/version/v1.2.0/schema.json
 id: glo-90
-title: Copernicus DEM global 90m
+title: Copernicus DEM global 90m (2021)
 description: 'Copernicus DEM GLO-90: global 3 arc second (90 m) Digital Surface Model (DSM) on the EGM2008 geoid, acquired by the TanDEM-X mission (2011-2015) and derived from the edited WorldDEM DSM. It represents the top-reflective surface, so buildings, infrastructure and vegetation are included; water bodies are flattened and coastlines, airports and implausible structures are edited. Ocean areas have no tiles. Distributed by the Earth Data Hub (DESTINE) as Cloud Optimized GeoTIFFs.'
 license: other
 extent:
@@ -32,6 +32,10 @@ providers:
   roles:
   - host
   url: https://earthdatahub.destine.eu/collections/copernicus-dem
+- name: B-Open
+  roles:
+  - processor
+  url: https://bopen.eu
 - name: Airbus Defence and Space GmbH
   roles:
   - processor
@@ -48,7 +52,7 @@ links:
 - rel: self
   href: ./glo-90.yaml
   type: application/yaml
-  title: Copernicus DEM global 90m STAC Collection
+  title: Copernicus DEM global 90m (2021) STAC Collection
 - rel: root
   href: ./catalog.yaml
   type: application/yaml

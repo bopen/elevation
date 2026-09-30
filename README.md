@@ -3,17 +3,17 @@
 Global geographic elevation data made easy.
 Elevation provides easy download, cache and access of the global datasets:
 
-- `TERRAIN_TILES`: [Terrain Tiles](https://registry.opendata.aws/terrain-tiles/)
+- `TERRAIN_TILES`: [Terrain Tiles global 30m v1](https://registry.opendata.aws/terrain-tiles/)
   hosted on [Amazon S3](https://aws.amazon.com/public-data-sets/terrain),
-  global 1 arc second (30m) DEMs in the SRTM HGT format
+  1 arc second (30m) DEMs in the SRTM HGT format
   assembled by Mapzen from several open data providers,
   including NASA/NGA SRTM, USGS 3DEP, EUDEM, ArcticDEM, GMTED2010 and ETOPO1.
-- `SRTM1_GEOID`: [SRTM 30m Global 1 arc second V003](https://lpdaac.usgs.gov/products/srtmgl1nv003/)
+- `SRTM1_GEOID`: [SRTM global 30m v3](https://lpdaac.usgs.gov/products/srtmgl1nv003/)
   produced by NASA and NGA hosted on [OpenTopography](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082015.4326.1),
   with 30m heights on the EGM96 geoid.
-- `SRTM1_ELLIP`: [SRTM GL1 Ellipsoidal (30m heights on the WGS84 ellipsoid)](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1)
-  hosted on OpenTopography.
-- `SRTM3`: [SRTM 90m Digital Elevation Database v4.1](https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/)
+- `SRTM1_ELLIP`: [SRTM global 30m v3 ellipsoidal](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1)
+  hosted on OpenTopography, 30m heights on the WGS84 ellipsoid.
+- `SRTM3`: [SRTM global 90m v4.1](https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/)
   produced by CGIAR-CSI.
 
 Note that any download policies and attribution requirements of the respective providers apply.
@@ -61,13 +61,13 @@ using the default `TERRAIN_TILES` product:
 $ eio clip -o Rome-TERRAIN_TILES-DEM.tif --bounds 12.35 41.8 12.65 42
 ```
 
-For the SRTM 30m DEM use:
+For the SRTM global 30m v3 DEM use:
 
 ```console
 $ eio --product SRTM1_GEOID clip -o Rome-SRTM1_GEOID-DEM.tif --bounds 12.35 41.8 12.65 42
 ```
 
-For the SRTM 90m DEM use:
+For the SRTM global 90m v4.1 DEM use:
 
 ```console
 $ eio --product SRTM3 clip -o Rome-SRTM3-DEM.tif --bounds 12.35 41.8 12.65 42

@@ -15,7 +15,7 @@ links:
 - rel: child
   href: ./terrain-tiles.yaml
   type: application/yaml
-  title: Terrain Tiles global 30m
+  title: Terrain Tiles global 30m v1
 - rel: child
   href: ./srtm1-geoid.yaml
   type: application/yaml
@@ -23,7 +23,7 @@ links:
 - rel: child
   href: ./srtm1-ellip.yaml
   type: application/yaml
-  title: SRTM global 30m ellipsoidal
+  title: SRTM global 30m v3 ellipsoidal
 - rel: child
   href: ./srtm3.yaml
   type: application/yaml
@@ -31,8 +31,8 @@ links:
 - rel: child
   href: ./glo-30.yaml
   type: application/yaml
-  title: Copernicus DEM global 30m
+  title: Copernicus DEM global 30m (2021)
 - rel: child
   href: ./glo-90.yaml
   type: application/yaml
-  title: Copernicus DEM global 90m
+  title: Copernicus DEM global 90m (2021)
