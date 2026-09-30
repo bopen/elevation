@@ -212,11 +212,13 @@ def clip(bounds, output=DEFAULT_OUTPUT, margin=MARGIN, **kwargs):
     """Clip the DEM to given bounds.
 
     :param bounds: Output bounds in 'left bottom right top' order.
-    :param output: Path to output file. Existing files will be overwritten.
+    :param output: Path to output file. Existing files will be overwritten. Relative
+        paths are resolved against the current working directory.
     :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
     """
+    output = os.path.abspath(output)
     bounds = build_bounds(bounds, margin=margin)
     datasource_root = seed(bounds=bounds, **kwargs)
     do_clip(datasource_root, bounds, output, **kwargs)

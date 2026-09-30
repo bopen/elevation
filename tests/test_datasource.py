@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2021 B-Open Solutions srl - http://bopen.eu
 #
 
+import os
 import subprocess
 
 import pytest
@@ -93,7 +94,10 @@ def test_clip(mocker, tmpdir):
     datasource.clip(cache_dir=str(root), product='SRTM1', bounds=bounds, output='out.tif')
     assert len(root.listdir()) == 1
     datasource_root = root.listdir()[0]
-    cmd = 'make -C %s clip OUTPUT="out.tif" PROJWIN="13.1 44.9 14.9 43.1" RUN_ID="asd"' % datasource_root
+    cmd = 'make -C %s clip OUTPUT="%s" PROJWIN="13.1 44.9 14.9 43.1" RUN_ID="asd"' % (
+        datasource_root,
+        os.path.abspath('out.tif'),
+    )
     subprocess.check_call.assert_any_call(cmd, shell=True)
 
 
