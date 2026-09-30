@@ -17,7 +17,7 @@ Elevation provides easy download, cache and access of the global datasets:
 
 Note that any download policies and attribution requirements of the respective providers apply.
 
-This Open Source project is sponsored by B-Open - <https://www.bopen.eu>.
+This Open Source project is sponsored by B-Open - <https://bopen.eu>.
 
 ## Installation
 

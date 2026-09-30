@@ -18,10 +18,12 @@ dev = [
 
 [project]
 authors = [
-  {name = "B-Open Solutions srl, Alessandro Amici", email = "info@bopen.eu"}
+  {name = "Alessandro Amici"},
+  {name = "B-Open"}
 ]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
   "Operating System :: OS Independent",
@@ -39,17 +41,18 @@ dependencies = [
   "fasteners>=0.18",
   "typer>=0.26.7"
 ]
-description = "Python script to download global terrain digital elevation models, SRTM 30m DEM, SRTM 90m DEM and SRTM GL1 ellipsoidal DEM."
+description = "Download, cache and clip global terrain digital elevation models: Terrain Tiles, SRTM 30m, SRTM 90m and SRTM GL1 ellipsoidal DEMs."
 dynamic = ["version"]
 keywords = [
-  "script",
-  "download",
-  "SRTM",
   "DEM",
   "DTM",
-  "global",
+  "SRTM",
   "digital elevation",
-  "terrain model"
+  "download",
+  "geospatial",
+  "global",
+  "terrain model",
+  "terrain tiles"
 ]
 license = "Apache-2.0"
 license-files = ["LICENSE"]
@@ -65,6 +68,8 @@ eio = "elevation.__main__:app"
 
 [project.urls]
 Homepage = "https://elevation.bopen.eu"
+Repository = "https://github.com/bopen/elevation"
+Sponsor = "https://bopen.eu"
 
 [tool.coverage.run]
 branch = true
