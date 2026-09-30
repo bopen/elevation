@@ -2,6 +2,8 @@
 1.1.4 (unreleased)
 ------------------
 
+- Document that the ``SRTM1`` product name is a misnomer and that it downloads
+  the Terrain Tiles dataset, not the official SRTM GL1 one.
 - Fix the ``eio distclean`` crash when the cache holds sub-folders.
 - Fix the ``eio clip`` crash when neither ``--bounds`` nor ``--reference`` is given.
 - Resolve a relative ``output`` against the current working directory.

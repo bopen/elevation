@@ -108,11 +108,12 @@ The ``eio`` command as the following sub-commands and options::
     $ Usage: eio [OPTIONS] COMMAND [ARGS]...
 
     Options:
-      --version                Show the version and exit.
-      --product [SRTM1|SRTM3]  DEM product choice.  [default: SRTM1]
-      --cache_dir DIRECTORY    Root of the DEM cache folder.  [default:
-                               /Users/amici/Library/Caches/elevation]
-      --help                   Show this message and exit.
+      --version                       Show the version and exit.
+      --product [SRTM1|SRTM3|SRTM1_ELLIP]
+                                      DEM product choice.  [default: SRTM1]
+      --cache_dir DIRECTORY           Root of the DEM cache folder.  [default:
+                                      /Users/amici/Library/Caches/elevation]
+      --help                          Show this message and exit.
 
     Commands:
       clean      Clean up the product cache from temporary files.

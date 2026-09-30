@@ -54,7 +54,8 @@ No completeness and no performance guarantees.
 
 - Cache management:
 
-  - new SRTM1 and old SRTM3 global high resolution digital elevation model
+  - new ``SRTM1``, actually the Terrain Tiles dataset, and old ``SRTM3`` global high
+    resolution digital elevation model
 
   - GNU Makefile for cache management (parallelism and dependency tracking)
 
