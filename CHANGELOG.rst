@@ -5,6 +5,8 @@
 - Move the DEM cache to a new ``elevation2`` folder to invalidate previous caches.
 - Honour the ``EIO_CACHE_DIR`` environment variable in the Python API, not only in the
   ``eio`` command line.
+- Add the ``--make_options`` option and the ``EIO_MAKE_OPTIONS`` variable to pass options
+  through to every ``make`` invocation.
 - Download the original SRTM GL1 data from OpenTopography for the ``SRTM1`` product.
 - Add the ``TERRAIN_TILES`` product for the global Mapzen terrain tiles mosaic and make
   it the default product.

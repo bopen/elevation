@@ -29,7 +29,8 @@ def test_parent_params_reach_subcommand(mocker: MockerFixture, tmp_path: Path) -
     )
     assert not result.exception
     assert mock_check_call.call_count == 1
-    assert mock_check_call.call_args[0][0] == f"make -C {root / 'SRTM3'} info "
+    expected_cmd = ["make", "-C", str(root / "SRTM3"), "info"]
+    assert mock_check_call.call_args[0][0] == expected_cmd
 
 
 def test_invalid_product() -> None:
@@ -117,4 +118,18 @@ def test_eio_cache_dir_env(
     mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(__main__.app, ["--product", "SRTM1", "info"])
     assert not result.exception
-    assert mock_check_call.call_args[0][0] == f"make -C {root / 'SRTM1'} info "
+    expected_cmd = ["make", "-C", str(root / "SRTM1"), "info"]
+    assert mock_check_call.call_args[0][0] == expected_cmd
+
+
+def test_eio_make_options(mocker: MockerFixture, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    runner = typer.testing.CliRunner()
+    mock_check_call = mocker.patch("subprocess.check_call")
+    result = runner.invoke(
+        __main__.app,
+        ["--product", "SRTM1", "--cache_dir", str(root), "--make_options=-s", "info"],
+    )
+    assert not result.exception
+    expected_cmd = ["make", "-C", str(root / "SRTM1"), "-s", "info"]
+    assert mock_check_call.call_args[0][0] == expected_cmd

@@ -115,17 +115,20 @@ $ eio --help
  Usage: eio [OPTIONS] COMMAND [ARGS]...
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --version                                       Show the version and exit.   │
-│                                                 [env var: EIO_VERSION]       │
-│ --product          [TERRAIN_TILES|SRTM1|SRTM3|  DEM product choice.          │
-│                    SRTM1_ELLIP]                 [env var: EIO_PRODUCT]       │
-│                                                 [default: TERRAIN_TILES]     │
-│ --cache_dir        <directory>                  Root of the DEM cache        │
-│                                                 folder.                      │
-│                                                 [env var: EIO_CACHE_DIR]     │
-│                                                 [default:                    │
-│                                                 /Users/amici/Library/Caches… │
-│ --help                                          Show this message and exit.  │
+│ --version                                        Show the version and exit.  │
+│                                                  [env var: EIO_VERSION]      │
+│ --product             [TERRAIN_TILES|SRTM1|SRTM  DEM product choice.         │
+│                       3|SRTM1_ELLIP]             [env var: EIO_PRODUCT]      │
+│                                                  [default: TERRAIN_TILES]    │
+│ --cache_dir           <directory>                Root of the DEM cache       │
+│                                                  folder.                     │
+│                                                  [env var: EIO_CACHE_DIR]    │
+│                                                  [default:                   │
+│                                                  /Users/amici/Library/Cache… │
+│ --make_options        <str>                      Options passed through to   │
+│                                                  every GNU make invocation.  │
+│                                                  [env var: EIO_MAKE_OPTIONS] │
+│ --help                                           Show this message and exit. │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────╮
 │ selfcheck  Audit the system for common issues.                               │
@@ -170,6 +173,8 @@ $ eio clip --help
 Defaults can be defined by setting environment variables prefixed with `EIO`,
 e.g. `EIO_PRODUCT=SRTM3`, `EIO_CLIP_MARGIN=10%` and `EIO_CACHE_DIR=/tmp/elevation2`.
 `EIO_CACHE_DIR` selects the DEM cache folder and is honoured by the Python API as well.
+`EIO_MAKE_OPTIONS` is passed through to every `make` invocation, e.g. `EIO_MAKE_OPTIONS=-s`
+silences make; the Python API takes the same value as the `make_options` keyword argument.
 
 ## Python API
 

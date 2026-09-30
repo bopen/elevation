@@ -59,8 +59,8 @@ def test_srtm_ellip_tiles_names() -> None:
 def test_ensure_tiles(mocker: MockerFixture) -> None:
     mock_check_call = mocker.patch("subprocess.check_call")
     cmd = datasource.ensure_tiles(Path("/tmp"), ["a", "b"])
-    assert cmd == 'make -C /tmp download ENSURE_TILES="a b"'
-    mock_check_call.assert_called_once_with(cmd, shell=True)
+    assert cmd == ["make", "-C", "/tmp", "download", "ENSURE_TILES=a b"]
+    mock_check_call.assert_called_once_with(cmd)
 
 
 def test_do_clip(mocker: MockerFixture) -> None:
@@ -69,10 +69,9 @@ def test_do_clip(mocker: MockerFixture) -> None:
     cmd = datasource.do_clip(
         path=Path("/tmp"), bounds=bounds, output="/out.tif", product="SRTM1"
     )
-    assert cmd.startswith(
-        'make -C /tmp clip OUTPUT="/out.tif" PROJWIN="1 6 2 5" RUN_ID="'
-    )
-    mock_check_call.assert_called_with(cmd, shell=True)
+    expected_cmd = ["make", "-C", "/tmp", "clip", "OUTPUT=/out.tif", "PROJWIN=1 6 2 5"]
+    assert cmd[:-1] == expected_cmd
+    mock_check_call.assert_called_with(cmd)
 
 
 def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
@@ -82,8 +81,14 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     datasource.seed(cache_dir=root, product="SRTM1", bounds=bounds)
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
-    expected_cmd = f'make -C {datasource_root} download ENSURE_TILES="N43E013.tif"'
-    mock_check_call.assert_any_call(expected_cmd, shell=True)
+    expected_cmd = [
+        "make",
+        "-C",
+        str(datasource_root),
+        "download",
+        "ENSURE_TILES=N43E013.tif",
+    ]
+    mock_check_call.assert_any_call(expected_cmd)
 
     with pytest.raises(RuntimeError):
         datasource.seed(cache_dir=root, product="SRTM1", bounds=(-180, -90, 180, 90))
@@ -110,19 +115,19 @@ def test_build_bounds() -> None:
 def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 14.9, 44.9)
-
-    class UUID:
-        hex = "asd"
-
-    uuid_mock = mocker.Mock()
-    uuid_mock.return_value = UUID
-    mocker.patch("uuid.uuid4", uuid_mock)
     mock_check_call = mocker.patch("subprocess.check_call")
     datasource.clip(cache_dir=root, product="SRTM1", bounds=bounds, output="out.tif")
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
-    cmd = f'make -C {datasource_root} clip OUTPUT="out.tif" PROJWIN="13.1 44.9 14.9 43.1" RUN_ID="asd"'
-    mock_check_call.assert_any_call(cmd, shell=True)
+    expected_cmd = [
+        "make",
+        "-C",
+        str(datasource_root),
+        "clip",
+        "OUTPUT=out.tif",
+        "PROJWIN=13.1 44.9 14.9 43.1",
+    ]
+    assert mock_check_call.call_args[0][0][:-1] == expected_cmd
 
 
 def test_clean(mocker: MockerFixture, tmp_path: Path) -> None:
@@ -131,7 +136,7 @@ def test_clean(mocker: MockerFixture, tmp_path: Path) -> None:
     datasource.clean(cache_dir=root, product="SRTM1")
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
-    mock_check_call.assert_any_call(f"make -C {datasource_root} clean ", shell=True)
+    mock_check_call.assert_any_call(["make", "-C", str(datasource_root), "clean"])
 
 
 def test_cache_dir(
@@ -144,11 +149,37 @@ def test_cache_dir(
     mock_check_call = mocker.patch("subprocess.check_call")
 
     datasource.info(product="SRTM1")
-    assert mock_check_call.call_args[0][0] == f"make -C {default / 'SRTM1'} info "
+    expected_cmd = ["make", "-C", str(default / "SRTM1"), "info"]
+    assert mock_check_call.call_args[0][0] == expected_cmd
 
     monkeypatch.setenv("EIO_CACHE_DIR", str(override))
     datasource.info(product="SRTM1")
-    assert mock_check_call.call_args[0][0] == f"make -C {override / 'SRTM1'} info "
+    expected_cmd = ["make", "-C", str(override / "SRTM1"), "info"]
+    assert mock_check_call.call_args[0][0] == expected_cmd
 
     datasource.info(cache_dir=argument, product="SRTM1")
-    assert mock_check_call.call_args[0][0] == f"make -C {argument / 'SRTM1'} info "
+    expected_cmd = ["make", "-C", str(argument / "SRTM1"), "info"]
+    assert mock_check_call.call_args[0][0] == expected_cmd
+
+
+def test_make_options(mocker: MockerFixture, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    bounds = (13.1, 43.1, 14.9, 44.9)
+    mock_check_call = mocker.patch("subprocess.check_call")
+
+    datasource.info(cache_dir=root, product="SRTM1", make_options="-s")
+    expected_cmd = ["make", "-C", str(root / "SRTM1"), "-s", "info"]
+    assert mock_check_call.call_args[0][0] == expected_cmd
+
+    mock_check_call.reset_mock()
+    datasource.clip(
+        cache_dir=root,
+        product="SRTM1",
+        bounds=bounds,
+        output="out.tif",
+        make_options="-s",
+    )
+    expected_cmd = ["make", "-C", str(root / "SRTM1"), "-s"]
+    assert mock_check_call.call_count == 4
+    for call in mock_check_call.call_args_list:
+        assert call[0][0][:4] == expected_cmd

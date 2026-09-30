@@ -199,7 +199,7 @@ DEFAULT_PRODUCT = PRODUCTS[0]
 
 def ensure_tiles(
     path: Path, ensure_tiles_names: Sequence[str] = (), **kwargs: Any
-) -> str:
+) -> list[str]:
     ensure_tiles = " ".join(ensure_tiles_names)
     variables_items = [("ensure_tiles", ensure_tiles)]
     return util.check_call_make(
@@ -223,10 +223,12 @@ def do_clip(
     output: str | Path,
     product: str,
     **kwargs: Any,
-) -> str:
+) -> list[str]:
     run_id = uuid.uuid4().hex
     with util.lock_vrt(path, product):
-        util.check_call_make(path, targets=["copy_vrt"], variables=[("run_id", run_id)])
+        util.check_call_make(
+            path, targets=["copy_vrt"], variables=[("run_id", run_id)], **kwargs
+        )
     left, bottom, right, top = bounds
     projwin = f"{left} {top} {right} {bottom}"
     variables_items = [
@@ -234,7 +236,9 @@ def do_clip(
         ("projwin", projwin),
         ("run_id", run_id),
     ]
-    return util.check_call_make(path, targets=["clip"], variables=variables_items)
+    return util.check_call_make(
+        path, targets=["clip"], variables=variables_items, **kwargs
+    )
 
 
 def seed(
@@ -250,7 +254,7 @@ def seed(
     :param product: DEM product choice.
     :param bounds: Output bounds in 'left bottom right top' order.
     :param max_download_tiles: Maximum number of tiles to process.
-    :param kwargs: Pass additional kwargs to ensure_tiles.
+    :param kwargs: Pass additional kwargs to check_call_make.
     """
     if bounds is None:
         raise TypeError("bounds must be supplied")
@@ -267,7 +271,7 @@ def seed(
         ensure_tiles(datasource_root, ensure_tiles_names, **kwargs)
 
     with util.lock_vrt(datasource_root, product):
-        util.check_call_make(datasource_root, targets=["all"])
+        util.check_call_make(datasource_root, targets=["all"], **kwargs)
     return datasource_root
 
 
@@ -304,42 +308,55 @@ def clip(
     :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
-    :param kwargs: Pass additional kwargs to seed.
+    :param kwargs: Pass additional kwargs to check_call_make.
     """
     bounds = build_bounds(bounds, margin=margin)
     datasource_root = seed(
         cache_dir=cache_dir, product=product, bounds=bounds, **kwargs
     )
-    do_clip(datasource_root, bounds, output, product=product)
+    do_clip(datasource_root, bounds, output, product=product, **kwargs)
 
 
-def info(cache_dir: str | Path | None = None, product: str = DEFAULT_PRODUCT) -> None:
+def info(
+    cache_dir: str | Path | None = None,
+    product: str = DEFAULT_PRODUCT,
+    **kwargs: Any,
+) -> None:
     """Show info about the product cache.
 
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
+    :param kwargs: Pass additional kwargs to check_call_make.
     """
     datasource_root, _ = ensure_setup(cache_dir, product)
-    util.check_call_make(datasource_root, targets=["info"])
+    util.check_call_make(datasource_root, targets=["info"], **kwargs)
 
 
-def clean(cache_dir: str | Path | None = None, product: str = DEFAULT_PRODUCT) -> None:
+def clean(
+    cache_dir: str | Path | None = None,
+    product: str = DEFAULT_PRODUCT,
+    **kwargs: Any,
+) -> None:
     """Clean up the product cache from temporary files.
 
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
+    :param kwargs: Pass additional kwargs to check_call_make.
     """
     datasource_root, _ = ensure_setup(cache_dir, product)
-    util.check_call_make(datasource_root, targets=["clean"])
+    util.check_call_make(datasource_root, targets=["clean"], **kwargs)
 
 
 def distclean(
-    cache_dir: str | Path | None = None, product: str = DEFAULT_PRODUCT
+    cache_dir: str | Path | None = None,
+    product: str = DEFAULT_PRODUCT,
+    **kwargs: Any,
 ) -> None:
     """Remove the product cache entirely.
 
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
+    :param kwargs: Pass additional kwargs to check_call_make.
     """
     datasource_root, _ = ensure_setup(cache_dir, product)
-    util.check_call_make(datasource_root, targets=["distclean"])
+    util.check_call_make(datasource_root, targets=["distclean"], **kwargs)

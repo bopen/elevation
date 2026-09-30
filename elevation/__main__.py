@@ -64,6 +64,11 @@ def main(
         path_type=Path,  # type: ignore[arg-type]
         help="Root of the DEM cache folder.",
     ),
+    make_options: str = typer.Option(
+        "",
+        "--make_options",
+        help="Options passed through to every GNU make invocation.",
+    ),
 ) -> None:
     if product not in elevation.PRODUCTS:
         raise typer.BadParameter(
@@ -71,7 +76,11 @@ def main(
             f"{', '.join(repr(item) for item in elevation.PRODUCTS)}.",
             param_hint="--product",
         )
-    ctx.obj = {"cache_dir": cache_dir, "product": product}
+    ctx.obj = {
+        "cache_dir": cache_dir,
+        "product": product,
+        "make_options": make_options,
+    }
 
 
 @app.command(short_help="Audit the system for common issues.")

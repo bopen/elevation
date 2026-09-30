@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import shlex
 import subprocess
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
@@ -95,11 +96,23 @@ def ensure_setup(
 
 
 def check_call_make(
-    path: Path, targets: Iterable[str] = (), variables: Iterable[tuple[str, str]] = ()
-) -> str:
-    make_targets = " ".join(targets)
+    path: Path,
+    targets: Iterable[str] = (),
+    variables: Iterable[tuple[str, str]] = (),
+    make_options: str = "",
+) -> list[str]:
+    """Run ``make`` in the given folder and return the command arguments.
+
+    :param path: Folder to run ``make`` in, i.e. the ``-C`` argument.
+    :param targets: Make targets to run.
+    :param variables: Make variables to set, as ``(name, value)`` pairs.
+    :param make_options: Extra options passed to ``make``, e.g. ``-s``, as a single
+        shell-like string.
+    :return: The command arguments, e.g. ``["make", "-C", "/tmp", "info"]``.
+    """
+    options = shlex.split(make_options)
     variables_items = dict(variables).items()
-    make_variables = " ".join(f'{k.upper()}="{v}"' for k, v in variables_items)
-    cmd = f"make -C {path} {make_targets} {make_variables}"
-    subprocess.check_call(cmd, shell=True)
+    make_variables = [f"{k.upper()}={v}" for k, v in variables_items]
+    cmd = ["make", "-C", str(path), *options, *targets, *make_variables]
+    subprocess.check_call(cmd)
     return cmd

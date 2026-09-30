@@ -61,5 +61,5 @@ def test_ensure_setup(tmp_path: Path) -> None:
 def test_check_call_make(mocker: MockerFixture) -> None:
     mock_check_call = mocker.patch("subprocess.check_call")
     cmd = util.check_call_make(Path("/tmp"))
-    assert cmd.strip() == "make -C /tmp"
-    mock_check_call.assert_called_once_with(cmd, shell=True)
+    assert cmd == ["make", "-C", "/tmp"]
+    mock_check_call.assert_called_once_with(cmd)
