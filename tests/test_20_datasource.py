@@ -185,3 +185,16 @@ def test_make_options(mocker: MockerFixture, tmp_path: Path) -> None:
     assert mock_check_call.call_count == 4
     for call in mock_check_call.call_args_list:
         assert call[0][0][:4] == expected_cmd
+
+
+def test_dataset() -> None:
+    assert "id: SRTM3\n" in elevation.dataset("SRTM3")
+    text = elevation.dataset()
+    assert text.count("id: ") == len(elevation.PRODUCTS)
+    assert "GLO-30" not in text
+    assert text.endswith("\n")
+    # the documents are separated by a blank line and a YAML document separator
+    assert text.count("\n---\n") == len(elevation.PRODUCTS) - 1
+    assert "\n\n---\nid: SRTM1_GEOID\n" in text
+    with pytest.raises(KeyError):
+        elevation.dataset("BOGUS")

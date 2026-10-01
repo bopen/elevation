@@ -14,6 +14,8 @@
 - Accept ``str`` or ``Path`` for all path-valued arguments.
 - Resolve relative ``output`` and cache folder paths against the current working
   directory.
+- Add the ``eio dataset`` command and the ``elevation.dataset`` function to show the
+  STAC metadata of the datasets.
 
 
 2.0.0rc1 (2026-09-28)

@@ -1,13 +1,11 @@
-type: Collection
-stac_version: 1.1.0
-stac_extensions:
-- https://stac-extensions.github.io/projection/v2.1.0/schema.json
-- https://stac-extensions.github.io/scientific/v1.0.0/schema.json
-- https://stac-extensions.github.io/version/v1.2.0/schema.json
-id: glo-90
-title: Copernicus DEM global 90m (2021)
-description: 'Copernicus DEM GLO-90: global 3 arc second (90 m) Digital Surface Model (DSM) on the EGM2008 geoid, acquired by the TanDEM-X mission (2011-2015) and derived from the edited WorldDEM DSM. It represents the top-reflective surface, so buildings, infrastructure and vegetation are included; water bodies are flattened and coastlines, airports and implausible structures are edited. Ocean areas have no tiles. Distributed by the Earth Data Hub (DESTINE) as Cloud Optimized GeoTIFFs.'
-license: other
+id: GLO-30
+title: Copernicus DEM global 30m (2021)
+version: '2021'
+summaries:
+  gsd:
+  - 30
+  proj:code:
+  - EPSG:9518
 extent:
   spatial:
     bbox:
@@ -19,14 +17,10 @@ extent:
     interval:
     - - '2011-01-01T00:00:00Z'
       - '2015-12-31T00:00:00Z'
-version: '2021'
+license: other
 sci:doi: 10.5270/ESA-c5d3d65
 sci:citation: Copernicus DEM, European Space Agency and European Union, https://doi.org/10.5270/ESA-c5d3d65
-summaries:
-  gsd:
-  - 90
-  proj:code:
-  - EPSG:9518
+description: 'Copernicus DEM GLO-30: global 1 arc second (30 m) Digital Surface Model (DSM) on the EGM2008 geoid, acquired by the TanDEM-X mission (2011-2015) and derived from the edited WorldDEM DSM. It represents the top-reflective surface, so buildings, infrastructure and vegetation are included; water bodies are flattened and coastlines, airports and implausible structures are edited. Ocean areas have no tiles. Distributed by the Earth Data Hub (DESTINE) as Cloud Optimized GeoTIFFs.'
 providers:
 - name: Earth Data Hub (DESTINE)
   roles:
@@ -48,17 +42,23 @@ providers:
   roles:
   - licensor
   url: https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM
+type: Collection
+stac_version: 1.1.0
+stac_extensions:
+- https://stac-extensions.github.io/projection/v2.1.0/schema.json
+- https://stac-extensions.github.io/scientific/v1.0.0/schema.json
+- https://stac-extensions.github.io/version/v1.2.0/schema.json
 links:
 - rel: self
-  href: ./glo-90.yaml
+  href: ./GLO-30.yaml
   type: application/yaml
-  title: Copernicus DEM global 90m (2021) STAC Collection
+  title: Copernicus DEM global 30m (2021) STAC Collection
 - rel: root
-  href: ./catalog.yaml
+  href: ./elevation.yaml
   type: application/yaml
   title: elevation datasets STAC Catalog
 - rel: parent
-  href: ./catalog.yaml
+  href: ./elevation.yaml
   type: application/yaml
   title: elevation datasets STAC Catalog
 - rel: license

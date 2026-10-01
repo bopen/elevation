@@ -1,12 +1,11 @@
-type: Collection
-stac_version: 1.1.0
-stac_extensions:
-- https://stac-extensions.github.io/projection/v2.1.0/schema.json
-- https://stac-extensions.github.io/version/v1.2.0/schema.json
-id: terrain-tiles
+id: TERRAIN_TILES
 title: Terrain Tiles global 30m v1
-description: "Global mosaic of 1 arc second (30 m) surface heights assembled by the Mapzen joerd pipeline from SRTM and other open DEMs (3DEP, EUDEM, ArcticDEM, GMTED2010, ETOPO1 and more), re-referenced to the EGM96 geoid and distributed as gzip-compressed SRTM HGT tiles (the Mapzen 'skadi' format). The heights are a surface model: on land they include vegetation and buildings, and over the ocean they carry ETOPO1 bathymetry."
-license: other
+version: '1'
+summaries:
+  gsd:
+  - 30
+  proj:code:
+  - EPSG:9707
 extent:
   spatial:
     bbox:
@@ -18,12 +17,8 @@ extent:
     interval:
     - - '2000-02-11T00:00:00Z'
       - '2016-12-31T00:00:00Z'
-version: '1'
-summaries:
-  gsd:
-  - 30
-  proj:code:
-  - EPSG:9707
+license: other
+description: "Global mosaic of 1 arc second (30 m) surface heights assembled by the Mapzen joerd pipeline from SRTM and other open DEMs (3DEP, EUDEM, ArcticDEM, GMTED2010, ETOPO1 and more), re-referenced to the EGM96 geoid and distributed as gzip-compressed SRTM HGT tiles (the Mapzen 'skadi' format). The heights are a surface model: on land they include vegetation and buildings, and over the ocean they carry ETOPO1 bathymetry."
 providers:
 - name: Mapzen, a Linux Foundation project
   roles:
@@ -34,17 +29,22 @@ providers:
   roles:
   - producer
   url: https://github.com/tilezen/joerd/blob/master/docs/data-sources.md
+type: Collection
+stac_version: 1.1.0
+stac_extensions:
+- https://stac-extensions.github.io/projection/v2.1.0/schema.json
+- https://stac-extensions.github.io/version/v1.2.0/schema.json
 links:
 - rel: self
-  href: ./terrain-tiles.yaml
+  href: ./TERRAIN_TILES.yaml
   type: application/yaml
   title: Terrain Tiles global 30m v1 STAC Collection
 - rel: root
-  href: ./catalog.yaml
+  href: ./elevation.yaml
   type: application/yaml
   title: elevation datasets STAC Catalog
 - rel: parent
-  href: ./catalog.yaml
+  href: ./elevation.yaml
   type: application/yaml
   title: elevation datasets STAC Catalog
 - rel: license

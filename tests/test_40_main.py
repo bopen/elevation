@@ -20,6 +20,29 @@ def test_eio_selfcheck(mocker: MockerFixture) -> None:
     assert mock_check_output.call_count == len(elevation.TOOLS)
 
 
+def test_eio_dataset() -> None:
+    runner = typer.testing.CliRunner()
+    result = runner.invoke(__main__.app, ["dataset"])
+    assert not result.exception
+    for dataset in elevation.PRODUCTS:
+        assert f"id: {dataset}\n" in result.output
+    assert "GLO-30" not in result.output
+
+
+def test_eio_dataset_one() -> None:
+    runner = typer.testing.CliRunner()
+    result = runner.invoke(__main__.app, ["dataset", "SRTM3"])
+    assert not result.exception
+    assert result.output.count("id: ") == 1
+    assert "id: SRTM3\n" in result.output
+
+
+def test_eio_dataset_invalid() -> None:
+    runner = typer.testing.CliRunner()
+    result = runner.invoke(__main__.app, ["dataset", "BOGUS"])
+    assert result.exit_code == 2
+
+
 def test_parent_params_reach_subcommand(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = typer.testing.CliRunner()

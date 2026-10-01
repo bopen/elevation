@@ -18,6 +18,7 @@ import os
 import pkgutil
 import uuid
 from collections.abc import Callable, Iterator, Sequence
+from importlib import resources
 from pathlib import Path
 from typing import Any, TypedDict
 
@@ -36,6 +37,7 @@ __all__ = [
     "ProductRetiredError",
     "clean",
     "clip",
+    "dataset",
     "distclean",
     "info",
     "resolve_cache_dir",
@@ -340,6 +342,24 @@ def clip(
         cache_dir=cache_dir, product=product, bounds=bounds, **kwargs
     )
     do_clip(datasource_root, bounds, output, product=product, **kwargs)
+
+
+def dataset(dataset: str | None = None) -> str:
+    """Show the STAC metadata of the datasets.
+
+    :param dataset: Dataset choice, all the products if not given.
+    :return: The dataset STAC files, in PRODUCTS order, as a stream of YAML documents.
+    """
+    if dataset is not None and dataset not in PRODUCTS:
+        raise KeyError(dataset)
+    names = PRODUCTS if dataset is None else [dataset]
+    folder = resources.files("elevation") / "datasets"
+    # the files are newline terminated, so the separator ends up alone on its line,
+    # preceded by a blank line, and the result is a valid stream of YAML documents
+    documents = [
+        (folder / f"{name}.yaml").read_text(encoding="utf-8") for name in names
+    ]
+    return "\n---\n".join(documents)
 
 
 def info(

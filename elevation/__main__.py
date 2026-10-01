@@ -96,6 +96,23 @@ def info(ctx: typer.Context) -> None:
     elevation.info(**ctx.obj)
 
 
+@app.command(short_help="Show the STAC metadata of the datasets.")
+def dataset(
+    dataset: str | None = typer.Argument(
+        None,
+        metavar="[" + "|".join(elevation.PRODUCTS) + "]",
+        help="Dataset choice, all of them if not given.",
+    ),
+) -> None:
+    if dataset is not None and dataset not in elevation.PRODUCTS:
+        raise typer.BadParameter(
+            f"{dataset!r} is not one of "
+            f"{', '.join(repr(item) for item in elevation.PRODUCTS)}.",
+            param_hint="dataset",
+        )
+    typer.echo(elevation.dataset(dataset))
+
+
 @app.command(short_help="Seed the DEM to given bounds.")
 def seed(
     ctx: typer.Context,

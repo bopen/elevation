@@ -1,13 +1,11 @@
-type: Collection
-stac_version: 1.1.0
-stac_extensions:
-- https://stac-extensions.github.io/projection/v2.1.0/schema.json
-- https://stac-extensions.github.io/scientific/v1.0.0/schema.json
-- https://stac-extensions.github.io/version/v1.2.0/schema.json
-id: srtm3
+id: SRTM3
 title: SRTM global 90m v4.1
-description: 'Void-filled, seamless Shuttle Radar Topography Mission (SRTM) 3 arc second (90 m) surface heights on the EGM96 geoid, over land between 60°N and 60°S, mosaicked into 5° x 5° tiles by CGIAR-CSI (CIAT and JRC) from the NASA/USGS SRTM data. The heights are a surface model: vegetation and buildings contribute to them. Redistribution and commercial resale require written permission from CIAT.'
-license: other
+version: '4.1'
+summaries:
+  gsd:
+  - 90
+  proj:code:
+  - EPSG:9707
 extent:
   spatial:
     bbox:
@@ -19,13 +17,9 @@ extent:
     interval:
     - - '2000-02-11T00:00:00Z'
       - '2000-02-22T00:00:00Z'
-version: '4.1'
+license: other
 sci:citation: Jarvis A., H.I. Reuter, A. Nelson, E. Guevara, 2008, Hole-filled seamless SRTM data V4, International Centre for Tropical Agriculture (CIAT), available from https://srtm.csi.cgiar.org
-summaries:
-  gsd:
-  - 90
-  proj:code:
-  - EPSG:9707
+description: 'Void-filled, seamless Shuttle Radar Topography Mission (SRTM) 3 arc second (90 m) surface heights on the EGM96 geoid, over land between 60°N and 60°S, mosaicked into 5° x 5° tiles by CGIAR-CSI (CIAT and JRC) from the NASA/USGS SRTM data. The heights are a surface model: vegetation and buildings contribute to them. Redistribution and commercial resale require written permission from CIAT.'
 providers:
 - name: CGIAR-CSI
   roles:
@@ -36,17 +30,23 @@ providers:
   roles:
   - producer
   url: https://www.earthdata.nasa.gov/data/instruments/srtm
+type: Collection
+stac_version: 1.1.0
+stac_extensions:
+- https://stac-extensions.github.io/projection/v2.1.0/schema.json
+- https://stac-extensions.github.io/scientific/v1.0.0/schema.json
+- https://stac-extensions.github.io/version/v1.2.0/schema.json
 links:
 - rel: self
-  href: ./srtm3.yaml
+  href: ./SRTM3.yaml
   type: application/yaml
   title: SRTM global 90m v4.1 STAC Collection
 - rel: root
-  href: ./catalog.yaml
+  href: ./elevation.yaml
   type: application/yaml
   title: elevation datasets STAC Catalog
 - rel: parent
-  href: ./catalog.yaml
+  href: ./elevation.yaml
   type: application/yaml
   title: elevation datasets STAC Catalog
 - rel: license
