@@ -1,6 +1,6 @@
 id: elevation
 title: elevation datasets
-description: 'Catalogue of the digital elevation model products distributed by elevation: Terrain Tiles, SRTM 30m, SRTM 90m, SRTM GL1 ellipsoidal and Copernicus DEM 30m and 90m.'
+description: 'Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, SRTM 30m and 90m DEMs.'
 type: Catalog
 stac_version: 1.1.0
 links:

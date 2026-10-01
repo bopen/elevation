@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 type: software
 title: elevation
-abstract: "Download, cache and clip global terrain digital elevation models: Terrain Tiles, SRTM 30m, SRTM 90m and SRTM GL1 ellipsoidal DEMs."
+abstract: "Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, SRTM 30m and 90m DEMs."
 authors:
   - family-names: Amici
     given-names: Alessandro
@@ -11,6 +11,7 @@ authors:
     website: "https://linkedin.com/in/alexamici"
   - name: "B-Open"
     website: "https://bopen.eu"
+doi: 10.5281/zenodo.23065529
 repository-code: "https://github.com/bopen/elevation"
 url: "https://elevation.bopen.eu"
 license: Apache-2.0
