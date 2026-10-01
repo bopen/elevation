@@ -13,7 +13,7 @@ links:
   type: application/yaml
   title: elevation datasets STAC Catalog
 - rel: child
-  href: ./TERRAIN_TILES.yaml
+  href: ./MAPZEN.yaml
   type: application/yaml
   title: Terrain Tiles global 30m v1
 - rel: child

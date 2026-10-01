@@ -27,12 +27,12 @@ def test_srtm1_tiles_names() -> None:
     assert list(datasource.srtm1_tiles_names(10, 44, 11, 45)) == ["N44E010.tif"]
 
 
-def test_terrain_tiles_names() -> None:
-    assert list(datasource.terrain_tiles_names(10.1, 44.9, 10.1, 44.9)) == [
+def test_mapzen_tiles_names() -> None:
+    assert list(datasource.mapzen_tiles_names(10.1, 44.9, 10.1, 44.9)) == [
         "N44/N44E010.tif"
     ]
     # NOTE this also tests int (not float) input
-    assert list(datasource.terrain_tiles_names(10, 44, 11, 45)) == ["N44/N44E010.tif"]
+    assert list(datasource.mapzen_tiles_names(10, 44, 11, 45)) == ["N44/N44E010.tif"]
 
 
 def test_srtm3_tiles_names() -> None:
@@ -157,16 +157,16 @@ def test_cache_dir(
     mock_check_call = mocker.patch("subprocess.check_call")
 
     datasource.info()
-    expected_cmd = ["make", "-C", str(default / "TERRAIN_TILES"), "info"]
+    expected_cmd = ["make", "-C", str(default / "MAPZEN"), "info"]
     assert mock_check_call.call_args[0][0] == expected_cmd
 
     monkeypatch.setenv("EIO_CACHE_DIR", str(override))
     datasource.info()
-    expected_cmd = ["make", "-C", str(override / "TERRAIN_TILES"), "info"]
+    expected_cmd = ["make", "-C", str(override / "MAPZEN"), "info"]
     assert mock_check_call.call_args[0][0] == expected_cmd
 
     datasource.info(cache_dir=argument)
-    expected_cmd = ["make", "-C", str(argument / "TERRAIN_TILES"), "info"]
+    expected_cmd = ["make", "-C", str(argument / "MAPZEN"), "info"]
     assert mock_check_call.call_args[0][0] == expected_cmd
 
 
@@ -176,12 +176,12 @@ def test_make_options(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_check_call = mocker.patch("subprocess.check_call")
 
     datasource.info(cache_dir=root, make_options="-s")
-    expected_cmd = ["make", "-C", str(root / "TERRAIN_TILES"), "-s", "info"]
+    expected_cmd = ["make", "-C", str(root / "MAPZEN"), "-s", "info"]
     assert mock_check_call.call_args[0][0] == expected_cmd
 
     mock_check_call.reset_mock()
     datasource.clip(cache_dir=root, bounds=bounds, output="out.tif", make_options="-s")
-    expected_cmd = ["make", "-C", str(root / "TERRAIN_TILES"), "-s"]
+    expected_cmd = ["make", "-C", str(root / "MAPZEN"), "-s"]
     assert mock_check_call.call_count == 4
     for call in mock_check_call.call_args_list:
         assert call[0][0][:4] == expected_cmd
