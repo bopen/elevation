@@ -94,6 +94,9 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     with pytest.raises(RuntimeError):
         datasource.seed(cache_dir=root, bounds=(-180, -90, 180, 90))
 
+    with pytest.raises(TypeError, match="bounds must be supplied"):
+        datasource.seed(cache_dir=root)
+
 
 def test_build_bounds() -> None:
     raw_bounds = (13.1, 43.1, 13.9, 43.9)

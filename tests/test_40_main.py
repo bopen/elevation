@@ -12,6 +12,13 @@ import elevation
 from elevation import __main__
 
 
+def test_eio_version() -> None:
+    runner = typer.testing.CliRunner()
+    result = runner.invoke(__main__.app, ["--version"])
+    assert not result.exception
+    assert result.output == f"eio, version {elevation.__version__}\n"
+
+
 def test_eio_selfcheck(mocker: MockerFixture) -> None:
     runner = typer.testing.CliRunner()
     mock_check_output = mocker.patch("subprocess.check_output")
