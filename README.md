@@ -100,6 +100,14 @@ subsequent accesses to the same and nearby areas are much faster.
 The `clip` sub-command doesn't allow automatic download of a large amount of DEM tiles,
 please refer to the upstream providers' websites to learn the preferred procedures for bulk download.
 
+To show the STAC metadata of the datasets use:
+
+```console
+$ eio dataset
+```
+
+The optional argument selects a single dataset by id, e.g. `eio dataset SRTM3`.
+
 To clean up stale temporary files and fix the cache in the event of a server error use:
 
 ```console
@@ -112,6 +120,7 @@ The `eio` command has the following sub-commands and options:
 
 ```text
 $ eio --help
+
 
  Usage: eio [OPTIONS] COMMAND [ARGS]...
 
@@ -133,6 +142,7 @@ $ eio --help
 ╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
 │ selfcheck  Audit the system for common issues.                                                   │
 │ info       Show info about the product cache.                                                    │
+│ dataset    Show the STAC metadata of the datasets.                                               │
 │ seed       Seed the DEM to given bounds.                                                         │
 │ clip       Clip the DEM to given bounds.                                                         │
 │ clean      Clean up the product cache from temporary files.                                      │

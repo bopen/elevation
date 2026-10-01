@@ -1,13 +1,11 @@
-type: Collection
-stac_version: 1.1.0
-stac_extensions:
-- https://stac-extensions.github.io/projection/v2.1.0/schema.json
-- https://stac-extensions.github.io/scientific/v1.0.0/schema.json
-- https://stac-extensions.github.io/version/v1.2.0/schema.json
-id: srtm1-geoid
-title: SRTM global 30m v3
-description: 'Void-filled Shuttle Radar Topography Mission (SRTM) 1 arc second (30 m) surface heights on the EGM96 geoid, over land between 60°N and 56°S. These are the NASA MEaSUREs SRTMGL1 v003 (SRTM version 3) data, distributed as 1° x 1° GeoTIFF tiles by OpenTopography. The heights are a surface model: vegetation and buildings contribute to them, and over water bodies the elevation is flattened.'
-license: other
+id: SRTM1_ELLIP
+title: SRTM global 30m v3 ellipsoidal
+version: '003'
+summaries:
+  gsd:
+  - 30
+  proj:code:
+  - EPSG:4979
 extent:
   spatial:
     bbox:
@@ -19,38 +17,37 @@ extent:
     interval:
     - - '2000-02-11T00:00:00Z'
       - '2000-02-22T00:00:00Z'
-version: '003'
+license: other
 sci:doi: 10.5069/G9445JDF
 sci:citation: NASA Shuttle Radar Topography Mission (SRTM). (2013). Shuttle Radar Topography Mission (SRTM) Global. Distributed by OpenTopography. https://doi.org/10.5069/G9445JDF
-summaries:
-  gsd:
-  - 30
-  proj:code:
-  - EPSG:9707
+description: 'Shuttle Radar Topography Mission (SRTM) 1 arc second (30 m) surface heights on the WGS84 ellipsoid, over land between 60°N and 56°S. A non-standard SRTM GL1 variant produced by OpenTopography by converting the orthometric SRTM GL1 (EGM96 geoid) to ellipsoidal heights; mostly used for InSAR analysis. The heights are a surface model: vegetation and buildings contribute to them.'
 providers:
 - name: OpenTopography
   roles:
-  - host
-  url: https://portal.opentopography.org/raster?opentopoID=OTSRTM.082015.4326.1
-- name: NASA MEaSUREs / LP DAAC
-  roles:
   - processor
-  url: https://www.earthdata.nasa.gov/data/catalog/lpcloud-srtmgl1-003
+  - host
+  url: https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1
 - name: NASA and NGA (SRTM mission STS-99, 2000)
   roles:
   - producer
   url: https://www.earthdata.nasa.gov/data/instruments/srtm
+type: Collection
+stac_version: 1.1.0
+stac_extensions:
+- https://stac-extensions.github.io/projection/v2.1.0/schema.json
+- https://stac-extensions.github.io/scientific/v1.0.0/schema.json
+- https://stac-extensions.github.io/version/v1.2.0/schema.json
 links:
 - rel: self
-  href: ./srtm1-geoid.yaml
+  href: ./SRTM1_ELLIP.yaml
   type: application/yaml
-  title: SRTM global 30m v3 STAC Collection
+  title: SRTM global 30m v3 ellipsoidal STAC Collection
 - rel: root
-  href: ./catalog.yaml
+  href: ./elevation.yaml
   type: application/yaml
   title: elevation datasets STAC Catalog
 - rel: parent
-  href: ./catalog.yaml
+  href: ./elevation.yaml
   type: application/yaml
   title: elevation datasets STAC Catalog
 - rel: license
@@ -58,7 +55,7 @@ links:
   type: text/html
   title: SRTM data distribution policy (US Government public domain)
 - rel: describedby
-  href: https://portal.opentopography.org/raster?opentopoID=OTSRTM.082015.4326.1
+  href: https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1
   type: text/html
   title: OpenTopography dataset page
 - rel: cite-as

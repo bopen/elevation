@@ -1,38 +1,38 @@
-type: Catalog
-stac_version: 1.1.0
 id: elevation
 title: elevation datasets
 description: 'Catalogue of the digital elevation model products distributed by elevation: Terrain Tiles, SRTM 30m, SRTM 90m, SRTM GL1 ellipsoidal and Copernicus DEM 30m and 90m.'
+type: Catalog
+stac_version: 1.1.0
 links:
 - rel: self
-  href: ./catalog.yaml
+  href: ./elevation.yaml
   type: application/yaml
   title: elevation datasets STAC Catalog
 - rel: root
-  href: ./catalog.yaml
+  href: ./elevation.yaml
   type: application/yaml
   title: elevation datasets STAC Catalog
 - rel: child
-  href: ./terrain-tiles.yaml
+  href: ./TERRAIN_TILES.yaml
   type: application/yaml
   title: Terrain Tiles global 30m v1
 - rel: child
-  href: ./srtm1-geoid.yaml
+  href: ./SRTM1_GEOID.yaml
   type: application/yaml
   title: SRTM global 30m v3
 - rel: child
-  href: ./srtm1-ellip.yaml
+  href: ./SRTM1_ELLIP.yaml
   type: application/yaml
   title: SRTM global 30m v3 ellipsoidal
 - rel: child
-  href: ./srtm3.yaml
+  href: ./SRTM3.yaml
   type: application/yaml
   title: SRTM global 90m v4.1
 - rel: child
-  href: ./glo-30.yaml
+  href: ./GLO-30.yaml
   type: application/yaml
   title: Copernicus DEM global 30m (2021)
 - rel: child
-  href: ./glo-90.yaml
+  href: ./GLO-90.yaml
   type: application/yaml
   title: Copernicus DEM global 90m (2021)
