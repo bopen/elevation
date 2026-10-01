@@ -171,7 +171,7 @@ def test_clip_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_check_call.assert_called_once_with(expected_cmd)
 
 
-def test_clip_remote_glo30(mocker: MockerFixture, tmp_path: Path) -> None:
+def test_clip_remote_glo_30(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 14.9, 44.9)
     mock_check_call = mocker.patch("subprocess.check_call")

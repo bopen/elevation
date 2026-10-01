@@ -203,7 +203,7 @@ SRTM3_SPEC: DatasourceSpec = {
 # stores are north-up and hold a single 'dsm' array, so the array path must be
 # part of the GDAL connection string, see
 # https://gdal.org/en/stable/drivers/raster/zarr.html
-GLO30_SPEC: DatasourceSpec = {
+GLO_30_SPEC: DatasourceSpec = {
     "folders": (),
     "file_templates": {"Makefile": DATASOURCE_REMOTE_MAKEFILE},
     "datasource_url": (
@@ -214,7 +214,7 @@ GLO30_SPEC: DatasourceSpec = {
 }
 
 # the GLO-90 store has the same layout at 3 arc seconds
-GLO90_SPEC: DatasourceSpec = {
+GLO_90_SPEC: DatasourceSpec = {
     "folders": (),
     "file_templates": {"Makefile": DATASOURCE_REMOTE_MAKEFILE},
     "datasource_url": (
@@ -226,8 +226,8 @@ GLO90_SPEC: DatasourceSpec = {
 
 PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
     "MAPZEN": MAPZEN_SPEC,
-    "GLO-30": GLO30_SPEC,
-    "GLO-90": GLO90_SPEC,
+    "GLO-30": GLO_30_SPEC,
+    "GLO-90": GLO_90_SPEC,
     "SRTM1_GEOID": SRTM1_GEOID_SPEC,
     "SRTM1_ELLIP": SRTM1_ELLIP_SPEC,
     "SRTM3": SRTM3_SPEC,
