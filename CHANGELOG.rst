@@ -7,7 +7,7 @@
 - Add the ``--make_options`` option and the ``EIO_MAKE_OPTIONS`` variable to pass options
   through to every ``make`` invocation.
 - Download the original SRTM GL1 data from OpenTopography for the ``SRTM1_GEOID`` product.
-- Add the ``TERRAIN_TILES`` product for the global Mapzen terrain tiles mosaic and make
+- Add the ``MAPZEN`` product for the global Mapzen terrain tiles mosaic and make
   it the default product.
 - Retire the ``SRTM1`` product name: requesting it raises an error pointing to the
   migration notes.

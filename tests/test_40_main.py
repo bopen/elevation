@@ -151,7 +151,7 @@ def test_eio_cache_dir_env(
     mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(__main__.app, ["info"])
     assert not result.exception
-    expected_cmd = ["make", "-C", str(root / "TERRAIN_TILES"), "info"]
+    expected_cmd = ["make", "-C", str(root / "MAPZEN"), "info"]
     assert mock_check_call.call_args[0][0] == expected_cmd
 
 
@@ -163,5 +163,5 @@ def test_eio_make_options(mocker: MockerFixture, tmp_path: Path) -> None:
         __main__.app, ["--cache_dir", str(root), "--make_options=-s", "info"]
     )
     assert not result.exception
-    expected_cmd = ["make", "-C", str(root / "TERRAIN_TILES"), "-s", "info"]
+    expected_cmd = ["make", "-C", str(root / "MAPZEN"), "-s", "info"]
     assert mock_check_call.call_args[0][0] == expected_cmd

@@ -1,4 +1,4 @@
-id: TERRAIN_TILES
+id: MAPZEN
 title: Terrain Tiles global 30m v1
 version: '1'
 summaries:
@@ -36,7 +36,7 @@ stac_extensions:
 - https://stac-extensions.github.io/version/v1.2.0/schema.json
 links:
 - rel: self
-  href: ./TERRAIN_TILES.yaml
+  href: ./MAPZEN.yaml
   type: application/yaml
   title: Terrain Tiles global 30m v1 STAC Collection
 - rel: root

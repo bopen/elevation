@@ -3,7 +3,7 @@
 Global geographic elevation data made easy.
 Elevation provides easy download, cache and access of the global datasets:
 
-- `TERRAIN_TILES`: [Terrain Tiles global 30m v1](https://registry.opendata.aws/terrain-tiles/)
+- `MAPZEN`: [Terrain Tiles global 30m v1](https://registry.opendata.aws/terrain-tiles/)
   hosted on [Amazon S3](https://aws.amazon.com/public-data-sets/terrain),
   1 arc second (30m) DEMs in the SRTM HGT format
   assembled by Mapzen from several open data providers,
@@ -54,11 +54,11 @@ Note that *elevation* v2.0 requires Python 3.11 or later.
 ## Command line usage
 
 Identify the geographic bounds of the area of interest and fetch the DEM with the `eio` command.
-For example to clip the 30m DEM of Rome, around 41.9N 12.5E, to the `Rome-TERRAIN_TILES-DEM.tif` file
-using the default `TERRAIN_TILES` product:
+For example to clip the 30m DEM of Rome, around 41.9N 12.5E, to the `Rome-MAPZEN-DEM.tif` file
+using the default `MAPZEN` product:
 
 ```console
-$ eio clip -o Rome-TERRAIN_TILES-DEM.tif --bounds 12.35 41.8 12.65 42
+$ eio clip -o Rome-MAPZEN-DEM.tif --bounds 12.35 41.8 12.65 42
 ```
 
 For the SRTM global 30m v3 DEM use:
@@ -121,23 +121,22 @@ The `eio` command has the following sub-commands and options:
 ```text
 $ eio --help
 
-
  Usage: eio [OPTIONS] COMMAND [ARGS]...
 
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --version                                                  Show the version and exit.            │
-│                                                            [env var: EIO_VERSION]                │
-│ --product             [TERRAIN_TILES|SRTM1_GEOID|SRTM1_EL  DEM product choice.                   │
-│                       LIP|SRTM3]                           [env var: EIO_PRODUCT]                │
-│                                                            [default: TERRAIN_TILES]              │
-│ --cache_dir           <directory>                          Root of the DEM cache folder.         │
-│                                                            [env var: EIO_CACHE_DIR]              │
-│                                                            [default:                             │
-│                                                            /Users/amici/Library/Caches/elevatio… │
-│ --make_options        <str>                                Options passed through to every GNU   │
-│                                                            make invocation.                      │
-│                                                            [env var: EIO_MAKE_OPTIONS]           │
-│ --help                                                     Show this message and exit.           │
+│ --version                                                   Show the version and exit.           │
+│                                                             [env var: EIO_VERSION]               │
+│ --product             [MAPZEN|SRTM1_GEOID|SRTM1_ELLIP|SRTM  DEM product choice.                  │
+│                       3]                                    [env var: EIO_PRODUCT]               │
+│                                                             [default: MAPZEN]                    │
+│ --cache_dir           <directory>                           Root of the DEM cache folder.        │
+│                                                             [env var: EIO_CACHE_DIR]             │
+│                                                             [default:                            │
+│                                                             /Users/amici/Library/Caches/elevati… │
+│ --make_options        <str>                                 Options passed through to every GNU  │
+│                                                             make invocation.                     │
+│                                                             [env var: EIO_MAKE_OPTIONS]          │
+│ --help                                                      Show this message and exit.          │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
 │ selfcheck  Audit the system for common issues.                                                   │

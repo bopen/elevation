@@ -7,8 +7,8 @@ New features and the current usage are documented in the README.
 ## Datasets
 
 The default 1.x dataset was the Terrain Tiles mosaic, erroneously called `SRTM1`: it is
-still the default dataset but is now called `TERRAIN_TILES`, a more fitting name. A plain
-`eio clip` keeps downloading the same data as in 1.x.
+still the default dataset but is now called `MAPZEN`, after the Mapzen project that
+assembled it. A plain `eio clip` keeps downloading the same data as in 1.x.
 
 The `SRTM1` name is retired: requesting it raises `elevation.ProductRetiredError`, a
 subclass of `KeyError`, from the Python API and an `Invalid value for --product` usage
@@ -18,7 +18,7 @@ Correspondence between the 1.x and 2.0 datasets:
 
 | elevation 1.x | elevation 2.0 | Data |
 | --- | --- | --- |
-| `SRTM1` | `TERRAIN_TILES` (default) | Terrain Tiles global 30m v1, the mosaic of 30m DEMs assembled by Mapzen |
+| `SRTM1` | `MAPZEN` (default) | Terrain Tiles global 30m v1, the mosaic of 30m DEMs assembled by Mapzen |
 | — | `SRTM1_GEOID` | SRTM global 30m v3 hosted on OpenTopography, 30m heights on the EGM96 geoid |
 | `SRTM1_ELLIP` | `SRTM1_ELLIP` | SRTM global 30m v3 ellipsoidal, 30m heights on the WGS84 ellipsoid |
 | `SRTM3` | `SRTM3` | SRTM global 90m v4.1, CGIAR-CSI |
@@ -33,7 +33,7 @@ A 1.x installation keeps the Terrain Tiles data in the old `SRTM1` sub-folder, s
 downloading it again move the tiles into the new folder:
 
 ```text
-mv <cache_folder>/SRTM1/cache/* <cache_folder>/TERRAIN_TILES/cache/
+mv <cache_folder>/SRTM1/cache/* <cache_folder>/MAPZEN/cache/
 ```
 
 The `SRTM3` and `SRTM1_ELLIP` datasets are reused as they are.

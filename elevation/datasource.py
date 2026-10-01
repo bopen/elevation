@@ -129,7 +129,7 @@ def srtm_ellip_tiles_names(
                 yield f"{subdir}/{fname}"
 
 
-def terrain_tiles_names(
+def mapzen_tiles_names(
     left: float, bottom: float, right: float, top: float
 ) -> Iterator[str]:
     yield from srtm1_tiles_names(left, bottom, right, top, "{slat}/{slat}{slon}.tif")
@@ -149,14 +149,14 @@ _datasource_makefile = pkgutil.get_data("elevation", "datasource.mk")
 assert _datasource_makefile is not None
 DATASOURCE_MAKEFILE = _datasource_makefile.decode("utf-8")
 
-TERRAIN_TILES_SPEC: DatasourceSpec = {
+MAPZEN_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
     "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
     "tile_ext": ".hgt",
     "compressed_pre_ext": ".hgt",
     "compressed_ext": ".hgt.gz",
-    "tile_names": terrain_tiles_names,
+    "tile_names": mapzen_tiles_names,
 }
 
 SRTM1_GEOID_SPEC: DatasourceSpec = {
@@ -190,7 +190,7 @@ SRTM3_SPEC: DatasourceSpec = {
 }
 
 PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
-    "TERRAIN_TILES": TERRAIN_TILES_SPEC,
+    "MAPZEN": MAPZEN_SPEC,
     "SRTM1_GEOID": SRTM1_GEOID_SPEC,
     "SRTM1_ELLIP": SRTM1_ELLIP_SPEC,
     "SRTM3": SRTM3_SPEC,
@@ -214,7 +214,7 @@ class ProductRetiredError(KeyError):
 RETIRED_PRODUCTS: dict[str, str] = {
     "SRTM1": (
         "The 'SRTM1' product was renamed in elevation 2.0: the global terrain tiles "
-        "mosaic it used to download is now the 'TERRAIN_TILES' product (the default) and "
+        "mosaic it used to download is now the 'MAPZEN' product (the default) and "
         "the OpenTopography SRTM GL1 product is now 'SRTM1_GEOID'. See "
         "https://elevation.bopen.eu/migration.html"
     ),
