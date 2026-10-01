@@ -5,7 +5,7 @@
 """Integration tests for the ``SRTM3`` product, i.e. CGIAR-CSI SRTM 90m.
 
 Each test clips a ~100x100 pixel DEM and compares it with the reference GeoTIFF
-committed in ``tests/data/srtm3``, see ``CONTRIBUTING.rst`` to regenerate them.
+committed in ``tests/data/SRTM3``, see ``CONTRIBUTING.rst`` to regenerate them.
 """
 
 from collections.abc import Callable

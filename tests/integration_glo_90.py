@@ -11,7 +11,7 @@ The regions are the same as the ones of ``SRTM3``, so the two reference datasets
 cover the same areas and can be cross-checked, even though the two grids are half
 a pixel apart.
 Each test clips a ~100x100 pixel DEM and compares it with the reference GeoTIFF
-committed in ``tests/data/glo_90``, see ``CONTRIBUTING.rst`` to regenerate them.
+committed in ``tests/data/GLO-90``, see ``CONTRIBUTING.rst`` to regenerate them.
 """
 
 from collections.abc import Callable

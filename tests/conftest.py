@@ -107,8 +107,7 @@ def integration_data(
     def integrate(
         product: str, name: str, bounds: tuple[float, float, float, float]
     ) -> None:
-        product_dir = product.lower().replace("-", "_")
-        reference = REFERENCE_DATA_DIR / product_dir / f"{name}.tif"
+        reference = REFERENCE_DATA_DIR / product / f"{name}.tif"
         if not update and not reference.exists():
             pytest.skip(f"missing {reference}: run --update-integration-data")
         output = tmp_path / f"{name}.tif"
