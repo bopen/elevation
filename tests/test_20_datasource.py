@@ -158,35 +158,34 @@ def test_clip_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     datasource.clip(cache_dir=root, bounds=bounds, output="out.tif", product="GLO-90")
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
-    # a remote clip is a single gdalwarp: no VRT to copy, and the bounds are
-    # passed as 'left bottom right top', not in the projwin order
+    # a remote clip is a single gdal_translate: no VRT to copy, and the bounds are
+    # passed in the 'left top right bottom' projwin order as for local products
     expected_cmd = [
         "make",
         "-C",
         str(datasource_root),
         "clip",
         f"OUTPUT={Path('out.tif').resolve()}",
-        "TE=13.1 43.1 14.9 44.9",
-        "SRS=EPSG:9518",
+        "PROJWIN=13.1 44.9 14.9 43.1",
     ]
     mock_check_call.assert_called_once_with(expected_cmd)
 
 
-def test_clip_remote_declared_srs(mocker: MockerFixture, tmp_path: Path) -> None:
+def test_clip_remote_glo30(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 14.9, 44.9)
     mock_check_call = mocker.patch("subprocess.check_call")
     datasource.clip(cache_dir=root, bounds=bounds, output="out.tif", product="GLO-30")
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
-    # the GLO-30 store declares its own CRS, so no -s_srs is passed
+    # both remote products are clipped the same way
     expected_cmd = [
         "make",
         "-C",
         str(datasource_root),
         "clip",
         f"OUTPUT={Path('out.tif').resolve()}",
-        "TE=13.1 43.1 14.9 44.9",
+        "PROJWIN=13.1 44.9 14.9 43.1",
     ]
     mock_check_call.assert_called_once_with(expected_cmd)
 

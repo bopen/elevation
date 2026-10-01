@@ -13,26 +13,17 @@ PRODUCT := {product}
 # quote itself.
 SOURCE := '$(DATASOURCE_URL)'
 
-# GDAL configuration options, as a space separated list of KEY=VALUE
-# assignments, prefixed to every GDAL command, e.g.
-# GDAL_DISABLE_READDIR_ON_OPEN=EMPTY_DIR or GDAL_HTTP_BEARER=a-token. The
-# Python API and the eio command line set it from EIO_GDAL_CONFIG.
-GDAL_CONFIG ?=
-
 # nothing to prepare: the dataset is read in place by clip
 all:
 	@echo '$(PRODUCT) is a remote dataset, nothing to prepare'
 
-# The crop is done with gdalwarp rather than gdal_translate -projwin: these stores
-# are bottom-up (their Y coordinate increases with the row) and both gdalbuildvrt
-# and gdal_translate -projwin refuse such a raster. TE is the
-# 'left bottom right top' bounds in the CRS of the dataset (build_bounds works in
-# WGS84 degrees), -r near keeps the native resolution without resampling, and
-# PREDICTOR=3 suits the Float32 store data. SRS is only passed for the stores that
-# do not declare their own CRS: it is WGS 84 lat/lon with EGM2008 geoid heights.
-SRS_FLAG := $(if $(SRS),-s_srs $(SRS))
+# The crop is done with gdal_translate -projwin, as for the local products: it
+# reads the remote dataset in place and returns the exact pixels of the store
+# grid, without resampling and without shifting the output grid. PROJWIN is the
+# 'left top right bottom' bounds in the CRS of the dataset (build_bounds works
+# in WGS84 degrees) and PREDICTOR=3 suits the Float32 store data.
 clip:
-	$(GDAL_CONFIG) gdalwarp -q -overwrite $(SRS_FLAG) -te $(TE) -r near -co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=3 $(SOURCE) $(OUTPUT)
+	gdal_translate -q -projwin $(PROJWIN) -co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=3 $(SOURCE) $(OUTPUT)
 
 info:
 	@echo 'Product folder: $(shell pwd)'

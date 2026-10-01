@@ -141,8 +141,6 @@ class DatasourceSpec(TypedDict):
     datasource_url: str
     # a remote product is read in place from datasource_url and is not downloaded
     remote: bool
-    # the CRS to assign to a remote product that does not declare one itself
-    datasource_srs: NotRequired[str]
     tile_ext: NotRequired[str]
     compressed_pre_ext: NotRequired[str]
     compressed_ext: NotRequired[str]
@@ -201,30 +199,29 @@ SRTM3_SPEC: DatasourceSpec = {
     "tile_names": srtm3_tiles_names,
 }
 
-# read in place from the Earth Data Hub Zarr store: nothing is downloaded; both
-# stores hold a single 'dsm' array, so the array path must be part of the GDAL
-# connection string, see https://gdal.org/en/stable/drivers/raster/zarr.html
+# read in place from the Earth Data Hub Zarr store: nothing is downloaded; the v1
+# stores are north-up and hold a single 'dsm' array, so the array path must be
+# part of the GDAL connection string, see
+# https://gdal.org/en/stable/drivers/raster/zarr.html
 GLO30_SPEC: DatasourceSpec = {
     "folders": (),
     "file_templates": {"Makefile": DATASOURCE_REMOTE_MAKEFILE},
     "datasource_url": (
         'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu/copernicus-dem'
-        '/GLO-30-v0.zarr":/dsm'
+        '/GLO-30-v1.zarr":/dsm'
     ),
     "remote": True,
 }
 
-# the GLO-90 store has the same layout at 3 arc seconds, but unlike GLO-30 it does
-# not declare its CRS
+# the GLO-90 store has the same layout at 3 arc seconds
 GLO90_SPEC: DatasourceSpec = {
     "folders": (),
     "file_templates": {"Makefile": DATASOURCE_REMOTE_MAKEFILE},
     "datasource_url": (
         'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu/copernicus-dem'
-        '/GLO-90-v0.zarr":/dsm'
+        '/GLO-90-v1.zarr":/dsm'
     ),
     "remote": True,
-    "datasource_srs": "EPSG:9518",
 }
 
 PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
@@ -292,15 +289,12 @@ def do_clip(
 ) -> list[str]:
     left, bottom, right, top = bounds
     spec = PRODUCTS_SPECS[product]
+    projwin = f"{left} {top} {right} {bottom}"
     if spec["remote"]:
-        # a remote product is read in place: there is no VRT to copy and no shared
-        # local state to lock, and gdalwarp takes the bounds as 'left bottom right
-        # top', not in the 'left top right bottom' projwin order
-        te = f"{left} {bottom} {right} {top}"
-        variables_items = [("output", str(output)), ("te", te)]
-        datasource_srs = spec.get("datasource_srs")
-        if datasource_srs is not None:
-            variables_items.append(("srs", datasource_srs))
+        # a remote product is read in place: there is no VRT to copy and no
+        # shared local state to lock, so the dataset itself is cropped with the
+        # same 'left top right bottom' projwin bounds used for local products
+        variables_items = [("output", str(output)), ("projwin", projwin)]
         return util.check_call_make(
             path, targets=["clip"], variables=variables_items, **kwargs
         )
@@ -309,7 +303,6 @@ def do_clip(
         util.check_call_make(
             path, targets=["copy_vrt"], variables=[("run_id", run_id)], **kwargs
         )
-    projwin = f"{left} {top} {right} {bottom}"
     variables_items = [
         ("output", str(output)),
         ("projwin", projwin),
