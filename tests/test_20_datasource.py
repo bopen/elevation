@@ -98,6 +98,23 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
         datasource.seed(cache_dir=root)
 
 
+def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    bounds = (13.1, 43.1, 13.9, 43.9)
+    mock_check_call = mocker.patch("subprocess.check_call")
+    datasource_root = datasource.seed(cache_dir=root, product="GLO-90", bounds=bounds)
+    assert datasource_root == datasource.resolve_cache_dir(root) / "GLO-90"
+    assert (datasource_root / "Makefile").exists()
+    # remote products are not downloaded, so they have no cache folder
+    assert not (datasource_root / "cache").exists()
+    # there is nothing to seed: the dataset is read in place by clip
+    mock_check_call.assert_not_called()
+
+    # the no-bulk-download guard does not apply to remote products
+    datasource.seed(cache_dir=root, product="GLO-90", bounds=(-180, -90, 180, 90))
+    mock_check_call.assert_not_called()
+
+
 def test_build_bounds() -> None:
     raw_bounds = (13.1, 43.1, 13.9, 43.9)
     assert datasource.build_bounds(raw_bounds, margin="0") == raw_bounds
@@ -132,6 +149,46 @@ def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
         "PROJWIN=13.1 44.9 14.9 43.1",
     ]
     assert mock_check_call.call_args[0][0][:-1] == expected_cmd
+
+
+def test_clip_remote(mocker: MockerFixture, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    bounds = (13.1, 43.1, 14.9, 44.9)
+    mock_check_call = mocker.patch("subprocess.check_call")
+    datasource.clip(cache_dir=root, bounds=bounds, output="out.tif", product="GLO-90")
+    assert len(list(root.iterdir())) == 1
+    datasource_root = next(iter(root.iterdir()))
+    # a remote clip is a single gdalwarp: no VRT to copy, and the bounds are
+    # passed as 'left bottom right top', not in the projwin order
+    expected_cmd = [
+        "make",
+        "-C",
+        str(datasource_root),
+        "clip",
+        f"OUTPUT={Path('out.tif').resolve()}",
+        "TE=13.1 43.1 14.9 44.9",
+        "SRS=EPSG:9518",
+    ]
+    mock_check_call.assert_called_once_with(expected_cmd)
+
+
+def test_clip_remote_declared_srs(mocker: MockerFixture, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    bounds = (13.1, 43.1, 14.9, 44.9)
+    mock_check_call = mocker.patch("subprocess.check_call")
+    datasource.clip(cache_dir=root, bounds=bounds, output="out.tif", product="GLO-30")
+    assert len(list(root.iterdir())) == 1
+    datasource_root = next(iter(root.iterdir()))
+    # the GLO-30 store declares its own CRS, so no -s_srs is passed
+    expected_cmd = [
+        "make",
+        "-C",
+        str(datasource_root),
+        "clip",
+        f"OUTPUT={Path('out.tif').resolve()}",
+        "TE=13.1 43.1 14.9 44.9",
+    ]
+    mock_check_call.assert_called_once_with(expected_cmd)
 
 
 def test_clean(mocker: MockerFixture, tmp_path: Path) -> None:
@@ -194,10 +251,9 @@ def test_dataset() -> None:
     assert "id: SRTM3\n" in elevation.dataset("SRTM3")
     text = elevation.dataset()
     assert text.count("id: ") == len(elevation.PRODUCTS)
-    assert "GLO-30" not in text
     assert text.endswith("\n")
     # the documents are separated by a blank line and a YAML document separator
     assert text.count("\n---\n") == len(elevation.PRODUCTS) - 1
-    assert "\n\n---\nid: SRTM1_GEOID\n" in text
+    assert "\n\n---\nid: GLO-30\n" in text
     with pytest.raises(KeyError):
         elevation.dataset("BOGUS")

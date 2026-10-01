@@ -30,6 +30,7 @@ TOOLS: list[tuple[str, str]] = [
     ("gunzip", "gunzip --version"),
     ("gdal_translate", "gdal_translate --version"),
     ("gdalbuildvrt", "gdalbuildvrt --version"),
+    ("gdalwarp", "gdalwarp --version"),
 ]
 
 

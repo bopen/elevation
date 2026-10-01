@@ -20,7 +20,7 @@ import uuid
 from collections.abc import Callable, Iterator, Sequence
 from importlib import resources
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 import appdirs
 
@@ -139,20 +139,29 @@ class DatasourceSpec(TypedDict):
     folders: tuple[str, ...]
     file_templates: dict[str, str]
     datasource_url: str
-    tile_ext: str
-    compressed_pre_ext: str
-    compressed_ext: str
-    tile_names: Callable[..., Iterator[str]]
+    # a remote product is read in place from datasource_url and is not downloaded
+    remote: bool
+    # the CRS to assign to a remote product that does not declare one itself
+    datasource_srs: NotRequired[str]
+    tile_ext: NotRequired[str]
+    compressed_pre_ext: NotRequired[str]
+    compressed_ext: NotRequired[str]
+    tile_names: NotRequired[Callable[..., Iterator[str]]]
 
 
 _datasource_makefile = pkgutil.get_data("elevation", "datasource.mk")
 assert _datasource_makefile is not None
 DATASOURCE_MAKEFILE = _datasource_makefile.decode("utf-8")
 
+_datasource_remote_makefile = pkgutil.get_data("elevation", "datasource_remote.mk")
+assert _datasource_remote_makefile is not None
+DATASOURCE_REMOTE_MAKEFILE = _datasource_remote_makefile.decode("utf-8")
+
 MAPZEN_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
     "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
+    "remote": False,
     "tile_ext": ".hgt",
     "compressed_pre_ext": ".hgt",
     "compressed_ext": ".hgt.gz",
@@ -163,6 +172,7 @@ SRTM1_GEOID_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
     "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
+    "remote": False,
     "tile_ext": ".tif",
     "compressed_pre_ext": "",
     "compressed_ext": "",
@@ -173,6 +183,7 @@ SRTM1_ELLIP_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
     "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
+    "remote": False,
     "tile_ext": ".tif",
     "compressed_pre_ext": "",
     "compressed_ext": "",
@@ -183,14 +194,43 @@ SRTM3_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
     "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
+    "remote": False,
     "tile_ext": ".tif",
     "compressed_pre_ext": "",
     "compressed_ext": ".zip",
     "tile_names": srtm3_tiles_names,
 }
 
+# read in place from the Earth Data Hub Zarr store: nothing is downloaded; both
+# stores hold a single 'dsm' array, so the array path must be part of the GDAL
+# connection string, see https://gdal.org/en/stable/drivers/raster/zarr.html
+GLO30_SPEC: DatasourceSpec = {
+    "folders": (),
+    "file_templates": {"Makefile": DATASOURCE_REMOTE_MAKEFILE},
+    "datasource_url": (
+        'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu/copernicus-dem'
+        '/GLO-30-v0.zarr":/dsm'
+    ),
+    "remote": True,
+}
+
+# the GLO-90 store has the same layout at 3 arc seconds, but unlike GLO-30 it does
+# not declare its CRS
+GLO90_SPEC: DatasourceSpec = {
+    "folders": (),
+    "file_templates": {"Makefile": DATASOURCE_REMOTE_MAKEFILE},
+    "datasource_url": (
+        'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu/copernicus-dem'
+        '/GLO-90-v0.zarr":/dsm'
+    ),
+    "remote": True,
+    "datasource_srs": "EPSG:9518",
+}
+
 PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
     "MAPZEN": MAPZEN_SPEC,
+    "GLO-30": GLO30_SPEC,
+    "GLO-90": GLO90_SPEC,
     "SRTM1_GEOID": SRTM1_GEOID_SPEC,
     "SRTM1_ELLIP": SRTM1_ELLIP_SPEC,
     "SRTM3": SRTM3_SPEC,
@@ -250,12 +290,25 @@ def do_clip(
     product: str,
     **kwargs: Any,
 ) -> list[str]:
+    left, bottom, right, top = bounds
+    spec = PRODUCTS_SPECS[product]
+    if spec["remote"]:
+        # a remote product is read in place: there is no VRT to copy and no shared
+        # local state to lock, and gdalwarp takes the bounds as 'left bottom right
+        # top', not in the 'left top right bottom' projwin order
+        te = f"{left} {bottom} {right} {top}"
+        variables_items = [("output", str(output)), ("te", te)]
+        datasource_srs = spec.get("datasource_srs")
+        if datasource_srs is not None:
+            variables_items.append(("srs", datasource_srs))
+        return util.check_call_make(
+            path, targets=["clip"], variables=variables_items, **kwargs
+        )
     run_id = uuid.uuid4().hex
     with util.lock_vrt(path, product):
         util.check_call_make(
             path, targets=["copy_vrt"], variables=[("run_id", run_id)], **kwargs
         )
-    left, bottom, right, top = bounds
     projwin = f"{left} {top} {right} {bottom}"
     variables_items = [
         ("output", str(output)),
@@ -276,6 +329,9 @@ def seed(
 ) -> Path:
     """Seed the DEM to given bounds.
 
+    A remote product is not downloaded: ``bounds`` is only used by ``clip`` to crop
+    the remote dataset and nothing is prepared locally.
+
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
     :param bounds: Output bounds in 'left bottom right top' order.
@@ -285,6 +341,12 @@ def seed(
     if bounds is None:
         raise TypeError("bounds must be supplied")
     datasource_root, spec = ensure_setup(cache_dir, product)
+
+    if spec["remote"]:
+        # a remote product is read in place from the datasource URL: there is nothing
+        # to download and nothing to prepare locally
+        return datasource_root
+
     ensure_tiles_names = list(spec["tile_names"](*bounds))
     # FIXME: emergency hack to enforce the no-bulk-download policy
     if len(ensure_tiles_names) > max_download_tiles:
