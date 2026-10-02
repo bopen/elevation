@@ -651,10 +651,6 @@ dependencies = [
   {name = "appdirs"},
   {name = "fasteners"},
   {name = "fsspec", extra = ["http"]},
-  {name = "numpy", version = "2.4.6", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version < '3.12'"},
-  {name = "numpy", version = "2.5.3", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version >= '3.12'"},
-  {name = "rasterio", version = "1.4.4", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version < '3.12'"},
-  {name = "rasterio", version = "1.5.2", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version >= '3.12'"},
   {name = "typer"}
 ]
 name = "elevation"
@@ -682,8 +678,7 @@ requires-dist = [
   {name = "fasteners", specifier = ">=0.18"},
   {name = "fiona", marker = "extra == 'reference'", specifier = ">=1.8.22"},
   {name = "fsspec", extras = ["http"], specifier = ">=2022.11.0"},
-  {name = "numpy", specifier = ">=1.24"},
-  {name = "rasterio", specifier = ">=1.3.4"},
+  {name = "rasterio", marker = "extra == 'reference'", specifier = ">=1.3.4"},
   {name = "typer", specifier = ">=0.26.7"}
 ]
 
@@ -703,7 +698,9 @@ dev = [
 
 [package.optional-dependencies]
 reference = [
-  {name = "fiona"}
+  {name = "fiona"},
+  {name = "rasterio", version = "1.4.4", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version < '3.12'"},
+  {name = "rasterio", version = "1.5.2", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version >= '3.12'"}
 ]
 
 [[package]]
