@@ -4,8 +4,6 @@
 
 from pathlib import Path
 
-from pytest_mock import MockerFixture
-
 from elevation import util
 
 
@@ -29,37 +27,17 @@ def test_lock_vrt(tmp_path: Path) -> None:
 
 def test_ensure_setup(tmp_path: Path) -> None:
     root = tmp_path / "root"
-    created_folders, _ = util.ensure_setup(root)
+    created_folders = util.ensure_setup(root)
     assert len(created_folders) == 0
     assert len(list(tmp_path.iterdir())) == 1
 
     folders = ["etc", "lib"]
-    created_folders, _ = util.ensure_setup(root, folders=folders)
+    created_folders = util.ensure_setup(root, folders=folders)
     assert len(created_folders) == 2
     assert created_folders[0].name == "etc"
     assert created_folders[1].name == "lib"
     assert len(list(root.iterdir())) == 3
 
-    file_templates = {"Makefile": "all: {target}"}
-    created_folders, created_files = util.ensure_setup(
-        root, folders=folders, file_templates=file_templates, target="file.txt"
-    )
+    created_folders = util.ensure_setup(root, folders=folders)
     assert len(created_folders) == 0
-    assert len(created_files) == 1
-    assert len(list(root.iterdir())) == 4
-    assert (root / "Makefile").read_text() == "all: file.txt"
-
-    created_folders, created_files = util.ensure_setup(
-        root, folders=folders, file_templates=file_templates, target="wrong"
-    )
-    assert len(created_folders) == 0
-    assert len(created_files) == 0
-    assert len(list(root.iterdir())) == 4
-    assert (root / "Makefile").read_text() == "all: file.txt"
-
-
-def test_check_call_make(mocker: MockerFixture) -> None:
-    mock_check_call = mocker.patch("subprocess.check_call")
-    cmd = util.check_call_make(Path("/tmp"))
-    assert cmd == ["make", "-C", "/tmp"]
-    mock_check_call.assert_called_once_with(cmd)
+    assert len(list(root.iterdir())) == 3

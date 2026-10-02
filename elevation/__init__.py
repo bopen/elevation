@@ -21,9 +21,9 @@ except ImportError:
     # Local copy or not installed with setuptools
     __version__ = "999"
 
-# import all API functions and constants
 from .datasource import (
     CACHE_DIR,
+    DEFAULT_GDAL_OPTIONS,
     DEFAULT_OUTPUT,
     DEFAULT_PRODUCT,
     MARGIN,
@@ -38,10 +38,11 @@ from .datasource import (
     resolve_cache_dir,
     seed,
 )
-from .util import TOOLS, check_call_make, selfcheck
+from .util import TOOLS, selfcheck
 
 __all__ = [
     "CACHE_DIR",
+    "DEFAULT_GDAL_OPTIONS",
     "DEFAULT_OUTPUT",
     "DEFAULT_PRODUCT",
     "MARGIN",
@@ -50,7 +51,6 @@ __all__ = [
     "TOOLS",
     "ProductRetiredError",
     "__version__",
-    "check_call_make",
     "clean",
     "clip",
     "dataset",

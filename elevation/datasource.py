@@ -15,20 +15,20 @@
 
 import math
 import os
-import pkgutil
-import uuid
+import shutil
+import subprocess
 from collections.abc import Callable, Iterator, Sequence
 from importlib import resources
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import TypedDict
 
 import appdirs
 
 from . import util
 
-# declare public all API functions and constants
 __all__ = [
     "CACHE_DIR",
+    "DEFAULT_GDAL_OPTIONS",
     "DEFAULT_OUTPUT",
     "DEFAULT_PRODUCT",
     "MARGIN",
@@ -46,6 +46,9 @@ __all__ = [
 
 CACHE_DIR: str = appdirs.user_cache_dir("elevation", "bopen")
 DEFAULT_OUTPUT = "out.tif"
+DEFAULT_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
+# the VRT mosaic reads the cache tiles whole, the options only trade size for speed
+TILE_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
 MARGIN = "0"
 
 
@@ -137,54 +140,40 @@ def mapzen_tiles_names(
 
 class DatasourceSpec(TypedDict):
     folders: tuple[str, ...]
-    file_templates: dict[str, str]
     datasource_url: str
     tile_ext: str
-    compressed_pre_ext: str
     compressed_ext: str
     tile_names: Callable[..., Iterator[str]]
 
 
-_datasource_makefile = pkgutil.get_data("elevation", "datasource.mk")
-assert _datasource_makefile is not None
-DATASOURCE_MAKEFILE = _datasource_makefile.decode("utf-8")
-
 MAPZEN_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
-    "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
     "tile_ext": ".hgt",
-    "compressed_pre_ext": ".hgt",
     "compressed_ext": ".hgt.gz",
     "tile_names": mapzen_tiles_names,
 }
 
 SRTM1_GEOID_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
-    "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
     "tile_ext": ".tif",
-    "compressed_pre_ext": "",
     "compressed_ext": "",
     "tile_names": srtm1_tiles_names,
 }
 
 SRTM1_ELLIP_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
-    "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
     "tile_ext": ".tif",
-    "compressed_pre_ext": "",
     "compressed_ext": "",
     "tile_names": srtm_ellip_tiles_names,
 }
 
 SRTM3_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
-    "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
     "tile_ext": ".tif",
-    "compressed_pre_ext": "",
     "compressed_ext": ".zip",
     "tile_names": srtm3_tiles_names,
 }
@@ -221,25 +210,124 @@ RETIRED_PRODUCTS: dict[str, str] = {
 }
 
 
-def ensure_tiles(
-    path: Path, ensure_tiles_names: Sequence[str] = (), **kwargs: Any
+CACHE_EXT = ".tif"
+
+
+def tile_source(spec: DatasourceSpec, tile_name: str) -> tuple[str, str, str | None]:
+    """Return the ``(url, spool_name, member)`` of the tile for *tile_name*.
+
+    *tile_name* is the cache tile name, always a ``.tif``; the spool name is the
+    same tile with the source extension (``tile_ext``) and the remote name adds
+    the ``compressed_ext`` when the source is compressed. The member is the file
+    to read inside a ``.zip`` archive and ``None`` otherwise.
+    """
+    stem = tile_name.removesuffix(CACHE_EXT)
+    spool_name = f"{stem}{spec['tile_ext']}"
+    compressed_ext = spec["compressed_ext"]
+    remote = spool_name if not compressed_ext else f"{stem}{compressed_ext}"
+    member = Path(spool_name).name if compressed_ext == ".zip" else None
+    return f"{spec['datasource_url']}/{remote}", spool_name, member
+
+
+def fetch_tile(source: str, destination: Path, *, member: str | None = None) -> None:
+    """Fetch *source* and write it uncompressed to *destination*.
+
+    A ``.gz`` source is gunzipped, a ``.zip`` source is read at *member*, any
+    other source is copied as it is. The tile is written through a ``.temp``
+    sibling and moved in place, so a failed download never leaves a half written
+    tile behind.
+
+    :param source: Any fsspec URL, e.g. ``https://...`` or ``s3://...``.
+    :param destination: Path of the uncompressed tile, parent folders are created.
+    :param member: Name of the file to extract from a ``.zip`` source.
+    """
+    # imported here to keep ``import elevation`` and ``eio`` free of the fsspec cost
+    import fsspec
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if member is None:
+        stream = fsspec.open(source, "rb", compression="infer")
+    else:
+        stream = fsspec.open(f"zip://{member}::{source}", "rb")
+    temporary = destination.with_name(f"{destination.name}.temp")
+    try:
+        with stream as remote, temporary.open("wb") as local:
+            shutil.copyfileobj(remote, local)
+        temporary.replace(destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def write_cache_tile(
+    source: str | Path,
+    destination: Path,
+    *,
+    srcwin: Sequence[int] | None = None,
+    gdal_options: str = TILE_GDAL_OPTIONS,
 ) -> list[str]:
-    ensure_tiles = " ".join(ensure_tiles_names)
-    variables_items = [("ensure_tiles", ensure_tiles)]
-    return util.check_call_make(
-        path, targets=["download"], variables=variables_items, **kwargs
+    """Write *source* to *destination* as the internal compressed GeoTIFF tile.
+
+    The data, its dtype, its nodata value, its georeferencing and its metadata are
+    preserved unchanged, only compression is added. ``PREDICTOR=2`` in the default
+    options suits the integer products, pass ``PREDICTOR=3`` for float ones.
+
+    :param source: Any GDAL readable raster, local or remote.
+    :param destination: Path of the cache GeoTIFF, parent folders are created.
+    :param srcwin: Window of *source* to write, e.g. a single ``Zarr`` chunk.
+    :param gdal_options: GDAL creation options of the cache tile.
+    :return: The command arguments.
+    """
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    window = [] if srcwin is None else ["-srcwin", *map(str, srcwin)]
+    cmd = [
+        "gdal_translate",
+        "-q",
+        *gdal_options.split(),
+        *window,
+        str(source),
+        str(destination),
+    ]
+    subprocess.check_call(cmd)
+    return cmd
+
+
+def ensure_tiles(root: Path, spec: DatasourceSpec, tile_names: Sequence[str]) -> None:
+    """Fetch and cache *tile_names*, skipping the tiles already in the cache."""
+    for tile_name in tile_names:
+        cached = root / "cache" / tile_name
+        if cached.exists() and cached.stat().st_size > 0:
+            continue
+        source, spool_name, member = tile_source(spec, tile_name)
+        spooled = root / "spool" / spool_name
+        fetch_tile(source, spooled, member=member)
+        write_cache_tile(spooled, cached)
+        spooled.unlink(missing_ok=True)
+
+
+def build_vrt(root: Path, product: str) -> list[str]:
+    """Build the ``<product>.vrt`` mosaic over the non empty cache tiles."""
+    tiles = sorted(
+        tile for tile in (root / "cache").rglob("*.tif") if tile.stat().st_size > 0
     )
+    cmd = [
+        "gdalbuildvrt",
+        "-q",
+        "-overwrite",
+        str(root / f"{product}.vrt"),
+        *map(str, tiles),
+    ]
+    subprocess.check_call(cmd)
+    return cmd
 
 
-# FIXME: force=True is an emergency hack to ensure that the file always contains the intended body
 def ensure_setup(
-    cache_dir: str | Path | None, product: str, force: bool = True
+    cache_dir: str | Path | None, product: str
 ) -> tuple[Path, DatasourceSpec]:
     if product in RETIRED_PRODUCTS:
         raise ProductRetiredError(RETIRED_PRODUCTS[product])
     datasource_root = resolve_cache_dir(cache_dir) / product
     spec = PRODUCTS_SPECS[product]
-    util.ensure_setup(datasource_root, product=product, force=force, **spec)
+    util.ensure_setup(datasource_root, folders=spec["folders"])
     return datasource_root, spec
 
 
@@ -248,23 +336,14 @@ def do_clip(
     bounds: tuple[float, float, float, float],
     output: Path,
     product: str,
-    **kwargs: Any,
+    gdal_options: str = DEFAULT_GDAL_OPTIONS,
 ) -> list[str]:
-    run_id = uuid.uuid4().hex
-    with util.lock_vrt(path, product):
-        util.check_call_make(
-            path, targets=["copy_vrt"], variables=[("run_id", run_id)], **kwargs
-        )
     left, bottom, right, top = bounds
-    projwin = f"{left} {top} {right} {bottom}"
-    variables_items = [
-        ("output", str(output)),
-        ("projwin", projwin),
-        ("run_id", run_id),
-    ]
-    return util.check_call_make(
-        path, targets=["clip"], variables=variables_items, **kwargs
-    )
+    options = f"gdal_translate -q {gdal_options} -projwin {left} {top} {right} {bottom}"
+    cmd = [*options.split(), str(path / f"{product}.vrt"), str(output)]
+    with util.lock_vrt(path, product):
+        subprocess.check_call(cmd)
+    return cmd
 
 
 def seed(
@@ -272,7 +351,6 @@ def seed(
     product: str = DEFAULT_PRODUCT,
     bounds: tuple[float, float, float, float] | None = None,
     max_download_tiles: int = 9,
-    **kwargs: Any,
 ) -> Path:
     """Seed the DEM to given bounds.
 
@@ -280,7 +358,6 @@ def seed(
     :param product: DEM product choice.
     :param bounds: Output bounds in 'left bottom right top' order.
     :param max_download_tiles: Maximum number of tiles to process.
-    :param kwargs: Pass additional kwargs to check_call_make.
     """
     if bounds is None:
         raise TypeError("bounds must be supplied")
@@ -294,10 +371,10 @@ def seed(
         )
 
     with util.lock_tiles(datasource_root, ensure_tiles_names):
-        ensure_tiles(datasource_root, ensure_tiles_names, **kwargs)
+        ensure_tiles(datasource_root, spec, ensure_tiles_names)
 
     with util.lock_vrt(datasource_root, product):
-        util.check_call_make(datasource_root, targets=["all"], **kwargs)
+        build_vrt(datasource_root, product)
     return datasource_root
 
 
@@ -325,7 +402,7 @@ def clip(
     margin: str = MARGIN,
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
-    **kwargs: Any,
+    gdal_options: str = DEFAULT_GDAL_OPTIONS,
 ) -> None:
     """Clip the DEM to given bounds.
 
@@ -334,14 +411,12 @@ def clip(
     :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
-    :param kwargs: Pass additional kwargs to check_call_make.
+    :param gdal_options: GDAL creation options of the output file.
     """
     output = Path(output).resolve()
     bounds = build_bounds(bounds, margin=margin)
-    datasource_root = seed(
-        cache_dir=cache_dir, product=product, bounds=bounds, **kwargs
-    )
-    do_clip(datasource_root, bounds, output, product=product, **kwargs)
+    datasource_root = seed(cache_dir=cache_dir, product=product, bounds=bounds)
+    do_clip(datasource_root, bounds, output, product=product, gdal_options=gdal_options)
 
 
 def dataset(dataset: str | None = None) -> str:
@@ -365,43 +440,56 @@ def dataset(dataset: str | None = None) -> str:
 def info(
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
-    **kwargs: Any,
-) -> None:
+) -> str:
     """Show info about the product cache.
 
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
-    :param kwargs: Pass additional kwargs to check_call_make.
+    :return: The product cache report.
     """
     datasource_root, _ = ensure_setup(cache_dir, product)
-    util.check_call_make(datasource_root, targets=["info"], **kwargs)
+    tiles = sorted((datasource_root / "cache").rglob("*.tif"))
+    size = sum(
+        path.stat().st_size for path in datasource_root.rglob("*") if path.is_file()
+    )
+    report = "\n".join(
+        (
+            f"Product folder: {datasource_root}",
+            f"Tiles count: {len(tiles)}",
+            f"Cache size: {size / 1024**2:,.1f} MiB",
+        )
+    )
+    return report
 
 
 def clean(
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
-    **kwargs: Any,
 ) -> None:
     """Clean up the product cache from temporary files.
 
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
-    :param kwargs: Pass additional kwargs to check_call_make.
     """
     datasource_root, _ = ensure_setup(cache_dir, product)
-    util.check_call_make(datasource_root, targets=["clean"], **kwargs)
+    for tile in (datasource_root / "cache").rglob("*.tif"):
+        if tile.stat().st_size == 0:
+            tile.unlink()
+    for vrt in datasource_root.glob(f"{product}.*.vrt"):
+        vrt.unlink()
+    shutil.rmtree(datasource_root / "spool", ignore_errors=True)
 
 
 def distclean(
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
-    **kwargs: Any,
 ) -> None:
     """Remove the product cache entirely.
 
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
-    :param kwargs: Pass additional kwargs to check_call_make.
     """
     datasource_root, _ = ensure_setup(cache_dir, product)
-    util.check_call_make(datasource_root, targets=["distclean"], **kwargs)
+    clean(cache_dir=cache_dir, product=product)
+    shutil.rmtree(datasource_root / "cache", ignore_errors=True)
+    (datasource_root / f"{product}.vrt").unlink(missing_ok=True)

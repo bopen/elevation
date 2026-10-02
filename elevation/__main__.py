@@ -63,11 +63,6 @@ def main(
         path_type=Path,  # type: ignore[arg-type]
         help="Root of the DEM cache folder.",
     ),
-    make_options: str = typer.Option(
-        "",
-        "--make_options",
-        help="Options passed through to every GNU make invocation.",
-    ),
 ) -> None:
     if product in elevation.RETIRED_PRODUCTS:
         raise typer.BadParameter(
@@ -82,7 +77,6 @@ def main(
     ctx.obj = {
         "cache_dir": cache_dir,
         "product": product,
-        "make_options": make_options,
     }
 
 
@@ -93,7 +87,7 @@ def selfcheck() -> None:
 
 @app.command(short_help="Show info about the product cache.")
 def info(ctx: typer.Context) -> None:
-    elevation.info(**ctx.obj)
+    typer.echo(elevation.info(**ctx.obj))
 
 
 @app.command(short_help="Show the STAC metadata of the datasets.")
@@ -155,6 +149,11 @@ def clip(
         path_type=Path,  # type: ignore[arg-type]
         help="Use the extent of a reference GDAL/OGR data source as output bounds.",
     ),
+    gdal_options: str = typer.Option(
+        elevation.DEFAULT_GDAL_OPTIONS,
+        "--gdal-options",
+        help="GDAL creation options of the output file, e.g. '-co COMPRESS=LZW'.",
+    ),
 ) -> None:
     if bounds is None and reference is None:
         raise typer.BadParameter(
@@ -164,7 +163,9 @@ def clip(
     if bounds is None:
         assert reference is not None
         bounds = spatial.import_bounds(reference)
-    elevation.clip(bounds, output=output, margin=margin, **ctx.obj)
+    elevation.clip(
+        bounds, output=output, margin=margin, gdal_options=gdal_options, **ctx.obj
+    )
 
 
 @app.command(short_help="Clean up the product cache from temporary files.")
