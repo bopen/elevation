@@ -5,7 +5,7 @@
 - Honour the ``EIO_CACHE_DIR`` environment variable in the Python API, not only in the
   ``eio`` command line.
 - Replace the datasource ``Makefile`` with Python: tiles are downloaded with ``fsspec``
-  and written to the cache with ``rioxarray``, the mosaic is still built with
+  and written to the cache with ``rasterio``, the mosaic is still built with
   ``gdalbuildvrt`` and the final clip with ``gdal_translate``.
 - Drop the ``make``, ``curl``, ``unzip`` and ``gunzip`` dependencies: tile downloads are
   now sequential.
