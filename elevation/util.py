@@ -24,6 +24,8 @@ FOLDER_LOCKFILE_NAME = ".folder_lock"
 TOOLS: list[tuple[str, str]] = [
     ("gdal_translate", "gdal_translate --version"),
     ("gdalbuildvrt", "gdalbuildvrt --version"),
+    ("gdalinfo", "gdalinfo --version"),
+    ("ogrinfo", "ogrinfo --version"),
 ]
 
 

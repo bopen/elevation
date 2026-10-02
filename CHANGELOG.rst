@@ -9,6 +9,8 @@
   built with ``gdalbuildvrt``.
 - Drop the ``make``, ``curl``, ``unzip`` and ``gunzip`` dependencies: tile downloads are
   now sequential.
+- Drop the ``reference`` optional dependencies: the bounds of a reference data source
+  are read with the ``gdalinfo`` and ``ogrinfo`` command line tools.
 - Add the ``--gdal-options`` option and the ``EIO_CLIP_GDAL_OPTIONS`` variable to pass
   GDAL creation options, e.g. ``-co COMPRESS=LZW``, to the clip.
 - Download the original SRTM GL1 data from OpenTopography for the ``SRTM1_GEOID`` product.
@@ -24,12 +26,10 @@
 - Drop support for Python 3.6-3.10: only Python >= 3.11 is supported.
 - Move the packaging metadata to ``pyproject.toml`` and remove ``setup.py``
   and ``setup.cfg``.
-- Manage the development environment and dependencies with ``uv`` and add a
-  ``Makefile`` with ``qa``, ``unit-tests``, ``check-typing``, ``docs-build``
-  and ``minver-tests`` targets.
+- Manage the development environment and dependencies with ``uv`` and a ``Makefile``.
 - Replace ``black``, ``isort`` and ``flake8`` with ``ruff`` and add ``mypy``
   strict type checking.
-- Add lower bounds to the dependencies, pinned to versions available in 2022.
+- Add lower bounds to the dependencies, checked by the ``minver-tests`` job.
 - Build the documentation with Sphinx through ``make docs-build``.
 - Modernise the CI with uv-based jobs, pre-commit checks and a PyPI
   trusted-publishing release job.

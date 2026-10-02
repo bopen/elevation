@@ -31,8 +31,8 @@ $ pip install elevation
 
 The following dependencies need to be installed and working:
 
-- [GDAL](https://www.gdal.org/) command line tools, i.e. `gdal_translate` and
-  `gdalbuildvrt`
+- [GDAL](https://www.gdal.org/) command line tools, i.e. `gdal_translate`, `gdalbuildvrt`,
+  `gdalinfo` and `ogrinfo`
 
 The following command runs some basic checks and reports common issues:
 
@@ -73,23 +73,19 @@ The `--bounds` option accepts latitude and longitude coordinates
 (more precisely in geodetic coordinates in the WGS84 reference system EPSG:4326 for those who care)
 given as `left bottom right top` similarly to the `rio` command form `rasterio`.
 
-If you have installed the optional `reference` dependencies `rasterio` and `fiona`
-(`pip install "elevation[reference]"`)
-you can clip a DEM on the same extent of any other geospatial data source supported by GDAL and OGR,
-for example if you have a georeferenced image `MyImage.tif` you can clip the corresponding DEM with:
+The `--reference` option clips a DEM on the same extent of any other geospatial data source
+supported by GDAL and OGR, for example if you have a georeferenced image `MyImage.tif`
+you can clip the corresponding DEM with:
 
 ```console
-$ eio clip -o MyImage-DEM.tif --reference MyImage.tif  # enable with: $ pip install rasterio
+$ eio clip -o MyImage-DEM.tif --reference MyImage.tif
 ```
 
 The `--reference` option can also take vector data as input:
 
 ```console
-$ eio clip -o MyShapefile-DEM.tif --reference MyShapefile.shp  # enable with: $ pip install fiona
+$ eio clip -o MyShapefile-DEM.tif --reference MyShapefile.shp
 ```
-
-`fiona` has no binary wheels for Python 3.14 yet, so installing the `reference`
-extra on Python 3.14 requires the GDAL development headers to build it from source.
 
 The first time an area is accessed Elevation downloads the data tiles from
 the AWS S3, CGIAR-CSI or OpenTopography servers and

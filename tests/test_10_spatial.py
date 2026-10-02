@@ -8,13 +8,20 @@ import pytest
 
 from elevation import spatial
 
-REFERENCE = Path(__file__).parent / "data" / "reference.tif"
+DATA_DIR = Path(__file__).parent / "data"
+RASTER = DATA_DIR / "reference.tif"
+VECTOR = DATA_DIR / "reference.geojson"
+BOUNDS = (10.0, 40.0, 11.0, 41.0)
 
 
-def test_import_bounds_without_optional_dependencies(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(spatial, "SUPPORT_RASTER_DATA", False)
-    monkeypatch.setattr(spatial, "SUPPORT_VECTOR_DATA", False)
+def test_import_bounds_raster() -> None:
+    assert spatial.import_bounds(RASTER) == BOUNDS
+
+
+def test_import_bounds_vector() -> None:
+    assert spatial.import_bounds(VECTOR) == BOUNDS
+
+
+def test_import_bounds_invalid() -> None:
     with pytest.raises(RuntimeError, match="could not be opened"):
-        spatial.import_bounds(REFERENCE)
+        spatial.import_bounds(RASTER.with_suffix(".bad"))
