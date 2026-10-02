@@ -17,7 +17,6 @@ import math
 import os
 import pkgutil
 import subprocess
-import uuid
 from collections.abc import Callable, Iterator, Sequence
 from importlib import resources
 from pathlib import Path
@@ -47,6 +46,7 @@ __all__ = [
 
 CACHE_DIR: str = appdirs.user_cache_dir("elevation", "bopen")
 DEFAULT_OUTPUT = "out.tif"
+DEFAULT_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
 MARGIN = "0"
 
 
@@ -284,23 +284,15 @@ def do_clip(
     bounds: tuple[float, float, float, float],
     output: Path,
     product: str,
+    gdal_options: str = DEFAULT_GDAL_OPTIONS,
     **kwargs: Any,
 ) -> list[str]:
-    run_id = uuid.uuid4().hex
-    with util.lock_vrt(path, product):
-        util.check_call_make(
-            path, targets=["copy_vrt"], variables=[("run_id", run_id)], **kwargs
-        )
     left, bottom, right, top = bounds
-    projwin = f"{left} {top} {right} {bottom}"
-    variables_items = [
-        ("output", str(output)),
-        ("projwin", projwin),
-        ("run_id", run_id),
-    ]
-    return util.check_call_make(
-        path, targets=["clip"], variables=variables_items, **kwargs
-    )
+    options = f"gdal_translate -q {gdal_options} -projwin {left} {top} {right} {bottom}"
+    cmd = [*options.split(), str(path / f"{product}.vrt"), str(output)]
+    with util.lock_vrt(path, product):
+        subprocess.check_call(cmd)
+    return cmd
 
 
 def seed(

@@ -111,7 +111,7 @@ def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     mocker.patch("elevation.raster.write_cache_tile")
     result = runner.invoke(__main__.app, options.split())
     assert not result.exception
-    assert mock_check_call.call_count == 3
+    assert mock_check_call.call_count == 2
 
     mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(__main__.app, ["clip"])

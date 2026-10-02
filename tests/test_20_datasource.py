@@ -109,15 +109,56 @@ def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> Non
     mock_write.assert_not_called()
 
 
-def test_do_clip(mocker: MockerFixture) -> None:
-    bounds = (1, 5, 2, 6)
+def test_do_clip(mocker: MockerFixture, tmp_path: Path) -> None:
+    bounds = (13.1, 43.1, 14.9, 44.9)
     mock_check_call = mocker.patch("subprocess.check_call")
+
     cmd = datasource.do_clip(
-        path=Path("/tmp"), bounds=bounds, output=Path("/out.tif"), product="SRTM3"
+        path=tmp_path, bounds=bounds, output=Path("/out.tif"), product="SRTM3"
     )
-    expected_cmd = ["make", "-C", "/tmp", "clip", "OUTPUT=/out.tif", "PROJWIN=1 6 2 5"]
-    assert cmd[:-1] == expected_cmd
-    mock_check_call.assert_called_with(cmd)
+
+    expected_cmd = [
+        "gdal_translate",
+        "-q",
+        *datasource.DEFAULT_GDAL_OPTIONS.split(),
+        "-projwin",
+        "13.1",
+        "44.9",
+        "14.9",
+        "43.1",
+        str(tmp_path / "SRTM3.vrt"),
+        "/out.tif",
+    ]
+    assert cmd == expected_cmd
+    mock_check_call.assert_called_once_with(cmd)
+
+
+def test_do_clip_gdal_options(mocker: MockerFixture, tmp_path: Path) -> None:
+    mock_check_call = mocker.patch("subprocess.check_call")
+
+    cmd = datasource.do_clip(
+        path=tmp_path,
+        bounds=(1.0, 2.0, 3.0, 4.0),
+        output=Path("/out.tif"),
+        product="SRTM3",
+        gdal_options="-co COMPRESS=LZW",
+    )
+
+    expected_cmd = [
+        "gdal_translate",
+        "-q",
+        "-co",
+        "COMPRESS=LZW",
+        "-projwin",
+        "1.0",
+        "4.0",
+        "3.0",
+        "2.0",
+        str(tmp_path / "SRTM3.vrt"),
+        "/out.tif",
+    ]
+    assert cmd == expected_cmd
+    mock_check_call.assert_called_once_with(cmd)
 
 
 def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
@@ -177,17 +218,20 @@ def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
 
     datasource.clip(cache_dir=root, bounds=bounds, output="out.tif")
 
-    assert len(list(root.iterdir())) == 1
-    datasource_root = next(iter(root.iterdir()))
+    datasource_root = root / "MAPZEN"
     expected_cmd = [
-        "make",
-        "-C",
-        str(datasource_root),
-        "clip",
-        f"OUTPUT={Path('out.tif').resolve()}",
-        "PROJWIN=13.1 44.9 14.9 43.1",
+        "gdal_translate",
+        "-q",
+        *datasource.DEFAULT_GDAL_OPTIONS.split(),
+        "-projwin",
+        "13.1",
+        "44.9",
+        "14.9",
+        "43.1",
+        str(datasource_root / "MAPZEN.vrt"),
+        str(Path("out.tif").resolve()),
     ]
-    assert mock_check_call.call_args[0][0][:-1] == expected_cmd
+    assert mock_check_call.call_args[0][0] == expected_cmd
 
 
 def test_clean(mocker: MockerFixture, tmp_path: Path) -> None:
@@ -231,23 +275,16 @@ def test_cache_dir(
 
 def test_make_options(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
-    bounds = (13.1, 43.1, 14.9, 44.9)
     mock_check_call = mocker.patch("subprocess.check_call")
 
     datasource.info(cache_dir=root, make_options="-s")
     expected_cmd = ["make", "-C", str(root / "MAPZEN"), "-s", "info"]
     assert mock_check_call.call_args[0][0] == expected_cmd
 
-    mocker.patch("elevation.fetch.fetch_tile")
-    mocker.patch("elevation.raster.write_cache_tile")
     mock_check_call.reset_mock()
-    datasource.clip(cache_dir=root, bounds=bounds, output="out.tif", make_options="-s")
-    make_calls = [
-        call for call in mock_check_call.call_args_list if call[0][0][0] == "make"
-    ]
-    assert len(make_calls) == 2
-    for call in make_calls:
-        assert call[0][0][:4] == ["make", "-C", str(root / "MAPZEN"), "-s"]
+    datasource.clean(cache_dir=root, make_options="-s")
+    expected_cmd = ["make", "-C", str(root / "MAPZEN"), "-s", "clean"]
+    assert mock_check_call.call_args[0][0] == expected_cmd
 
 
 def test_dataset() -> None:
