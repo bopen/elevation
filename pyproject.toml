@@ -39,6 +39,7 @@ classifiers = [
 dependencies = [
   "appdirs>=1.4.4",
   "fasteners>=0.18",
+  "fsspec>=2024.6.0",
   "rioxarray>=0.18",
   "typer>=0.26.7"
 ]
@@ -80,7 +81,7 @@ strict = true
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
-module = ["appdirs", "fasteners", "fiona", "rasterio", "rasterio.*"]
+module = ["appdirs", "fasteners", "fiona", "fsspec", "rasterio", "rasterio.*"]
 
 [tool.ruff]
 # Same as Black.
