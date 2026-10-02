@@ -88,6 +88,9 @@ The `--reference` option can also take vector data as input:
 $ eio clip -o MyShapefile-DEM.tif --reference MyShapefile.shp  # enable with: $ pip install fiona
 ```
 
+`fiona` has no binary wheels for Python 3.14 yet, so installing the `reference`
+extra on Python 3.14 requires the GDAL development headers to build it from source.
+
 The first time an area is accessed Elevation downloads the data tiles from
 the AWS S3, CGIAR-CSI or OpenTopography servers and
 caches them in GeoTIFF compressed formats,
