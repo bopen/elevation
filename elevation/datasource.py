@@ -16,6 +16,7 @@
 import math
 import os
 import pkgutil
+import subprocess
 import uuid
 from collections.abc import Callable, Iterator, Sequence
 from importlib import resources
@@ -140,7 +141,6 @@ class DatasourceSpec(TypedDict):
     file_templates: dict[str, str]
     datasource_url: str
     tile_ext: str
-    compressed_pre_ext: str
     compressed_ext: str
     tile_names: Callable[..., Iterator[str]]
 
@@ -154,7 +154,6 @@ MAPZEN_SPEC: DatasourceSpec = {
     "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
     "tile_ext": ".hgt",
-    "compressed_pre_ext": ".hgt",
     "compressed_ext": ".hgt.gz",
     "tile_names": mapzen_tiles_names,
 }
@@ -164,7 +163,6 @@ SRTM1_GEOID_SPEC: DatasourceSpec = {
     "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
     "tile_ext": ".tif",
-    "compressed_pre_ext": "",
     "compressed_ext": "",
     "tile_names": srtm1_tiles_names,
 }
@@ -174,7 +172,6 @@ SRTM1_ELLIP_SPEC: DatasourceSpec = {
     "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
     "tile_ext": ".tif",
-    "compressed_pre_ext": "",
     "compressed_ext": "",
     "tile_names": srtm_ellip_tiles_names,
 }
@@ -184,7 +181,6 @@ SRTM3_SPEC: DatasourceSpec = {
     "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
     "tile_ext": ".tif",
-    "compressed_pre_ext": "",
     "compressed_ext": ".zip",
     "tile_names": srtm3_tiles_names,
 }
@@ -221,14 +217,54 @@ RETIRED_PRODUCTS: dict[str, str] = {
 }
 
 
-def ensure_tiles(
-    path: Path, ensure_tiles_names: Sequence[str] = (), **kwargs: Any
-) -> list[str]:
-    ensure_tiles = " ".join(ensure_tiles_names)
-    variables_items = [("ensure_tiles", ensure_tiles)]
-    return util.check_call_make(
-        path, targets=["download"], variables=variables_items, **kwargs
+CACHE_EXT = ".tif"
+
+
+def tile_source(spec: DatasourceSpec, tile_name: str) -> tuple[str, str, str | None]:
+    """Return the ``(url, spool_name, member)`` of the tile for *tile_name*.
+
+    *tile_name* is the cache tile name, always a ``.tif``; the spool name is the
+    same tile with the source extension (``tile_ext``) and the remote name adds
+    the ``compressed_ext`` when the source is compressed. The member is the file
+    to read inside a ``.zip`` archive and ``None`` otherwise.
+    """
+    stem = tile_name.removesuffix(CACHE_EXT)
+    spool_name = f"{stem}{spec['tile_ext']}"
+    compressed_ext = spec["compressed_ext"]
+    remote = spool_name if not compressed_ext else f"{stem}{compressed_ext}"
+    member = Path(spool_name).name if compressed_ext == ".zip" else None
+    return f"{spec['datasource_url']}/{remote}", spool_name, member
+
+
+def ensure_tiles(root: Path, spec: DatasourceSpec, tile_names: Sequence[str]) -> None:
+    """Fetch and cache *tile_names*, skipping the tiles already in the cache."""
+    from . import fetch, raster
+
+    for tile_name in tile_names:
+        cached = root / "cache" / tile_name
+        if cached.exists() and cached.stat().st_size > 0:
+            continue
+        source, spool_name, member = tile_source(spec, tile_name)
+        spooled = root / "spool" / spool_name
+        fetch.fetch_tile(source, spooled, member=member)
+        raster.write_cache_tile(spooled, cached)
+        spooled.unlink(missing_ok=True)
+
+
+def build_vrt(root: Path, product: str) -> list[str]:
+    """Build the ``<product>.vrt`` mosaic over the non empty cache tiles."""
+    tiles = sorted(
+        tile for tile in (root / "cache").rglob("*.tif") if tile.stat().st_size > 0
     )
+    cmd = [
+        "gdalbuildvrt",
+        "-q",
+        "-overwrite",
+        str(root / f"{product}.vrt"),
+        *map(str, tiles),
+    ]
+    subprocess.check_call(cmd)
+    return cmd
 
 
 # FIXME: force=True is an emergency hack to ensure that the file always contains the intended body
@@ -294,10 +330,10 @@ def seed(
         )
 
     with util.lock_tiles(datasource_root, ensure_tiles_names):
-        ensure_tiles(datasource_root, ensure_tiles_names, **kwargs)
+        ensure_tiles(datasource_root, spec, ensure_tiles_names)
 
     with util.lock_vrt(datasource_root, product):
-        util.check_call_make(datasource_root, targets=["all"], **kwargs)
+        build_vrt(datasource_root, product)
     return datasource_root
 
 

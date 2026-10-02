@@ -94,9 +94,12 @@ def test_eio_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     runner = typer.testing.CliRunner()
     options = f"--cache_dir {root!s} seed --bounds 12.5 42 12.5 42"
     mock_check_call = mocker.patch("subprocess.check_call")
+    mocker.patch("elevation.fetch.fetch_tile")
+    mocker.patch("elevation.raster.write_cache_tile")
     result = runner.invoke(__main__.app, options.split())
     assert not result.exception
-    assert mock_check_call.call_count == 2
+    assert mock_check_call.call_count == 1
+    assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
 
 
 def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
@@ -104,9 +107,11 @@ def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     runner = typer.testing.CliRunner()
     options = f"--cache_dir {root!s} clip --bounds 12.5 42 12.5 42"
     mock_check_call = mocker.patch("subprocess.check_call")
+    mocker.patch("elevation.fetch.fetch_tile")
+    mocker.patch("elevation.raster.write_cache_tile")
     result = runner.invoke(__main__.app, options.split())
     assert not result.exception
-    assert mock_check_call.call_count == 4
+    assert mock_check_call.call_count == 3
 
     mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(__main__.app, ["clip"])
@@ -144,9 +149,11 @@ def test_eio(mocker: MockerFixture, tmp_path: Path) -> None:
     runner = typer.testing.CliRunner()
     options = f"--cache_dir {root!s} seed --bounds 12.5 42 12.5 42"
     mock_check_call = mocker.patch("subprocess.check_call")
+    mocker.patch("elevation.fetch.fetch_tile")
+    mocker.patch("elevation.raster.write_cache_tile")
     result = runner.invoke(__main__.app, options.split())
     assert not result.exception
-    assert mock_check_call.call_count == 2
+    assert mock_check_call.call_count == 1
 
 
 def test_eio_cache_dir_env(

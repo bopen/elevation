@@ -57,11 +57,56 @@ def test_srtm_ellip_tiles_names() -> None:
     )
 
 
-def test_ensure_tiles(mocker: MockerFixture) -> None:
-    mock_check_call = mocker.patch("subprocess.check_call")
-    cmd = datasource.ensure_tiles(Path("/tmp"), ["a", "b"])
-    assert cmd == ["make", "-C", "/tmp", "download", "ENSURE_TILES=a b"]
-    mock_check_call.assert_called_once_with(cmd)
+def test_tile_source() -> None:
+    url, spooled, member = datasource.tile_source(
+        datasource.MAPZEN_SPEC, "N41/N41E012.tif"
+    )
+    assert url.endswith("/skadi/N41/N41E012.hgt.gz")
+    assert spooled == "N41/N41E012.hgt"
+    assert member is None
+
+    url, spooled, member = datasource.tile_source(
+        datasource.SRTM3_SPEC, "srtm_39_04.tif"
+    )
+    assert url.endswith("/srtm_39_04.zip")
+    assert spooled == "srtm_39_04.tif"
+    assert member == "srtm_39_04.tif"
+
+    url, spooled, member = datasource.tile_source(
+        datasource.SRTM1_ELLIP_SPEC, "North/North_30_60/N44E010_wgs84.tif"
+    )
+    assert url.endswith("/North/North_30_60/N44E010_wgs84.tif")
+    assert spooled == "North/North_30_60/N44E010_wgs84.tif"
+    assert member is None
+
+
+def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
+    mock_fetch = mocker.patch("elevation.fetch.fetch_tile")
+    mock_write = mocker.patch("elevation.raster.write_cache_tile")
+
+    datasource.ensure_tiles(tmp_path, datasource.SRTM1_GEOID_SPEC, ["N41E012.tif"])
+
+    mock_fetch.assert_called_once_with(
+        f"{datasource.SRTM1_GEOID_SPEC['datasource_url']}/N41E012.tif",
+        tmp_path / "spool" / "N41E012.tif",
+        member=None,
+    )
+    mock_write.assert_called_once_with(
+        tmp_path / "spool" / "N41E012.tif", tmp_path / "cache" / "N41E012.tif"
+    )
+
+
+def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> None:
+    cached = tmp_path / "cache" / "N41E012.tif"
+    cached.parent.mkdir(parents=True)
+    cached.write_bytes(b"cached")
+    mock_fetch = mocker.patch("elevation.fetch.fetch_tile")
+    mock_write = mocker.patch("elevation.raster.write_cache_tile")
+
+    datasource.ensure_tiles(tmp_path, datasource.SRTM1_GEOID_SPEC, ["N41E012.tif"])
+
+    mock_fetch.assert_not_called()
+    mock_write.assert_not_called()
 
 
 def test_do_clip(mocker: MockerFixture) -> None:
@@ -79,17 +124,24 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 13.9, 43.9)
     mock_check_call = mocker.patch("subprocess.check_call")
-    datasource.seed(cache_dir=root, product="SRTM1_GEOID", bounds=bounds)
-    assert len(list(root.iterdir())) == 1
-    datasource_root = next(iter(root.iterdir()))
-    expected_cmd = [
-        "make",
-        "-C",
-        str(datasource_root),
-        "download",
-        "ENSURE_TILES=N43E013.tif",
-    ]
-    mock_check_call.assert_any_call(expected_cmd)
+    mock_fetch = mocker.patch("elevation.fetch.fetch_tile")
+    mock_write = mocker.patch("elevation.raster.write_cache_tile")
+
+    datasource_root = datasource.seed(
+        cache_dir=root, product="SRTM1_GEOID", bounds=bounds
+    )
+
+    assert datasource_root == root / "SRTM1_GEOID"
+    mock_fetch.assert_called_once_with(
+        f"{datasource.SRTM1_GEOID_SPEC['datasource_url']}/N43E013.tif",
+        datasource_root / "spool" / "N43E013.tif",
+        member=None,
+    )
+    mock_write.assert_called_once_with(
+        datasource_root / "spool" / "N43E013.tif",
+        datasource_root / "cache" / "N43E013.tif",
+    )
+    assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
 
     with pytest.raises(RuntimeError):
         datasource.seed(cache_dir=root, bounds=(-180, -90, 180, 90))
@@ -120,7 +172,11 @@ def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 14.9, 44.9)
     mock_check_call = mocker.patch("subprocess.check_call")
+    mocker.patch("elevation.fetch.fetch_tile")
+    mocker.patch("elevation.raster.write_cache_tile")
+
     datasource.clip(cache_dir=root, bounds=bounds, output="out.tif")
+
     assert len(list(root.iterdir())) == 1
     datasource_root = next(iter(root.iterdir()))
     expected_cmd = [
@@ -182,12 +238,16 @@ def test_make_options(mocker: MockerFixture, tmp_path: Path) -> None:
     expected_cmd = ["make", "-C", str(root / "MAPZEN"), "-s", "info"]
     assert mock_check_call.call_args[0][0] == expected_cmd
 
+    mocker.patch("elevation.fetch.fetch_tile")
+    mocker.patch("elevation.raster.write_cache_tile")
     mock_check_call.reset_mock()
     datasource.clip(cache_dir=root, bounds=bounds, output="out.tif", make_options="-s")
-    expected_cmd = ["make", "-C", str(root / "MAPZEN"), "-s"]
-    assert mock_check_call.call_count == 4
-    for call in mock_check_call.call_args_list:
-        assert call[0][0][:4] == expected_cmd
+    make_calls = [
+        call for call in mock_check_call.call_args_list if call[0][0][0] == "make"
+    ]
+    assert len(make_calls) == 2
+    for call in make_calls:
+        assert call[0][0][:4] == ["make", "-C", str(root / "MAPZEN"), "-s"]
 
 
 def test_dataset() -> None:
