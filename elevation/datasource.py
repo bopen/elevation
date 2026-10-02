@@ -16,6 +16,7 @@
 import math
 import os
 import pkgutil
+import shutil
 import subprocess
 from collections.abc import Callable, Iterator, Sequence
 from importlib import resources
@@ -404,15 +405,26 @@ def info(
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
     **kwargs: Any,
-) -> None:
+) -> str:
     """Show info about the product cache.
 
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
-    :param kwargs: Pass additional kwargs to check_call_make.
+    :return: The product cache report.
     """
     datasource_root, _ = ensure_setup(cache_dir, product)
-    util.check_call_make(datasource_root, targets=["info"], **kwargs)
+    tiles = sorted((datasource_root / "cache").rglob("*.tif"))
+    size = sum(
+        path.stat().st_size for path in datasource_root.rglob("*") if path.is_file()
+    )
+    report = "\n".join(
+        (
+            f"Product folder: {datasource_root}",
+            f"Tiles count: {len(tiles)}",
+            f"Cache size: {size / 1024**2:,.1f} MiB",
+        )
+    )
+    return report
 
 
 def clean(
@@ -424,10 +436,14 @@ def clean(
 
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
-    :param kwargs: Pass additional kwargs to check_call_make.
     """
     datasource_root, _ = ensure_setup(cache_dir, product)
-    util.check_call_make(datasource_root, targets=["clean"], **kwargs)
+    for tile in (datasource_root / "cache").rglob("*.tif"):
+        if tile.stat().st_size == 0:
+            tile.unlink()
+    for vrt in datasource_root.glob(f"{product}.*.vrt"):
+        vrt.unlink()
+    shutil.rmtree(datasource_root / "spool", ignore_errors=True)
 
 
 def distclean(
@@ -439,7 +455,9 @@ def distclean(
 
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
-    :param kwargs: Pass additional kwargs to check_call_make.
     """
     datasource_root, _ = ensure_setup(cache_dir, product)
-    util.check_call_make(datasource_root, targets=["distclean"], **kwargs)
+    clean(cache_dir=cache_dir, product=product)
+    shutil.rmtree(datasource_root / "cache", ignore_errors=True)
+    (datasource_root / f"{product}.vrt").unlink(missing_ok=True)
+    (datasource_root / "Makefile").unlink(missing_ok=True)

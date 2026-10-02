@@ -50,17 +50,14 @@ def test_eio_dataset_invalid() -> None:
     assert result.exit_code == 2
 
 
-def test_parent_params_reach_subcommand(mocker: MockerFixture, tmp_path: Path) -> None:
+def test_parent_params_reach_subcommand(tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = typer.testing.CliRunner()
-    mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(
         __main__.app, ["--product", "SRTM3", "--cache_dir", str(root), "info"]
     )
     assert not result.exception
-    assert mock_check_call.call_count == 1
-    expected_cmd = ["make", "-C", str(root / "SRTM3"), "info"]
-    assert mock_check_call.call_args[0][0] == expected_cmd
+    assert f"Product folder: {root / 'SRTM3'}" in result.output
 
 
 def test_invalid_product() -> None:
@@ -79,14 +76,12 @@ def test_retired_product(tmp_path: Path) -> None:
     assert not root.exists()
 
 
-def test_eio_info(mocker: MockerFixture, tmp_path: Path) -> None:
+def test_eio_info(tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = typer.testing.CliRunner()
-    options = f"--cache_dir {root!s} info"
-    mock_check_call = mocker.patch("subprocess.check_call")
-    result = runner.invoke(__main__.app, options.split())
+    result = runner.invoke(__main__.app, f"--cache_dir {root!s} info".split())
     assert not result.exception
-    assert mock_check_call.call_count == 1
+    assert f"Product folder: {root / 'MAPZEN'}" in result.output
 
 
 def test_eio_seed(mocker: MockerFixture, tmp_path: Path) -> None:
@@ -151,24 +146,28 @@ def test_eio_clip_gdal_options(mocker: MockerFixture, tmp_path: Path) -> None:
     assert "COMPRESS=LZW" in mock_check_call.call_args[0][0]
 
 
-def test_eio_clean(mocker: MockerFixture, tmp_path: Path) -> None:
+def test_eio_clean(tmp_path: Path) -> None:
     root = tmp_path / "root"
+    (root / "MAPZEN" / "spool").mkdir(parents=True)
+    (root / "MAPZEN" / "spool" / "stale.hgt").write_text("stale")
     runner = typer.testing.CliRunner()
-    options = f"--cache_dir {root!s} clean"
-    mock_check_call = mocker.patch("subprocess.check_call")
-    result = runner.invoke(__main__.app, options.split())
+
+    result = runner.invoke(__main__.app, f"--cache_dir {root!s} clean".split())
+
     assert not result.exception
-    assert mock_check_call.call_count == 1
+    assert not (root / "MAPZEN" / "spool").exists()
 
 
-def test_eio_distclean(mocker: MockerFixture, tmp_path: Path) -> None:
+def test_eio_distclean(tmp_path: Path) -> None:
     root = tmp_path / "root"
+    (root / "MAPZEN" / "cache").mkdir(parents=True)
+    (root / "MAPZEN" / "cache" / "tile.tif").write_bytes(b"data")
     runner = typer.testing.CliRunner()
-    options = f"--cache_dir {root!s} distclean"
-    mock_check_call = mocker.patch("subprocess.check_call")
-    result = runner.invoke(__main__.app, options.split())
+
+    result = runner.invoke(__main__.app, f"--cache_dir {root!s} distclean".split())
+
     assert not result.exception
-    assert mock_check_call.call_count == 1
+    assert not (root / "MAPZEN" / "cache").exists()
 
 
 def test_eio(mocker: MockerFixture, tmp_path: Path) -> None:
@@ -183,26 +182,10 @@ def test_eio(mocker: MockerFixture, tmp_path: Path) -> None:
     assert mock_check_call.call_count == 1
 
 
-def test_eio_cache_dir_env(
-    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_eio_cache_dir_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     root = tmp_path / "root"
     monkeypatch.setenv("EIO_CACHE_DIR", str(root))
     runner = typer.testing.CliRunner()
-    mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(__main__.app, ["info"])
     assert not result.exception
-    expected_cmd = ["make", "-C", str(root / "MAPZEN"), "info"]
-    assert mock_check_call.call_args[0][0] == expected_cmd
-
-
-def test_eio_make_options(mocker: MockerFixture, tmp_path: Path) -> None:
-    root = tmp_path / "root"
-    runner = typer.testing.CliRunner()
-    mock_check_call = mocker.patch("subprocess.check_call")
-    result = runner.invoke(
-        __main__.app, ["--cache_dir", str(root), "--make_options=-s", "info"]
-    )
-    assert not result.exception
-    expected_cmd = ["make", "-C", str(root / "MAPZEN"), "-s", "info"]
-    assert mock_check_call.call_args[0][0] == expected_cmd
+    assert f"Product folder: {root / 'MAPZEN'}" in result.output

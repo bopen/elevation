@@ -93,7 +93,7 @@ def selfcheck() -> None:
 
 @app.command(short_help="Show info about the product cache.")
 def info(ctx: typer.Context) -> None:
-    elevation.info(**ctx.obj)
+    typer.echo(elevation.info(**ctx.obj))
 
 
 @app.command(short_help="Show the STAC metadata of the datasets.")

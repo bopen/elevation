@@ -234,13 +234,22 @@ def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     assert mock_check_call.call_args[0][0] == expected_cmd
 
 
-def test_clean(mocker: MockerFixture, tmp_path: Path) -> None:
-    root = tmp_path / "root"
-    mock_check_call = mocker.patch("subprocess.check_call")
-    datasource.clean(cache_dir=root)
-    assert len(list(root.iterdir())) == 1
-    datasource_root = next(iter(root.iterdir()))
-    mock_check_call.assert_any_call(["make", "-C", str(datasource_root), "clean"])
+def test_clean(tmp_path: Path) -> None:
+    cache_dir = tmp_path / "root"
+    root = cache_dir / "MAPZEN"
+    (root / "cache" / "N41").mkdir(parents=True)
+    (root / "cache" / "N41" / "empty.tif").write_bytes(b"")
+    (root / "cache" / "N41" / "full.tif").write_bytes(b"data")
+    (root / "MAPZEN.deadbeef.vrt").write_text("vrt")
+    (root / "spool").mkdir()
+    (root / "spool" / "N41E012.hgt").write_text("tile")
+
+    datasource.clean(cache_dir=cache_dir)
+
+    assert not (root / "cache" / "N41" / "empty.tif").exists()
+    assert (root / "cache" / "N41" / "full.tif").exists()
+    assert not (root / "MAPZEN.deadbeef.vrt").exists()
+    assert not (root / "spool").exists()
 
 
 def test_retired_product() -> None:
@@ -250,41 +259,31 @@ def test_retired_product() -> None:
     assert str(excinfo.value) == elevation.RETIRED_PRODUCTS["SRTM1"]
 
 
-def test_cache_dir(
-    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_cache_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     default = tmp_path / "default"
     override = tmp_path / "override"
     argument = tmp_path / "argument"
     monkeypatch.setattr(datasource, "CACHE_DIR", default)
-    mock_check_call = mocker.patch("subprocess.check_call")
 
-    datasource.info()
-    expected_cmd = ["make", "-C", str(default / "MAPZEN"), "info"]
-    assert mock_check_call.call_args[0][0] == expected_cmd
+    assert f"Product folder: {default.resolve() / 'MAPZEN'}" in datasource.info()
 
     monkeypatch.setenv("EIO_CACHE_DIR", str(override))
-    datasource.info()
-    expected_cmd = ["make", "-C", str(override / "MAPZEN"), "info"]
-    assert mock_check_call.call_args[0][0] == expected_cmd
+    assert f"Product folder: {override.resolve() / 'MAPZEN'}" in datasource.info()
 
-    datasource.info(cache_dir=argument)
-    expected_cmd = ["make", "-C", str(argument / "MAPZEN"), "info"]
-    assert mock_check_call.call_args[0][0] == expected_cmd
+    report = datasource.info(cache_dir=argument)
+    assert f"Product folder: {argument.resolve() / 'MAPZEN'}" in report
 
 
-def test_make_options(mocker: MockerFixture, tmp_path: Path) -> None:
-    root = tmp_path / "root"
-    mock_check_call = mocker.patch("subprocess.check_call")
+def test_info(tmp_path: Path) -> None:
+    cache_dir = tmp_path / "root"
+    (cache_dir / "MAPZEN" / "cache" / "N41").mkdir(parents=True)
+    (cache_dir / "MAPZEN" / "cache" / "N41" / "tile.tif").write_bytes(b"data")
 
-    datasource.info(cache_dir=root, make_options="-s")
-    expected_cmd = ["make", "-C", str(root / "MAPZEN"), "-s", "info"]
-    assert mock_check_call.call_args[0][0] == expected_cmd
+    report = datasource.info(cache_dir=cache_dir)
 
-    mock_check_call.reset_mock()
-    datasource.clean(cache_dir=root, make_options="-s")
-    expected_cmd = ["make", "-C", str(root / "MAPZEN"), "-s", "clean"]
-    assert mock_check_call.call_args[0][0] == expected_cmd
+    assert report.startswith("Product folder: ")
+    assert "Tiles count: 1" in report
+    assert "\nCache size: " in report
 
 
 def test_dataset() -> None:
