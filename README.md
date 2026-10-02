@@ -31,11 +31,8 @@ $ pip install elevation
 
 The following dependencies need to be installed and working:
 
-- [GNU make](https://www.gnu.org/software/make/)
-- [curl](https://curl.haxx.se/)
-- unzip
-- [gunzip](https://www.gzip.org/)
-- [GDAL command line tools](https://www.gdal.org/)
+- [GDAL](https://www.gdal.org/) command line tools, i.e. `gdal_translate` and
+  `gdalbuildvrt`
 
 The following command runs some basic checks and reports common issues:
 
@@ -44,7 +41,6 @@ $ eio selfcheck
 Your system is ready.
 ```
 
-GNU make, curl and unzip come pre-installed with most operating systems.
 The best way to install GDAL command line tools varies across operating systems
 and distributions, please refer to the
 [GDAL install documentation](https://trac.osgeo.org/gdal/wiki/DownloadingGdalBinaries).
@@ -124,19 +120,16 @@ $ eio --help
  Usage: eio [OPTIONS] COMMAND [ARGS]...
 
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --version                                                   Show the version and exit.           │
-│                                                             [env var: EIO_VERSION]               │
-│ --product             [MAPZEN|SRTM1_GEOID|SRTM1_ELLIP|SRTM  DEM product choice.                  │
-│                       3]                                    [env var: EIO_PRODUCT]               │
-│                                                             [default: MAPZEN]                    │
-│ --cache_dir           <directory>                           Root of the DEM cache folder.        │
-│                                                             [env var: EIO_CACHE_DIR]             │
-│                                                             [default:                            │
-│                                                             /Users/amici/Library/Caches/elevati… │
-│ --make_options        <str>                                 Options passed through to every GNU  │
-│                                                             make invocation.                     │
-│                                                             [env var: EIO_MAKE_OPTIONS]          │
-│ --help                                                      Show this message and exit.          │
+│ --version                                                 Show the version and exit.             │
+│                                                           [env var: EIO_VERSION]                 │
+│ --product          [MAPZEN|SRTM1_GEOID|SRTM1_ELLIP|SRTM3  DEM product choice.                    │
+│                    ]                                      [env var: EIO_PRODUCT]                 │
+│                                                           [default: MAPZEN]                      │
+│ --cache_dir        <directory>                            Root of the DEM cache folder.          │
+│                                                           [env var: EIO_CACHE_DIR]               │
+│                                                           [default:                              │
+│                                                           /Users/amici/Library/Caches/elevation] │
+│ --help                                                    Show this message and exit.            │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
 │ selfcheck  Audit the system for common issues.                                                   │
@@ -157,29 +150,33 @@ $ eio clip --help
  Usage: eio clip [OPTIONS]
 
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --output     -o      <file>                        Path to output file. Existing files will be   │
-│                                                    overwritten.                                  │
-│                                                    [env var: EIO_CLIP_OUTPUT]                    │
-│                                                    [default: out.tif]                            │
-│ --bounds             <float float float float>...  Output bounds in 'left bottom right top'      │
-│                                                    order.                                        │
-│                                                    [env var: EIO_CLIP_BOUNDS]                    │
-│ --margin     -m      <str>                         Decimal degree margin added to the bounds.    │
-│                                                    Use '%' for percent margin.                   │
-│                                                    [env var: EIO_CLIP_MARGIN]                    │
-│                                                    [default: 0]                                  │
-│ --reference  -r      <path>                        Use the extent of a reference GDAL/OGR data   │
-│                                                    source as output bounds.                      │
-│                                                    [env var: EIO_CLIP_REFERENCE]                 │
-│ --help                                             Show this message and exit.                   │
+│ --output        -o      <file>                        Path to output file. Existing files will   │
+│                                                       be overwritten.                            │
+│                                                       [env var: EIO_CLIP_OUTPUT]                 │
+│                                                       [default: out.tif]                         │
+│ --bounds                <float float float float>...  Output bounds in 'left bottom right top'   │
+│                                                       order.                                     │
+│                                                       [env var: EIO_CLIP_BOUNDS]                 │
+│ --margin        -m      <str>                         Decimal degree margin added to the bounds. │
+│                                                       Use '%' for percent margin.                │
+│                                                       [env var: EIO_CLIP_MARGIN]                 │
+│                                                       [default: 0]                               │
+│ --reference     -r      <path>                        Use the extent of a reference GDAL/OGR     │
+│                                                       data source as output bounds.              │
+│                                                       [env var: EIO_CLIP_REFERENCE]              │
+│ --gdal-options          <str>                         GDAL creation options of the output file,  │
+│                                                       e.g. '-co COMPRESS=LZW'.                   │
+│                                                       [env var: EIO_CLIP_GDAL_OPTIONS]           │
+│                                                       [default: -co TILED=YES -co                │
+│                                                       COMPRESS=DEFLATE -co ZLEVEL=9 -co          │
+│                                                       PREDICTOR=2]                               │
+│ --help                                                Show this message and exit.                │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 Defaults can be defined by setting environment variables prefixed with `EIO`,
 e.g. `EIO_PRODUCT=SRTM3`, `EIO_CLIP_MARGIN=10%` and `EIO_CACHE_DIR=/tmp/elevation`.
 `EIO_CACHE_DIR` selects the DEM cache folder and is honoured by the Python API as well.
-`EIO_MAKE_OPTIONS` is passed through to every `make` invocation, e.g. `EIO_MAKE_OPTIONS=-s`
-silences make; the Python API takes the same value as the `make_options` keyword argument.
 
 ## Python API
 

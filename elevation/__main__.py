@@ -63,11 +63,6 @@ def main(
         path_type=Path,  # type: ignore[arg-type]
         help="Root of the DEM cache folder.",
     ),
-    make_options: str = typer.Option(
-        "",
-        "--make_options",
-        help="Options passed through to every GNU make invocation.",
-    ),
 ) -> None:
     if product in elevation.RETIRED_PRODUCTS:
         raise typer.BadParameter(
@@ -82,7 +77,6 @@ def main(
     ctx.obj = {
         "cache_dir": cache_dir,
         "product": product,
-        "make_options": make_options,
     }
 
 

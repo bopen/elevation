@@ -20,7 +20,7 @@ import subprocess
 from collections.abc import Callable, Iterator, Sequence
 from importlib import resources
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import TypedDict
 
 import appdirs
 
@@ -276,7 +276,6 @@ def do_clip(
     output: Path,
     product: str,
     gdal_options: str = DEFAULT_GDAL_OPTIONS,
-    **kwargs: Any,
 ) -> list[str]:
     left, bottom, right, top = bounds
     options = f"gdal_translate -q {gdal_options} -projwin {left} {top} {right} {bottom}"
@@ -291,7 +290,6 @@ def seed(
     product: str = DEFAULT_PRODUCT,
     bounds: tuple[float, float, float, float] | None = None,
     max_download_tiles: int = 9,
-    **kwargs: Any,
 ) -> Path:
     """Seed the DEM to given bounds.
 
@@ -344,7 +342,6 @@ def clip(
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
     gdal_options: str = DEFAULT_GDAL_OPTIONS,
-    **kwargs: Any,
 ) -> None:
     """Clip the DEM to given bounds.
 
@@ -357,17 +354,8 @@ def clip(
     """
     output = Path(output).resolve()
     bounds = build_bounds(bounds, margin=margin)
-    datasource_root = seed(
-        cache_dir=cache_dir, product=product, bounds=bounds, **kwargs
-    )
-    do_clip(
-        datasource_root,
-        bounds,
-        output,
-        product=product,
-        gdal_options=gdal_options,
-        **kwargs,
-    )
+    datasource_root = seed(cache_dir=cache_dir, product=product, bounds=bounds)
+    do_clip(datasource_root, bounds, output, product=product, gdal_options=gdal_options)
 
 
 def dataset(dataset: str | None = None) -> str:
@@ -391,7 +379,6 @@ def dataset(dataset: str | None = None) -> str:
 def info(
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
-    **kwargs: Any,
 ) -> str:
     """Show info about the product cache.
 
@@ -417,7 +404,6 @@ def info(
 def clean(
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
-    **kwargs: Any,
 ) -> None:
     """Clean up the product cache from temporary files.
 
@@ -436,7 +422,6 @@ def clean(
 def distclean(
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
-    **kwargs: Any,
 ) -> None:
     """Remove the product cache entirely.
 

@@ -4,8 +4,13 @@
 
 - Honour the ``EIO_CACHE_DIR`` environment variable in the Python API, not only in the
   ``eio`` command line.
-- Add the ``--make_options`` option and the ``EIO_MAKE_OPTIONS`` variable to pass options
-  through to every ``make`` invocation.
+- Replace the datasource ``Makefile`` with Python: tiles are downloaded with ``fsspec``
+  and written to the cache with ``rioxarray``, the mosaic is still built with
+  ``gdalbuildvrt`` and the final clip with ``gdal_translate``.
+- Drop the ``make``, ``curl``, ``unzip`` and ``gunzip`` dependencies: tile downloads are
+  now sequential.
+- Add the ``--gdal-options`` option and the ``EIO_CLIP_GDAL_OPTIONS`` variable to pass
+  GDAL creation options, e.g. ``-co COMPRESS=LZW``, to the clip.
 - Download the original SRTM GL1 data from OpenTopography for the ``SRTM1_GEOID`` product.
 - Add the ``MAPZEN`` product for the global Mapzen terrain tiles mosaic and make
   it the default product.

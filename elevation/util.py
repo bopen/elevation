@@ -22,10 +22,6 @@ import fasteners
 
 FOLDER_LOCKFILE_NAME = ".folder_lock"
 TOOLS: list[tuple[str, str]] = [
-    ("GNU Make", "make --version"),
-    ("curl", "curl --help"),
-    ("unzip", "unzip -v"),
-    ("gunzip", "gunzip --version"),
     ("gdal_translate", "gdal_translate --version"),
     ("gdalbuildvrt", "gdalbuildvrt --version"),
 ]
