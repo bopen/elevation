@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import math
 import os
 import shutil
@@ -20,7 +21,7 @@ import subprocess
 from collections.abc import Callable, Iterator, Sequence
 from importlib import resources
 from pathlib import Path
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 import appdirs
 
@@ -47,8 +48,13 @@ __all__ = [
 CACHE_DIR: str = appdirs.user_cache_dir("elevation", "bopen")
 DEFAULT_OUTPUT = "out.tif"
 DEFAULT_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
+CACHE_EXT = ".tif"
 # the VRT mosaic reads the cache tiles whole, the options only trade size for speed
 TILE_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
+# the float products, e.g. the Copernicus DEM stores, need the float predictor
+FLOAT_TILE_GDAL_OPTIONS = (
+    "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=3"
+)
 MARGIN = "0"
 
 
@@ -138,16 +144,65 @@ def mapzen_tiles_names(
     yield from srtm1_tiles_names(left, bottom, right, top, "{slat}/{slat}{slon}.tif")
 
 
+def zarr_grid(source: str) -> tuple[list[float], list[int], list[int]]:
+    """Return the geotransform, the size and the block shape of a GDAL source.
+
+    The ``gdalinfo`` report of a Zarr store pins the grid its chunks tile from:
+    the store is north-up, so chunk ``(ix, iy)`` is the ``-srcwin`` window
+    ``(ix * block_xsize, iy * block_ysize, block_xsize, block_ysize)``.
+    """
+    env = {**os.environ, "GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR"}
+    report = subprocess.check_output(["gdalinfo", "-json", source], env=env)
+    info = json.loads(report)
+    return info["geoTransform"], info["size"], info["bands"][0]["block"]
+
+
+def zarr_chunks(
+    source: str, left: float, bottom: float, right: float, top: float
+) -> Iterator[tuple[str, tuple[int, int, int, int]]]:
+    """Yield the cache tile and the source window of the chunks covering the bounds.
+
+    The tiles are named after the chunk indices of the store, so the cache
+    folder shows which chunks have been read. The bounds are rounded outward to
+    whole chunks, like ``gdal_translate -projwin`` rounds to whole pixels.
+    """
+    geotransform, size, block = zarr_grid(source)
+    x0, pixel_x, _, y0, _, pixel_y = geotransform
+    width, height = size
+    block_xsize, block_ysize = block
+    # the store is north-up, so pixel_y is negative and the top row is the first
+    xoff = max(math.floor((left - x0) / pixel_x), 0)
+    xend = min(math.ceil((right - x0) / pixel_x), width)
+    yoff = max(math.floor((y0 - top) / -pixel_y), 0)
+    yend = min(math.ceil((y0 - bottom) / -pixel_y), height)
+    for ix in range(xoff // block_xsize, (xend - 1) // block_xsize + 1):
+        for iy in range(yoff // block_ysize, (yend - 1) // block_ysize + 1):
+            window = (
+                ix * block_xsize,
+                iy * block_ysize,
+                min(block_xsize, width - ix * block_xsize),
+                min(block_ysize, height - iy * block_ysize),
+            )
+            yield f"{ix}_{iy}{CACHE_EXT}", window
+
+
+# a cache tile is its name plus the source window, ``None`` for a whole download
+Tile = tuple[str, tuple[int, int, int, int] | None]
+
+
 class DatasourceSpec(TypedDict):
-    folders: tuple[str, ...]
     datasource_url: str
-    tile_ext: str
-    compressed_ext: str
-    tile_names: Callable[..., Iterator[str]]
+    # a local product has one URL per tile (``tile_names``), a remote one has many
+    # chunks of a single source (``chunks``): the enumerator tells the two apart
+    tile_names: NotRequired[Callable[..., Iterator[str]]]
+    chunks: NotRequired[Callable[..., Iterator[Tile]]]
+    tile_ext: NotRequired[str]
+    # only set when the provider serves the tile compressed
+    compressed_ext: NotRequired[str]
+    tile_gdal_options: NotRequired[str]
 
 
 MAPZEN_SPEC: DatasourceSpec = {
-    "folders": ("spool", "cache"),
     "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
     "tile_ext": ".hgt",
     "compressed_ext": ".hgt.gz",
@@ -155,31 +210,51 @@ MAPZEN_SPEC: DatasourceSpec = {
 }
 
 SRTM1_GEOID_SPEC: DatasourceSpec = {
-    "folders": ("spool", "cache"),
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
     "tile_ext": ".tif",
-    "compressed_ext": "",
     "tile_names": srtm1_tiles_names,
 }
 
 SRTM1_ELLIP_SPEC: DatasourceSpec = {
-    "folders": ("spool", "cache"),
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
     "tile_ext": ".tif",
-    "compressed_ext": "",
     "tile_names": srtm_ellip_tiles_names,
 }
 
 SRTM3_SPEC: DatasourceSpec = {
-    "folders": ("spool", "cache"),
     "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
     "tile_ext": ".tif",
     "compressed_ext": ".zip",
     "tile_names": srtm3_tiles_names,
 }
 
+# The Copernicus DEM products are distributed by the Earth Data Hub as a single
+# north-up Zarr store that is read in place and cached one chunk at a time. The
+# ``:/dsm`` array path is required, a bare store opens as a container of
+# subdatasets, see https://gdal.org/en/stable/drivers/raster/zarr.html
+GLO_30_SPEC: DatasourceSpec = {
+    "datasource_url": (
+        'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu/copernicus-dem'
+        '/GLO-30-v1.zarr":/dsm'
+    ),
+    "chunks": zarr_chunks,
+    "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
+}
+
+# the GLO-90 store has the same layout at 3 arc seconds
+GLO_90_SPEC: DatasourceSpec = {
+    "datasource_url": (
+        'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu/copernicus-dem'
+        '/GLO-90-v1.zarr":/dsm'
+    ),
+    "chunks": zarr_chunks,
+    "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
+}
+
 PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
     "MAPZEN": MAPZEN_SPEC,
+    "GLO-30": GLO_30_SPEC,
+    "GLO-90": GLO_90_SPEC,
     "SRTM1_GEOID": SRTM1_GEOID_SPEC,
     "SRTM1_ELLIP": SRTM1_ELLIP_SPEC,
     "SRTM3": SRTM3_SPEC,
@@ -210,9 +285,6 @@ RETIRED_PRODUCTS: dict[str, str] = {
 }
 
 
-CACHE_EXT = ".tif"
-
-
 def tile_source(spec: DatasourceSpec, tile_name: str) -> tuple[str, str, str | None]:
     """Return the ``(url, spool_name, member)`` of the tile for *tile_name*.
 
@@ -223,8 +295,8 @@ def tile_source(spec: DatasourceSpec, tile_name: str) -> tuple[str, str, str | N
     """
     stem = tile_name.removesuffix(CACHE_EXT)
     spool_name = f"{stem}{spec['tile_ext']}"
-    compressed_ext = spec["compressed_ext"]
-    remote = spool_name if not compressed_ext else f"{stem}{compressed_ext}"
+    compressed_ext = spec.get("compressed_ext")
+    remote = spool_name if compressed_ext is None else f"{stem}{compressed_ext}"
     member = Path(spool_name).name if compressed_ext == ".zip" else None
     return f"{spec['datasource_url']}/{remote}", spool_name, member
 
@@ -291,17 +363,31 @@ def write_cache_tile(
     return cmd
 
 
-def ensure_tiles(root: Path, spec: DatasourceSpec, tile_names: Sequence[str]) -> None:
-    """Fetch and cache *tile_names*, skipping the tiles already in the cache."""
-    for tile_name in tile_names:
+def ensure_tiles(root: Path, spec: DatasourceSpec, tiles: Sequence[Tile]) -> None:
+    """Fetch and cache *tiles*, skipping the tiles already in the cache.
+
+    A tile is a ``(name, window)`` pair: a tile with a window is read in place
+    from ``datasource_url``, a tile without one is downloaded whole from its own
+    URL and goes through the spool.
+    """
+    gdal_options = spec.get("tile_gdal_options", TILE_GDAL_OPTIONS)
+    for tile_name, srcwin in tiles:
         cached = root / "cache" / tile_name
         if cached.exists() and cached.stat().st_size > 0:
             continue
-        source, spool_name, member = tile_source(spec, tile_name)
-        spooled = root / "spool" / spool_name
-        fetch_tile(source, spooled, member=member)
-        write_cache_tile(spooled, cached)
-        spooled.unlink(missing_ok=True)
+        if srcwin is None:
+            source, spool_name, member = tile_source(spec, tile_name)
+            spooled = root / "spool" / spool_name
+            fetch_tile(source, spooled, member=member)
+            write_cache_tile(spooled, cached)
+            spooled.unlink(missing_ok=True)
+        else:
+            write_cache_tile(
+                spec["datasource_url"],
+                cached,
+                srcwin=srcwin,
+                gdal_options=gdal_options,
+            )
 
 
 def build_vrt(root: Path, product: str) -> list[str]:
@@ -327,7 +413,7 @@ def ensure_setup(
         raise ProductRetiredError(RETIRED_PRODUCTS[product])
     datasource_root = resolve_cache_dir(cache_dir) / product
     spec = PRODUCTS_SPECS[product]
-    util.ensure_setup(datasource_root, folders=spec["folders"])
+    util.ensure_setup(datasource_root)
     return datasource_root, spec
 
 
@@ -354,6 +440,9 @@ def seed(
 ) -> Path:
     """Seed the DEM to given bounds.
 
+    A remote product is not downloaded whole: only the chunks of the store that
+    cover the bounds are read in place and cached.
+
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
     :param bounds: Output bounds in 'left bottom right top' order.
@@ -362,16 +451,21 @@ def seed(
     if bounds is None:
         raise TypeError("bounds must be supplied")
     datasource_root, spec = ensure_setup(cache_dir, product)
-    ensure_tiles_names = list(spec["tile_names"](*bounds))
+    chunks = spec.get("chunks")
+    tiles: list[Tile]
+    if chunks is None:
+        tiles = [(tile_name, None) for tile_name in spec["tile_names"](*bounds)]
+    else:
+        tiles = list(chunks(spec["datasource_url"], *bounds))
     # FIXME: emergency hack to enforce the no-bulk-download policy
-    if len(ensure_tiles_names) > max_download_tiles:
+    if len(tiles) > max_download_tiles:
         raise RuntimeError(
-            f"Too many tiles: {len(ensure_tiles_names)}. Please consult the "
+            f"Too many tiles: {len(tiles)}. Please consult the "
             "providers' websites for how to bulk download tiles."
         )
 
-    with util.lock_tiles(datasource_root, ensure_tiles_names):
-        ensure_tiles(datasource_root, spec, ensure_tiles_names)
+    with util.lock_tiles(datasource_root, [tile_name for tile_name, _ in tiles]):
+        ensure_tiles(datasource_root, spec, tiles)
 
     with util.lock_vrt(datasource_root, product):
         build_vrt(datasource_root, product)

@@ -33,7 +33,6 @@ def test_eio_dataset() -> None:
     assert not result.exception
     for dataset in elevation.PRODUCTS:
         assert f"id: {dataset}\n" in result.output
-    assert "GLO-30" not in result.output
 
 
 def test_eio_dataset_one() -> None:

@@ -54,6 +54,23 @@ def test_mapzen_tiles_names() -> None:
     assert list(datasource.mapzen_tiles_names(10, 44, 11, 45)) == ["N44/N44E010.tif"]
 
 
+def test_zarr_chunks(mocker: MockerFixture) -> None:
+    mocker.patch(
+        "elevation.datasource.zarr_grid",
+        return_value=([0.0, 1.0, 0.0, 0.0, 0.0, -1.0], [100, 100], [4, 5]),
+    )
+
+    assert list(datasource.zarr_chunks("source", 1.0, -9.0, 3.0, -1.0)) == [
+        ("0_0.tif", (0, 0, 4, 5)),
+        ("0_1.tif", (0, 5, 4, 5)),
+    ]
+    # the bounds are rounded outward to whole chunks
+    assert list(datasource.zarr_chunks("source", 3.5, -1.5, 4.5, -0.5)) == [
+        ("0_0.tif", (0, 0, 4, 5)),
+        ("1_0.tif", (4, 0, 4, 5)),
+    ]
+
+
 def test_srtm3_tiles_names() -> None:
     assert next(datasource.srtm3_tiles_names(10.1, 44.9, 10.1, 44.9)).endswith(
         "srtm_39_04.tif"
@@ -76,6 +93,9 @@ def test_srtm_ellip_tiles_names() -> None:
 
 
 def test_tile_source() -> None:
+    # ``compressed_ext`` is only set when the source is compressed
+    assert "compressed_ext" not in datasource.SRTM1_GEOID_SPEC
+
     url, spooled, member = datasource.tile_source(
         datasource.MAPZEN_SPEC, "N41/N41E012.tif"
     )
@@ -102,7 +122,9 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch("elevation.datasource.write_cache_tile")
 
-    datasource.ensure_tiles(tmp_path, datasource.SRTM1_GEOID_SPEC, ["N41E012.tif"])
+    datasource.ensure_tiles(
+        tmp_path, datasource.SRTM1_GEOID_SPEC, [("N41E012.tif", None)]
+    )
 
     mock_fetch.assert_called_once_with(
         f"{datasource.SRTM1_GEOID_SPEC['datasource_url']}/N41E012.tif",
@@ -121,10 +143,29 @@ def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> Non
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch("elevation.datasource.write_cache_tile")
 
-    datasource.ensure_tiles(tmp_path, datasource.SRTM1_GEOID_SPEC, ["N41E012.tif"])
+    datasource.ensure_tiles(
+        tmp_path, datasource.SRTM1_GEOID_SPEC, [("N41E012.tif", None)]
+    )
 
     mock_fetch.assert_not_called()
     mock_write.assert_not_called()
+
+
+def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
+    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
+    mock_write = mocker.patch("elevation.datasource.write_cache_tile")
+    tile = ("192_48.tif", (230400, 57600, 1200, 1200))
+
+    datasource.ensure_tiles(tmp_path, datasource.GLO_90_SPEC, [tile])
+
+    # a remote product is read in place: no download, one chunk per tile
+    mock_fetch.assert_not_called()
+    mock_write.assert_called_once_with(
+        datasource.GLO_90_SPEC["datasource_url"],
+        tmp_path / "cache" / "192_48.tif",
+        srcwin=(230400, 57600, 1200, 1200),
+        gdal_options=datasource.FLOAT_TILE_GDAL_OPTIONS,
+    )
 
 
 def test_fetch_tile(tmp_path: Path) -> None:
@@ -275,6 +316,38 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
         datasource.seed(cache_dir=root)
 
 
+def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    mock_check_call = mocker.patch("subprocess.check_call")
+    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
+    mock_write = mocker.patch("elevation.datasource.write_cache_tile")
+    mocker.patch(
+        "elevation.datasource.zarr_grid",
+        return_value=([0.0, 1.0, 0.0, 0.0, 0.0, -1.0], [100, 100], [4, 5]),
+    )
+
+    datasource_root = datasource.seed(
+        cache_dir=root, product="GLO-30", bounds=(1.0, -9.0, 3.0, -1.0)
+    )
+
+    assert datasource_root == root / "GLO-30"
+    assert not (datasource_root / "spool").exists()
+    mock_fetch.assert_not_called()
+    assert mock_write.call_count == 2
+    mock_write.assert_any_call(
+        datasource.GLO_30_SPEC["datasource_url"],
+        datasource_root / "cache" / "0_0.tif",
+        srcwin=(0, 0, 4, 5),
+        gdal_options=datasource.FLOAT_TILE_GDAL_OPTIONS,
+    )
+    assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
+
+    with pytest.raises(RuntimeError):
+        datasource.seed(
+            cache_dir=root, product="GLO-30", bounds=(0.0, -100.0, 100.0, 0.0)
+        )
+
+
 def test_build_bounds() -> None:
     raw_bounds = (13.1, 43.1, 13.9, 43.9)
     assert datasource.build_bounds(raw_bounds, margin="0") == raw_bounds
@@ -372,9 +445,9 @@ def test_info(tmp_path: Path) -> None:
 
 def test_dataset() -> None:
     assert "id: SRTM3\n" in elevation.dataset("SRTM3")
+    assert "id: GLO-30\n" in elevation.dataset("GLO-30")
     text = elevation.dataset()
     assert text.count("id: ") == len(elevation.PRODUCTS)
-    assert "GLO-30" not in text
     assert text.endswith("\n")
     assert text.count("\n---\n") == len(elevation.PRODUCTS) - 1
     assert "\n\n---\nid: SRTM1_GEOID\n" in text
