@@ -8,7 +8,7 @@ This mosaic is assembled from several upstream providers, the regions below are
 chosen to cover plain SRTM data, the USGS 3DEP data in the United States and the
 high latitudes that no SRTM product covers.
 Each test clips a ~100x100 pixel DEM and compares it with the reference GeoTIFF
-committed in ``tests/data/mapzen``, see ``CONTRIBUTING.rst``.
+committed in ``tests/data/MAPZEN``, see ``CONTRIBUTING.rst``.
 """
 
 from collections.abc import Callable
