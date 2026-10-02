@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import math
 import os
 import shutil
@@ -144,58 +143,73 @@ def mapzen_tiles_names(
     yield from srtm1_tiles_names(left, bottom, right, top, "{slat}/{slat}{slon}.tif")
 
 
-def zarr_grid(source: str) -> tuple[list[float], list[int], list[int]]:
-    """Return the geotransform, the size and the block shape of a GDAL source.
+# a cache tile is its name plus the source window, ``None`` for a whole download
+Tile = tuple[str, tuple[int, int, int, int] | None]
 
-    The ``gdalinfo`` report of a Zarr store pins the grid its chunks tile from:
-    the store is north-up, so chunk ``(ix, iy)`` is the ``-srcwin`` window
-    ``(ix * block_xsize, iy * block_ysize, block_xsize, block_ysize)``.
+
+def zarr_source(url: str) -> str:
+    """Return the GDAL connection string that reads the Zarr array at *url*.
+
+    The array path must be given to the driver as the tag suffix. Addressing the
+    array as ``ZARR:"/vsicurl/<array>"`` reads the same raster but without any
+    CRS: the store keeps it in a separate ``spatial_ref`` variable, that GDAL
+    only reads through the store itself.
     """
-    env = {**os.environ, "GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR"}
-    report = subprocess.check_output(["gdalinfo", "-json", source], env=env)
-    info = json.loads(report)
-    return info["geoTransform"], info["size"], info["bands"][0]["block"]
+    store, _, array = url.rpartition("/")
+    source = f'ZARR:"/vsicurl/{store}":/{array}'
+    return source
+
+
+class StoreGrid(TypedDict):
+    """The georeferencing and the chunk layout of a remote Zarr store.
+
+    The geometry of the stores we read is fixed data, like the tile names of the
+    other products: it does not need to be probed at run time.
+    """
+
+    # as reported by ``gdalinfo``, i.e. ``(x0, pixel_x, 0, y0, 0, pixel_y)``
+    geotransform: tuple[float, float, float, float, float, float]
+    # the size of the array, as ``(xsize, ysize)``
+    size: tuple[int, int]
+    # the shape of the chunks, as ``(xsize, ysize)``; it is NOT what ``gdalinfo``
+    # reports as ``block``, that is a read buffer that shrinks with the cache
+    chunk_size: tuple[int, int]
 
 
 def zarr_chunks(
-    source: str, left: float, bottom: float, right: float, top: float
-) -> Iterator[tuple[str, tuple[int, int, int, int]]]:
+    grid: StoreGrid, left: float, bottom: float, right: float, top: float
+) -> Iterator[Tile]:
     """Yield the cache tile and the source window of the chunks covering the bounds.
 
     The tiles are named after the chunk indices of the store, so the cache
     folder shows which chunks have been read. The bounds are rounded outward to
     whole chunks, like ``gdal_translate -projwin`` rounds to whole pixels.
     """
-    geotransform, size, block = zarr_grid(source)
-    x0, pixel_x, _, y0, _, pixel_y = geotransform
-    width, height = size
-    block_xsize, block_ysize = block
+    x0, pixel_x, _, y0, _, pixel_y = grid["geotransform"]
+    width, height = grid["size"]
+    chunk_xsize, chunk_ysize = grid["chunk_size"]
     # the store is north-up, so pixel_y is negative and the top row is the first
     xoff = max(math.floor((left - x0) / pixel_x), 0)
     xend = min(math.ceil((right - x0) / pixel_x), width)
     yoff = max(math.floor((y0 - top) / -pixel_y), 0)
     yend = min(math.ceil((y0 - bottom) / -pixel_y), height)
-    for ix in range(xoff // block_xsize, (xend - 1) // block_xsize + 1):
-        for iy in range(yoff // block_ysize, (yend - 1) // block_ysize + 1):
+    for ix in range(xoff // chunk_xsize, (xend - 1) // chunk_xsize + 1):
+        for iy in range(yoff // chunk_ysize, (yend - 1) // chunk_ysize + 1):
             window = (
-                ix * block_xsize,
-                iy * block_ysize,
-                min(block_xsize, width - ix * block_xsize),
-                min(block_ysize, height - iy * block_ysize),
+                ix * chunk_xsize,
+                iy * chunk_ysize,
+                min(chunk_xsize, width - ix * chunk_xsize),
+                min(chunk_ysize, height - iy * chunk_ysize),
             )
             yield f"{ix}_{iy}{CACHE_EXT}", window
 
 
-# a cache tile is its name plus the source window, ``None`` for a whole download
-Tile = tuple[str, tuple[int, int, int, int] | None]
-
-
 class DatasourceSpec(TypedDict):
     datasource_url: str
-    # a local product has one URL per tile (``tile_names``), a remote one has many
-    # chunks of a single source (``chunks``): the enumerator tells the two apart
+    # a local product has one URL per tile (``tile_names``), a remote one is a
+    # single chunked source (``grid``): the key tells the two apart
     tile_names: NotRequired[Callable[..., Iterator[str]]]
-    chunks: NotRequired[Callable[..., Iterator[Tile]]]
+    grid: NotRequired[StoreGrid]
     tile_ext: NotRequired[str]
     # only set when the provider serves the tile compressed
     compressed_ext: NotRequired[str]
@@ -229,25 +243,57 @@ SRTM3_SPEC: DatasourceSpec = {
 }
 
 # The Copernicus DEM products are distributed by the Earth Data Hub as a single
-# north-up Zarr store that is read in place and cached one chunk at a time. The
-# ``:/dsm`` array path is required, a bare store opens as a container of
-# subdatasets, see https://gdal.org/en/stable/drivers/raster/zarr.html
+# north-up Zarr v3 store that is read in place and cached one chunk at a time.
+# The URL is the ``dsm`` array inside the store, see
+# https://gdal.org/en/stable/drivers/raster/zarr.html
+#
+# The geometry of the store is recorded here instead of being probed at run
+# time, like the tile names of the other products: ``geotransform`` and ``size``
+# are what ``gdalinfo`` reports and ``chunk_size`` is what the Zarr metadata
+# declares. Both stores are the global grid at 1 and 3 arc seconds, with the
+# origin half a pixel outside the ``[-180, 180] x [-90, 90]`` extent, and the
+# integration tests pin the geometry against the reference datasets.
+GLO_30_GRID: StoreGrid = {
+    "geotransform": (
+        -180.0001388888889,
+        0.0002777777777778,
+        0.0,
+        90.00013888888888,
+        0.0,
+        -0.0002777777777778,
+    ),
+    "size": (1296000, 648000),
+    # 1 degree of longitude by 0.5 degrees of latitude
+    "chunk_size": (3600, 1800),
+}
+
+GLO_90_GRID: StoreGrid = {
+    "geotransform": (
+        -180.00041666666667,
+        0.0008333333333333,
+        0.0,
+        90.00041666666667,
+        0.0,
+        -0.0008333333333333,
+    ),
+    "size": (432000, 216000),
+    # 2 degrees by 2 degrees
+    "chunk_size": (2400, 2400),
+}
+
 GLO_30_SPEC: DatasourceSpec = {
     "datasource_url": (
-        'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu/copernicus-dem'
-        '/GLO-30-v1.zarr":/dsm'
+        "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-30-v1.zarr/dsm"
     ),
-    "chunks": zarr_chunks,
+    "grid": GLO_30_GRID,
     "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
 }
 
-# the GLO-90 store has the same layout at 3 arc seconds
 GLO_90_SPEC: DatasourceSpec = {
     "datasource_url": (
-        'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu/copernicus-dem'
-        '/GLO-90-v1.zarr":/dsm'
+        "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-90-v1.zarr/dsm"
     ),
-    "chunks": zarr_chunks,
+    "grid": GLO_90_GRID,
     "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
 }
 
@@ -383,7 +429,7 @@ def ensure_tiles(root: Path, spec: DatasourceSpec, tiles: Sequence[Tile]) -> Non
             spooled.unlink(missing_ok=True)
         else:
             write_cache_tile(
-                spec["datasource_url"],
+                zarr_source(spec["datasource_url"]),
                 cached,
                 srcwin=srcwin,
                 gdal_options=gdal_options,
@@ -451,12 +497,12 @@ def seed(
     if bounds is None:
         raise TypeError("bounds must be supplied")
     datasource_root, spec = ensure_setup(cache_dir, product)
-    chunks = spec.get("chunks")
+    grid = spec.get("grid")
     tiles: list[Tile]
-    if chunks is None:
+    if grid is None:
         tiles = [(tile_name, None) for tile_name in spec["tile_names"](*bounds)]
     else:
-        tiles = list(chunks(spec["datasource_url"], *bounds))
+        tiles = list(zarr_chunks(grid, *bounds))
     # FIXME: emergency hack to enforce the no-bulk-download policy
     if len(tiles) > max_download_tiles:
         raise RuntimeError(

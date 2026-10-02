@@ -54,21 +54,54 @@ def test_mapzen_tiles_names() -> None:
     assert list(datasource.mapzen_tiles_names(10, 44, 11, 45)) == ["N44/N44E010.tif"]
 
 
-def test_zarr_chunks(mocker: MockerFixture) -> None:
-    mocker.patch(
-        "elevation.datasource.zarr_grid",
-        return_value=([0.0, 1.0, 0.0, 0.0, 0.0, -1.0], [100, 100], [4, 5]),
+def test_zarr_source() -> None:
+    assert (
+        datasource.zarr_source("https://example.org/store.zarr/dsm")
+        == 'ZARR:"/vsicurl/https://example.org/store.zarr":/dsm'
     )
 
-    assert list(datasource.zarr_chunks("source", 1.0, -9.0, 3.0, -1.0)) == [
+
+def test_zarr_chunks() -> None:
+    grid = datasource.StoreGrid(
+        geotransform=(0.0, 1.0, 0.0, 0.0, 0.0, -1.0),
+        size=(100, 100),
+        chunk_size=(4, 5),
+    )
+
+    assert list(datasource.zarr_chunks(grid, 1.0, -9.0, 3.0, -1.0)) == [
         ("0_0.tif", (0, 0, 4, 5)),
         ("0_1.tif", (0, 5, 4, 5)),
     ]
     # the bounds are rounded outward to whole chunks
-    assert list(datasource.zarr_chunks("source", 3.5, -1.5, 4.5, -0.5)) == [
+    assert list(datasource.zarr_chunks(grid, 3.5, -1.5, 4.5, -0.5)) == [
         ("0_0.tif", (0, 0, 4, 5)),
         ("1_0.tif", (4, 0, 4, 5)),
     ]
+
+
+def test_zarr_grids() -> None:
+    # the store geometry is hardcoded, so these values are the Rome regions of
+    # the integration tests: they pin both the geotransform and the chunk size
+    tiles = list(
+        datasource.zarr_chunks(
+            datasource.GLO_30_GRID, 12.4, 41.8, 12.4 + 100 / 3600, 41.8 + 100 / 3600
+        )
+    )
+    assert tiles == [("192_96.tif", (691200, 172800, 3600, 1800))]
+
+    tiles = list(
+        datasource.zarr_chunks(
+            datasource.GLO_90_GRID, 12.4, 41.8, 12.4 + 100 / 1200, 41.8 + 100 / 1200
+        )
+    )
+    assert tiles == [("96_24.tif", (230400, 57600, 2400, 2400))]
+
+    # the origin is half a pixel outside the extent, so bounds that end on a
+    # round degree reach one pixel into the next chunk, like -projwin rounding
+    tiles = list(
+        datasource.zarr_chunks(datasource.GLO_30_GRID, 12.9, 41.9, 13.0, 41.95)
+    )
+    assert [name for name, _ in tiles] == ["192_96.tif", "193_96.tif"]
 
 
 def test_srtm3_tiles_names() -> None:
@@ -161,7 +194,7 @@ def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     # a remote product is read in place: no download, one chunk per tile
     mock_fetch.assert_not_called()
     mock_write.assert_called_once_with(
-        datasource.GLO_90_SPEC["datasource_url"],
+        datasource.zarr_source(datasource.GLO_90_SPEC["datasource_url"]),
         tmp_path / "cache" / "192_48.tif",
         srcwin=(230400, 57600, 1200, 1200),
         gdal_options=datasource.FLOAT_TILE_GDAL_OPTIONS,
@@ -321,23 +354,20 @@ def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_check_call = mocker.patch("subprocess.check_call")
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch("elevation.datasource.write_cache_tile")
-    mocker.patch(
-        "elevation.datasource.zarr_grid",
-        return_value=([0.0, 1.0, 0.0, 0.0, 0.0, -1.0], [100, 100], [4, 5]),
-    )
 
     datasource_root = datasource.seed(
-        cache_dir=root, product="GLO-30", bounds=(1.0, -9.0, 3.0, -1.0)
+        cache_dir=root,
+        product="GLO-30",
+        bounds=(12.4, 41.8, 12.4 + 100 / 3600, 41.8 + 100 / 3600),
     )
 
     assert datasource_root == root / "GLO-30"
     assert not (datasource_root / "spool").exists()
     mock_fetch.assert_not_called()
-    assert mock_write.call_count == 2
-    mock_write.assert_any_call(
-        datasource.GLO_30_SPEC["datasource_url"],
-        datasource_root / "cache" / "0_0.tif",
-        srcwin=(0, 0, 4, 5),
+    mock_write.assert_called_once_with(
+        datasource.zarr_source(datasource.GLO_30_SPEC["datasource_url"]),
+        datasource_root / "cache" / "192_96.tif",
+        srcwin=(691200, 172800, 3600, 1800),
         gdal_options=datasource.FLOAT_TILE_GDAL_OPTIONS,
     )
     assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
