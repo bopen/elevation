@@ -24,6 +24,7 @@ except ImportError:
 # import all API functions and constants
 from .datasource import (
     CACHE_DIR,
+    DEFAULT_GDAL_OPTIONS,
     DEFAULT_OUTPUT,
     DEFAULT_PRODUCT,
     MARGIN,
@@ -42,6 +43,7 @@ from .util import TOOLS, check_call_make, selfcheck
 
 __all__ = [
     "CACHE_DIR",
+    "DEFAULT_GDAL_OPTIONS",
     "DEFAULT_OUTPUT",
     "DEFAULT_PRODUCT",
     "MARGIN",

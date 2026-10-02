@@ -29,6 +29,7 @@ from . import util
 # declare public all API functions and constants
 __all__ = [
     "CACHE_DIR",
+    "DEFAULT_GDAL_OPTIONS",
     "DEFAULT_OUTPUT",
     "DEFAULT_PRODUCT",
     "MARGIN",
@@ -353,6 +354,7 @@ def clip(
     margin: str = MARGIN,
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
+    gdal_options: str = DEFAULT_GDAL_OPTIONS,
     **kwargs: Any,
 ) -> None:
     """Clip the DEM to given bounds.
@@ -362,6 +364,7 @@ def clip(
     :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
+    :param gdal_options: GDAL creation options of the output file.
     :param kwargs: Pass additional kwargs to check_call_make.
     """
     output = Path(output).resolve()
@@ -369,7 +372,14 @@ def clip(
     datasource_root = seed(
         cache_dir=cache_dir, product=product, bounds=bounds, **kwargs
     )
-    do_clip(datasource_root, bounds, output, product=product, **kwargs)
+    do_clip(
+        datasource_root,
+        bounds,
+        output,
+        product=product,
+        gdal_options=gdal_options,
+        **kwargs,
+    )
 
 
 def dataset(dataset: str | None = None) -> str:

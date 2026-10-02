@@ -124,6 +124,33 @@ def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     assert mock_check_call.call_count == 0
 
 
+def test_eio_clip_gdal_options(mocker: MockerFixture, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    runner = typer.testing.CliRunner()
+    mock_check_call = mocker.patch("subprocess.check_call")
+    mocker.patch("elevation.fetch.fetch_tile")
+    mocker.patch("elevation.raster.write_cache_tile")
+
+    result = runner.invoke(
+        __main__.app,
+        [
+            "--cache_dir",
+            str(root),
+            "clip",
+            "--bounds",
+            "12.5",
+            "42",
+            "12.5",
+            "42",
+            "--gdal-options",
+            "-co COMPRESS=LZW",
+        ],
+    )
+
+    assert not result.exception
+    assert "COMPRESS=LZW" in mock_check_call.call_args[0][0]
+
+
 def test_eio_clean(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = typer.testing.CliRunner()
