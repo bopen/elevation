@@ -1,5 +1,5 @@
 
-2.0.0rc2 (unreleased)
+2.0.0 (unreleased)
 ---------------------
 
 - Honour the ``EIO_CACHE_DIR`` environment variable in the Python API, not only in the
@@ -21,11 +21,6 @@
   directory.
 - Add the ``eio dataset`` command and the ``elevation.dataset`` function to show the
   STAC metadata of the datasets.
-
-
-2.0.0rc1 (2026-09-28)
----------------------
-
 - Drop support for Python 3.6-3.10: only Python >= 3.11 is supported.
 - Move the packaging metadata to ``pyproject.toml`` and remove ``setup.py``
   and ``setup.cfg``.
