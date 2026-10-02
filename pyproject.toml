@@ -39,6 +39,7 @@ classifiers = [
 dependencies = [
   "appdirs>=1.4.4",
   "fasteners>=0.18",
+  "rioxarray>=0.18",
   "typer>=0.26.7"
 ]
 description = "Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, SRTM 30m and 90m DEMs."
@@ -79,7 +80,7 @@ strict = true
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
-module = ["appdirs", "fasteners", "fiona", "rasterio"]
+module = ["appdirs", "fasteners", "fiona", "rasterio", "rasterio.*"]
 
 [tool.ruff]
 # Same as Black.
