@@ -20,7 +20,7 @@ extent:
 license: other
 sci:doi: 10.5270/ESA-c5d3d65
 sci:citation: Copernicus DEM, European Space Agency and European Union, https://doi.org/10.5270/ESA-c5d3d65
-description: 'Copernicus DEM GLO-90: global 3 arc second (90 m) Digital Surface Model (DSM) on the EGM2008 geoid, acquired by the TanDEM-X mission (2011-2015) and derived from the edited WorldDEM DSM. It represents the top-reflective surface, so buildings, infrastructure and vegetation are included; water bodies are flattened and coastlines, airports and implausible structures are edited. Ocean areas have no tiles. Distributed by the Earth Data Hub (DESTINE) as Cloud Optimized GeoTIFFs.'
+description: 'Copernicus DEM GLO-90: global 3 arc second (90 m) Digital Surface Model (DSM) on the EGM2008 geoid, acquired by the TanDEM-X mission (2011-2015) and derived from the edited WorldDEM DSM. It represents the top-reflective surface, so buildings, infrastructure and vegetation are included; water bodies are flattened and coastlines, airports and implausible structures are edited. Distributed by the Earth Data Hub (DESTINE) as a single cloud-hosted Zarr store, read in place without downloading tiles; the ocean and the other void areas are no data.'
 providers:
 - name: Earth Data Hub (DESTINE)
   roles:
