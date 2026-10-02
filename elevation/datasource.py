@@ -15,7 +15,6 @@
 
 import math
 import os
-import pkgutil
 import shutil
 import subprocess
 from collections.abc import Callable, Iterator, Sequence
@@ -140,20 +139,14 @@ def mapzen_tiles_names(
 
 class DatasourceSpec(TypedDict):
     folders: tuple[str, ...]
-    file_templates: dict[str, str]
     datasource_url: str
     tile_ext: str
     compressed_ext: str
     tile_names: Callable[..., Iterator[str]]
 
 
-_datasource_makefile = pkgutil.get_data("elevation", "datasource.mk")
-assert _datasource_makefile is not None
-DATASOURCE_MAKEFILE = _datasource_makefile.decode("utf-8")
-
 MAPZEN_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
-    "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
     "tile_ext": ".hgt",
     "compressed_ext": ".hgt.gz",
@@ -162,7 +155,6 @@ MAPZEN_SPEC: DatasourceSpec = {
 
 SRTM1_GEOID_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
-    "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
     "tile_ext": ".tif",
     "compressed_ext": "",
@@ -171,7 +163,6 @@ SRTM1_GEOID_SPEC: DatasourceSpec = {
 
 SRTM1_ELLIP_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
-    "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
     "tile_ext": ".tif",
     "compressed_ext": "",
@@ -180,7 +171,6 @@ SRTM1_ELLIP_SPEC: DatasourceSpec = {
 
 SRTM3_SPEC: DatasourceSpec = {
     "folders": ("spool", "cache"),
-    "file_templates": {"Makefile": DATASOURCE_MAKEFILE},
     "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
     "tile_ext": ".tif",
     "compressed_ext": ".zip",
@@ -269,15 +259,14 @@ def build_vrt(root: Path, product: str) -> list[str]:
     return cmd
 
 
-# FIXME: force=True is an emergency hack to ensure that the file always contains the intended body
 def ensure_setup(
-    cache_dir: str | Path | None, product: str, force: bool = True
+    cache_dir: str | Path | None, product: str
 ) -> tuple[Path, DatasourceSpec]:
     if product in RETIRED_PRODUCTS:
         raise ProductRetiredError(RETIRED_PRODUCTS[product])
     datasource_root = resolve_cache_dir(cache_dir) / product
     spec = PRODUCTS_SPECS[product]
-    util.ensure_setup(datasource_root, product=product, force=force, **spec)
+    util.ensure_setup(datasource_root, folders=spec["folders"])
     return datasource_root, spec
 
 
@@ -310,7 +299,6 @@ def seed(
     :param product: DEM product choice.
     :param bounds: Output bounds in 'left bottom right top' order.
     :param max_download_tiles: Maximum number of tiles to process.
-    :param kwargs: Pass additional kwargs to check_call_make.
     """
     if bounds is None:
         raise TypeError("bounds must be supplied")
@@ -366,7 +354,6 @@ def clip(
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
     :param gdal_options: GDAL creation options of the output file.
-    :param kwargs: Pass additional kwargs to check_call_make.
     """
     output = Path(output).resolve()
     bounds = build_bounds(bounds, margin=margin)
@@ -460,4 +447,3 @@ def distclean(
     clean(cache_dir=cache_dir, product=product)
     shutil.rmtree(datasource_root / "cache", ignore_errors=True)
     (datasource_root / f"{product}.vrt").unlink(missing_ok=True)
-    (datasource_root / "Makefile").unlink(missing_ok=True)

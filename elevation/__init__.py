@@ -39,7 +39,7 @@ from .datasource import (
     resolve_cache_dir,
     seed,
 )
-from .util import TOOLS, check_call_make, selfcheck
+from .util import TOOLS, selfcheck
 
 __all__ = [
     "CACHE_DIR",
@@ -52,7 +52,6 @@ __all__ = [
     "TOOLS",
     "ProductRetiredError",
     "__version__",
-    "check_call_make",
     "clean",
     "clip",
     "dataset",
