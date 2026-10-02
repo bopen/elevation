@@ -26,7 +26,6 @@ import appdirs
 
 from . import util
 
-# declare public all API functions and constants
 __all__ = [
     "CACHE_DIR",
     "DEFAULT_GDAL_OPTIONS",
@@ -242,8 +241,7 @@ def fetch_tile(source: str, destination: Path, *, member: str | None = None) -> 
     :param destination: Path of the uncompressed tile, parent folders are created.
     :param member: Name of the file to extract from a ``.zip`` source.
     """
-    # fsspec is imported here to keep the ``import elevation`` and ``eio`` startup
-    # free of its cost, this is the only code path that needs it
+    # imported here to keep ``import elevation`` and ``eio`` free of the fsspec cost
     import fsspec
 
     destination.parent.mkdir(parents=True, exist_ok=True)

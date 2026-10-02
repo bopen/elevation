@@ -21,7 +21,6 @@ except ImportError:
     # Local copy or not installed with setuptools
     __version__ = "999"
 
-# import all API functions and constants
 from .datasource import (
     CACHE_DIR,
     DEFAULT_GDAL_OPTIONS,

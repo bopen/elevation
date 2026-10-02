@@ -65,7 +65,6 @@ def test_srtm3_tiles_names() -> None:
 
 
 def test_srtm_ellip_tiles_names() -> None:
-    # Check the various subdirs in srtm_ellip
     ds1 = ["North/North_30_60/N44E010_wgs84.tif"]
     ds2 = ["North/North_0_29/N07W074_wgs84.tif"]
     ds3 = ["South/S20E015_wgs84.tif"]
@@ -377,7 +376,6 @@ def test_dataset() -> None:
     assert text.count("id: ") == len(elevation.PRODUCTS)
     assert "GLO-30" not in text
     assert text.endswith("\n")
-    # the documents are separated by a blank line and a YAML document separator
     assert text.count("\n---\n") == len(elevation.PRODUCTS) - 1
     assert "\n\n---\nid: SRTM1_GEOID\n" in text
     with pytest.raises(KeyError):
