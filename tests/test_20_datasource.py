@@ -2,13 +2,32 @@
 # Copyright (c) 2016-2026 B-Open Solutions srl - https://bopen.eu
 #
 
+import json
+import shutil
+import subprocess
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pytest_mock import MockerFixture
 
 import elevation
 from elevation import datasource
+
+DATA_DIR = Path(__file__).parent / "data"
+REFERENCE = DATA_DIR / "reference.tif"
+
+requires_gdal = pytest.mark.skipif(
+    shutil.which("gdal_translate") is None,
+    reason="the GDAL command line tools are not installed",
+)
+
+
+def gdalinfo_json(path: Path) -> dict[str, Any]:
+    """Return the ``gdalinfo`` report of *path*, with the band checksums."""
+    report = subprocess.check_output(["gdalinfo", "-json", "-checksum", str(path)])
+    info: dict[str, Any] = json.loads(report)
+    return info
 
 
 def test_srtm3_tile_ilonlat() -> None:
@@ -81,8 +100,8 @@ def test_tile_source() -> None:
 
 
 def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
-    mock_fetch = mocker.patch("elevation.fetch.fetch_tile")
-    mock_write = mocker.patch("elevation.raster.write_cache_tile")
+    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
+    mock_write = mocker.patch("elevation.datasource.write_cache_tile")
 
     datasource.ensure_tiles(tmp_path, datasource.SRTM1_GEOID_SPEC, ["N41E012.tif"])
 
@@ -100,13 +119,79 @@ def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> Non
     cached = tmp_path / "cache" / "N41E012.tif"
     cached.parent.mkdir(parents=True)
     cached.write_bytes(b"cached")
-    mock_fetch = mocker.patch("elevation.fetch.fetch_tile")
-    mock_write = mocker.patch("elevation.raster.write_cache_tile")
+    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
+    mock_write = mocker.patch("elevation.datasource.write_cache_tile")
 
     datasource.ensure_tiles(tmp_path, datasource.SRTM1_GEOID_SPEC, ["N41E012.tif"])
 
     mock_fetch.assert_not_called()
     mock_write.assert_not_called()
+
+
+def test_fetch_tile(tmp_path: Path) -> None:
+    destination = tmp_path / "spool" / "tile.tif"
+
+    datasource.fetch_tile(REFERENCE.as_uri(), destination)
+
+    assert destination.read_bytes() == REFERENCE.read_bytes()
+
+
+def test_fetch_tile_gzip(tmp_path: Path) -> None:
+    destination = tmp_path / "spool" / "tile.tif"
+
+    datasource.fetch_tile((DATA_DIR / "reference.tif.gz").as_uri(), destination)
+
+    assert destination.read_bytes() == REFERENCE.read_bytes()
+
+
+def test_fetch_tile_zip(tmp_path: Path) -> None:
+    destination = tmp_path / "spool" / "tile.tif"
+
+    datasource.fetch_tile(
+        (DATA_DIR / "reference.zip").as_uri(), destination, member="reference.tif"
+    )
+
+    assert destination.read_bytes() == REFERENCE.read_bytes()
+
+
+def test_write_cache_tile_command(tmp_path: Path, mocker: MockerFixture) -> None:
+    check_call = mocker.patch("subprocess.check_call")
+    destination = tmp_path / "cache" / "destination.tif"
+
+    cmd = datasource.write_cache_tile(REFERENCE, destination, srcwin=(0, 0, 1, 1))
+
+    assert cmd == [
+        "gdal_translate",
+        "-q",
+        *datasource.TILE_GDAL_OPTIONS.split(),
+        "-srcwin",
+        "0",
+        "0",
+        "1",
+        "1",
+        str(REFERENCE),
+        str(destination),
+    ]
+    check_call.assert_called_once_with(cmd)
+    assert destination.parent.is_dir()
+
+
+@requires_gdal
+def test_write_cache_tile(tmp_path: Path) -> None:
+    destination = tmp_path / "cache" / "destination.tif"
+
+    datasource.write_cache_tile(REFERENCE, destination)
+
+    source = gdalinfo_json(REFERENCE)
+    tile = gdalinfo_json(destination)
+    assert tile["size"] == source["size"]
+    assert tile["geoTransform"] == pytest.approx(source["geoTransform"])
+    assert tile["coordinateSystem"] == source["coordinateSystem"]
+    assert tile["metadata"]["IMAGE_STRUCTURE"]["COMPRESSION"] == "DEFLATE"
+    tile_band, source_band = tile["bands"][0], source["bands"][0]
+    assert tile_band["type"] == source_band["type"]
+    assert tile_band.get("noDataValue") == source_band.get("noDataValue")
+    assert tile_band["checksum"] == source_band["checksum"]
 
 
 def test_do_clip(mocker: MockerFixture, tmp_path: Path) -> None:
@@ -165,8 +250,8 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 13.9, 43.9)
     mock_check_call = mocker.patch("subprocess.check_call")
-    mock_fetch = mocker.patch("elevation.fetch.fetch_tile")
-    mock_write = mocker.patch("elevation.raster.write_cache_tile")
+    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
+    mock_write = mocker.patch("elevation.datasource.write_cache_tile")
 
     datasource_root = datasource.seed(
         cache_dir=root, product="SRTM1_GEOID", bounds=bounds
@@ -213,8 +298,8 @@ def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 14.9, 44.9)
     mock_check_call = mocker.patch("subprocess.check_call")
-    mocker.patch("elevation.fetch.fetch_tile")
-    mocker.patch("elevation.raster.write_cache_tile")
+    mocker.patch("elevation.datasource.fetch_tile")
+    mocker.patch("elevation.datasource.write_cache_tile")
 
     datasource.clip(cache_dir=root, bounds=bounds, output="out.tif")
 

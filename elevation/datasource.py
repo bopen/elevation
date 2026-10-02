@@ -48,6 +48,8 @@ __all__ = [
 CACHE_DIR: str = appdirs.user_cache_dir("elevation", "bopen")
 DEFAULT_OUTPUT = "out.tif"
 DEFAULT_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
+# the VRT mosaic reads the cache tiles whole, the options only trade size for speed
+TILE_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
 MARGIN = "0"
 
 
@@ -228,18 +230,79 @@ def tile_source(spec: DatasourceSpec, tile_name: str) -> tuple[str, str, str | N
     return f"{spec['datasource_url']}/{remote}", spool_name, member
 
 
+def fetch_tile(source: str, destination: Path, *, member: str | None = None) -> None:
+    """Fetch *source* and write it uncompressed to *destination*.
+
+    A ``.gz`` source is gunzipped, a ``.zip`` source is read at *member*, any
+    other source is copied as it is. The tile is written through a ``.temp``
+    sibling and moved in place, so a failed download never leaves a half written
+    tile behind.
+
+    :param source: Any fsspec URL, e.g. ``https://...`` or ``s3://...``.
+    :param destination: Path of the uncompressed tile, parent folders are created.
+    :param member: Name of the file to extract from a ``.zip`` source.
+    """
+    # fsspec is imported here to keep the ``import elevation`` and ``eio`` startup
+    # free of its cost, this is the only code path that needs it
+    import fsspec
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if member is None:
+        stream = fsspec.open(source, "rb", compression="infer")
+    else:
+        stream = fsspec.open(f"zip://{member}::{source}", "rb")
+    temporary = destination.with_name(f"{destination.name}.temp")
+    try:
+        with stream as remote, temporary.open("wb") as local:
+            shutil.copyfileobj(remote, local)
+        temporary.replace(destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def write_cache_tile(
+    source: str | Path,
+    destination: Path,
+    *,
+    srcwin: Sequence[int] | None = None,
+    gdal_options: str = TILE_GDAL_OPTIONS,
+) -> list[str]:
+    """Write *source* to *destination* as the internal compressed GeoTIFF tile.
+
+    The data, its dtype, its nodata value, its georeferencing and its metadata are
+    preserved unchanged, only compression is added. ``PREDICTOR=2`` in the default
+    options suits the integer products, pass ``PREDICTOR=3`` for float ones.
+
+    :param source: Any GDAL readable raster, local or remote.
+    :param destination: Path of the cache GeoTIFF, parent folders are created.
+    :param srcwin: Window of *source* to write, e.g. a single ``Zarr`` chunk.
+    :param gdal_options: GDAL creation options of the cache tile.
+    :return: The command arguments.
+    """
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    window = [] if srcwin is None else ["-srcwin", *map(str, srcwin)]
+    cmd = [
+        "gdal_translate",
+        "-q",
+        *gdal_options.split(),
+        *window,
+        str(source),
+        str(destination),
+    ]
+    subprocess.check_call(cmd)
+    return cmd
+
+
 def ensure_tiles(root: Path, spec: DatasourceSpec, tile_names: Sequence[str]) -> None:
     """Fetch and cache *tile_names*, skipping the tiles already in the cache."""
-    from . import fetch, raster
-
     for tile_name in tile_names:
         cached = root / "cache" / tile_name
         if cached.exists() and cached.stat().st_size > 0:
             continue
         source, spool_name, member = tile_source(spec, tile_name)
         spooled = root / "spool" / spool_name
-        fetch.fetch_tile(source, spooled, member=member)
-        raster.write_cache_tile(spooled, cached)
+        fetch_tile(source, spooled, member=member)
+        write_cache_tile(spooled, cached)
         spooled.unlink(missing_ok=True)
 
 

@@ -89,8 +89,8 @@ def test_eio_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     runner = typer.testing.CliRunner()
     options = f"--cache_dir {root!s} seed --bounds 12.5 42 12.5 42"
     mock_check_call = mocker.patch("subprocess.check_call")
-    mocker.patch("elevation.fetch.fetch_tile")
-    mocker.patch("elevation.raster.write_cache_tile")
+    mocker.patch("elevation.datasource.fetch_tile")
+    mocker.patch("elevation.datasource.write_cache_tile")
     result = runner.invoke(__main__.app, options.split())
     assert not result.exception
     assert mock_check_call.call_count == 1
@@ -102,8 +102,8 @@ def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     runner = typer.testing.CliRunner()
     options = f"--cache_dir {root!s} clip --bounds 12.5 42 12.5 42"
     mock_check_call = mocker.patch("subprocess.check_call")
-    mocker.patch("elevation.fetch.fetch_tile")
-    mocker.patch("elevation.raster.write_cache_tile")
+    mocker.patch("elevation.datasource.fetch_tile")
+    mocker.patch("elevation.datasource.write_cache_tile")
     result = runner.invoke(__main__.app, options.split())
     assert not result.exception
     assert mock_check_call.call_count == 2
@@ -123,8 +123,8 @@ def test_eio_clip_gdal_options(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = typer.testing.CliRunner()
     mock_check_call = mocker.patch("subprocess.check_call")
-    mocker.patch("elevation.fetch.fetch_tile")
-    mocker.patch("elevation.raster.write_cache_tile")
+    mocker.patch("elevation.datasource.fetch_tile")
+    mocker.patch("elevation.datasource.write_cache_tile")
 
     result = runner.invoke(
         __main__.app,
@@ -175,8 +175,8 @@ def test_eio(mocker: MockerFixture, tmp_path: Path) -> None:
     runner = typer.testing.CliRunner()
     options = f"--cache_dir {root!s} seed --bounds 12.5 42 12.5 42"
     mock_check_call = mocker.patch("subprocess.check_call")
-    mocker.patch("elevation.fetch.fetch_tile")
-    mocker.patch("elevation.raster.write_cache_tile")
+    mocker.patch("elevation.datasource.fetch_tile")
+    mocker.patch("elevation.datasource.write_cache_tile")
     result = runner.invoke(__main__.app, options.split())
     assert not result.exception
     assert mock_check_call.call_count == 1
