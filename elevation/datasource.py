@@ -68,13 +68,18 @@ def resolve_cache_dir(cache_dir: str | Path | None) -> Path:
     return Path(cache_dir).resolve()
 
 
+def latlon_to_indeces(
+    lon: float, lat: float, transform: tuple[float, float, float, float]
+) -> tuple[int, int]:
+    lon_start, lon_step, lat_start, lat_step = transform
+    ilon = math.floor((lon - lon_start) / lon_step)
+    ilat = math.floor((lat - lat_start) / lat_step)
+    return ilon, ilat
+
+
 def srtm1_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
-    return math.floor(lon), math.floor(lat)
-
-
-def srtm3_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
-    ilon, ilat = srtm1_tile_ilonlat(lon, lat)
-    return (ilon + 180) // 5 + 1, (64 - ilat) // 5
+    # NOTE: 0.5" is half a pixel
+    return latlon_to_indeces(lon, lat, (-0.0001388888889, 1.0, -0.0001388888889, 1.0))
 
 
 def srtm1_tiles_names(
@@ -96,6 +101,11 @@ def srtm1_tiles_names(
         for ilat in range(ibottom, itop + 1):
             slat = f"{'N' if ilat >= 0 else 'S'}{abs(ilat):02d}"
             yield tile_name_template.format(**locals())
+
+
+def srtm3_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
+    # NOTE: 1.5" is half a pixel
+    return latlon_to_indeces(lon, lat, (-185.00041666666, 5.0, 65.00041666666, -5.0))
 
 
 def srtm3_tiles_names(
@@ -135,6 +145,26 @@ def srtm_ellip_tiles_names(
                 yield f"{subdir}/{north_subdir}/{fname}"
             else:
                 yield f"{subdir}/{fname}"
+
+
+def glo_30_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
+    # NOTE: 0.5" is half a DEM pixel
+    transform = (180.0001388888889, 1.0, 90.00013888888888, -0.5)
+    return latlon_to_indeces(lon, lat, transform)
+
+
+def glo_30_tile_names(
+    left: float,
+    bottom: float,
+    right: float,
+    top: float,
+) -> Iterator[str]:
+    ileft, itop = glo_30_tile_ilonlat(left, top)
+    iright, ibottom = glo_30_tile_ilonlat(right, bottom)
+    for ilon in range(ileft, iright + 1):
+        for ilat in range(itop, ibottom + 1):
+            if ilon > 0 and ilat > 0:
+                yield f"{ilat}/{ilon}.tif"
 
 
 def mapzen_tiles_names(
@@ -208,7 +238,7 @@ class DatasourceSpec(TypedDict):
     datasource_url: str
     # a local product has one URL per tile (``tile_names``), a remote one is a
     # single chunked source (``grid``): the key tells the two apart
-    tile_names: NotRequired[Callable[..., Iterator[str]]]
+    cached_tile_names: NotRequired[Callable[..., Iterator[str]]]
     grid: NotRequired[StoreGrid]
     tile_ext: NotRequired[str]
     # only set when the provider serves the tile compressed
@@ -220,26 +250,26 @@ MAPZEN_SPEC: DatasourceSpec = {
     "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
     "tile_ext": ".hgt",
     "compressed_ext": ".hgt.gz",
-    "tile_names": mapzen_tiles_names,
+    "cached_tile_names": mapzen_tiles_names,
 }
 
 SRTM1_GEOID_SPEC: DatasourceSpec = {
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
     "tile_ext": ".tif",
-    "tile_names": srtm1_tiles_names,
+    "cached_tile_names": srtm1_tiles_names,
 }
 
 SRTM1_ELLIP_SPEC: DatasourceSpec = {
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
     "tile_ext": ".tif",
-    "tile_names": srtm_ellip_tiles_names,
+    "cached_tile_names": srtm_ellip_tiles_names,
 }
 
 SRTM3_SPEC: DatasourceSpec = {
     "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
     "tile_ext": ".tif",
     "compressed_ext": ".zip",
-    "tile_names": srtm3_tiles_names,
+    "cached_tile_names": srtm3_tiles_names,
 }
 
 # The Copernicus DEM products are distributed by the Earth Data Hub as a single
@@ -287,6 +317,7 @@ GLO_30_SPEC: DatasourceSpec = {
     ),
     "grid": GLO_30_GRID,
     "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
+    "cached_tile_names": glo_30_tile_names,
 }
 
 GLO_90_SPEC: DatasourceSpec = {
@@ -500,7 +531,7 @@ def seed(
     grid = spec.get("grid")
     tiles: list[Tile]
     if grid is None:
-        tiles = [(tile_name, None) for tile_name in spec["tile_names"](*bounds)]
+        tiles = [(tile_name, None) for tile_name in spec["cached_tile_names"](*bounds)]
     else:
         tiles = list(zarr_chunks(grid, *bounds))
     # FIXME: emergency hack to enforce the no-bulk-download policy
