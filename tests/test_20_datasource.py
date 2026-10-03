@@ -173,7 +173,7 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
 
     datasource.ensure_tiles(
         tmp_path,
-        [("N41E012.tif", None)],
+        ["N41E012.tif"],
         datasource.SRTM1_GEOID_SPEC["datasource_url"],
     )
 
@@ -198,7 +198,7 @@ def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> Non
 
     datasource.ensure_tiles(
         tmp_path,
-        [("N41E012.tif", None)],
+        ["N41E012.tif"],
         datasource.SRTM1_GEOID_SPEC["datasource_url"],
     )
 
@@ -209,7 +209,7 @@ def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> Non
 def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch("elevation.datasource.write_cache_tile")
-    tile = ("192_48.tif", (230400, 57600, 1200, 1200))
+    tile = "192/48.tif"
 
     datasource.ensure_tiles(
         tmp_path,

@@ -48,12 +48,9 @@ CACHE_DIR: str = appdirs.user_cache_dir("elevation", "bopen")
 DEFAULT_OUTPUT = "out.tif"
 DEFAULT_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
 CACHE_EXT = ".tif"
-# the VRT mosaic reads the cache tiles whole, the options only trade size for speed
-TILE_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
-# the float products, e.g. the Copernicus DEM stores, need the float predictor
-FLOAT_TILE_GDAL_OPTIONS = (
-    "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=3"
-)
+TILE_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9"
+INT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=2"
+FLOAT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=3"
 MARGIN = "0"
 
 # NOTE:
@@ -222,18 +219,14 @@ SRTM3_SPEC: DatasourceSpec = {
 }
 
 GLO_30_SPEC: DatasourceSpec = {
-    "datasource_url": (
-        "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-30-v1.zarr/dsm"
-    ),
+    "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-30-v1.zarr/dsm",
     "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
     "cached_tile_names": zarr_tile_names,
     "cached_tile_names_kwargs": {"transform": EDH_L2_CHUNK_INDECES_TRANSFORM},
 }
 
 GLO_90_SPEC: DatasourceSpec = {
-    "datasource_url": (
-        "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-90-v1.zarr/dsm"
-    ),
+    "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-90-v1.zarr/dsm",
     "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
     "cached_tile_names": zarr_tile_names,
     "cached_tile_names_kwargs": {"transform": EDH_L1_CHUNK_INDECES_TRANSFORM},
@@ -357,7 +350,7 @@ def write_cache_tile(
 
 def ensure_tiles(
     root: Path,
-    tiles: Sequence[Tile],
+    tiles: Sequence[str],
     datasource_url: str,
     gdal_options: str = TILE_GDAL_OPTIONS,
     **kwargs: Any,
@@ -368,25 +361,15 @@ def ensure_tiles(
     from ``datasource_url``, a tile without one is downloaded whole from its own
     URL and goes through the spool.
     """
-    for tile_name, srcwin in tiles:
+    for tile_name in tiles:
         cached = root / "cache" / tile_name
         if cached.exists() and cached.stat().st_size > 0:
             continue
-        if srcwin is None:
-            source, spool_name, member = tile_source(
-                datasource_url, tile_name, **kwargs
-            )
-            spooled = root / "spool" / spool_name
-            fetch_tile(source, spooled, member=member)
-            write_cache_tile(spooled, cached, gdal_options=gdal_options)
-            spooled.unlink(missing_ok=True)
-        else:
-            write_cache_tile(
-                zarr_source(datasource_url),
-                cached,
-                srcwin=srcwin,
-                gdal_options=gdal_options,
-            )
+        source, spool_name, member = tile_source(datasource_url, tile_name, **kwargs)
+        spooled = root / "spool" / spool_name
+        fetch_tile(source, spooled, member=member)
+        write_cache_tile(spooled, cached, gdal_options=gdal_options)
+        spooled.unlink(missing_ok=True)
 
 
 def build_vrt(root: Path, product: str) -> list[str]:
@@ -450,10 +433,9 @@ def seed(
     if bounds is None:
         raise TypeError("bounds must be supplied")
     datasource_root, spec = ensure_setup(cache_dir, product)
-    tiles: list[Tile]
     tile_names = spec["cached_tile_names"]
     kwargs = spec.get("cached_tile_names_kwargs", {})
-    tiles = [(tile_name, None) for tile_name in tile_names(*bounds, **kwargs)]
+    tiles = list(tile_names(*bounds, **kwargs))
     # FIXME: emergency hack to enforce the no-bulk-download policy
     if len(tiles) > max_download_tiles:
         raise RuntimeError(
@@ -461,7 +443,7 @@ def seed(
             "providers' websites for how to bulk download tiles."
         )
 
-    with util.lock_tiles(datasource_root, [tile_name for tile_name, _ in tiles]):
+    with util.lock_tiles(datasource_root, tiles):
         ensure_tiles(
             datasource_root,
             tiles,
@@ -472,6 +454,7 @@ def seed(
 
     with util.lock_vrt(datasource_root, product):
         build_vrt(datasource_root, product)
+
     return datasource_root
 
 
@@ -485,12 +468,13 @@ def build_bounds(
         margin_lat = (top - bottom) * margin_percent / 100
     else:
         margin_lon = margin_lat = float(margin)
-    return (
+    bounds = (
         left - margin_lon,
         bottom - margin_lat,
         right + margin_lon,
         top + margin_lat,
     )
+    return bounds
 
 
 def clip(
