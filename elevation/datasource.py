@@ -20,7 +20,7 @@ import subprocess
 from collections.abc import Callable, Iterator, Sequence
 from importlib import resources
 from pathlib import Path
-from typing import NotRequired, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 import appdirs
 
@@ -60,6 +60,7 @@ MARGIN = "0"
 #   0.0001388888889 == 0.5" is half pixel for DEMs with 1" spacing (DTED L2)
 #   0.0004166666667 == 1.5" is half pixel for DEMs with 3" spacing (DTED L1)
 EDH_L2_CHUNK_INDECES_TRANSFORM = (-180.0001388888889, 1.0, 90.00013888888888, -0.5)
+EDH_L1_CHUNK_INDECES_TRANSFORM = (-180.00041666666667, 2.0, 90.00041666666667, -2.0)
 DTED_L2_TILE_INDECES_TRANSFORM = (-0.0001388888889, 1.0, -0.0001388888889, 1.0)
 CGIAR_L1_TILE_INDECES_TRANSFORM = (-185.0004166666667, 5.0, 65.0004166666667, -5.0)
 
@@ -144,24 +145,19 @@ def srtm_ellip_tiles_names(
                 yield f"{subdir}/{fname}"
 
 
-def glo_30_tile_names(
+def zarr_tile_names(
     left: float,
     bottom: float,
     right: float,
     top: float,
+    transform: tuple[float, float, float, float],
 ) -> Iterator[str]:
-    ileft, itop = latlon_to_indeces(EDH_L2_CHUNK_INDECES_TRANSFORM, left, top)
-    iright, ibottom = latlon_to_indeces(EDH_L2_CHUNK_INDECES_TRANSFORM, right, bottom)
+    ileft, itop = latlon_to_indeces(transform, left, top)
+    iright, ibottom = latlon_to_indeces(transform, right, bottom)
     for ilon in range(ileft, iright + 1):
         for ilat in range(itop, ibottom + 1):
             if ilon >= 0 and ilat >= 0:
                 yield f"{ilat}/{ilon}.tif"
-
-
-def mapzen_tiles_names(
-    left: float, bottom: float, right: float, top: float
-) -> Iterator[str]:
-    yield from dted_l2_tiles_names(left, bottom, right, top, "{slat}/{slat}{slon}.tif")
 
 
 # a cache tile is its name plus the source window, ``None`` for a whole download
@@ -230,6 +226,9 @@ class DatasourceSpec(TypedDict):
     # a local product has one URL per tile (``tile_names``), a remote one is a
     # single chunked source (``grid``): the key tells the two apart
     cached_tile_names: NotRequired[Callable[..., Iterator[str]]]
+    # keyword arguments for ``cached_tile_names``, e.g. the tile name template
+    # of a product that keeps its tiles in subfolders
+    cached_tile_names_kwargs: NotRequired[dict[str, Any]]
     grid: NotRequired[StoreGrid]
     tile_ext: NotRequired[str]
     # only set when the provider serves the tile compressed
@@ -241,7 +240,8 @@ MAPZEN_SPEC: DatasourceSpec = {
     "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
     "tile_ext": ".hgt",
     "compressed_ext": ".hgt.gz",
-    "cached_tile_names": mapzen_tiles_names,
+    "cached_tile_names": dted_l2_tiles_names,
+    "cached_tile_names_kwargs": {"tile_name_template": "{slat}/{slat}{slon}.tif"},
 }
 
 SRTM1_GEOID_SPEC: DatasourceSpec = {
@@ -308,7 +308,8 @@ GLO_30_SPEC: DatasourceSpec = {
     ),
     "grid": GLO_30_GRID,
     "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
-    "cached_tile_names": glo_30_tile_names,
+    "cached_tile_names": zarr_tile_names,
+    "cached_tile_names_kwargs": {"transform": EDH_L2_CHUNK_INDECES_TRANSFORM},
 }
 
 GLO_90_SPEC: DatasourceSpec = {
@@ -317,6 +318,8 @@ GLO_90_SPEC: DatasourceSpec = {
     ),
     "grid": GLO_90_GRID,
     "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
+    "cached_tile_names": zarr_tile_names,
+    "cached_tile_names_kwargs": {"transform": EDH_L1_CHUNK_INDECES_TRANSFORM},
 }
 
 PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
@@ -522,7 +525,12 @@ def seed(
     grid = spec.get("grid")
     tiles: list[Tile]
     if grid is None:
-        tiles = [(tile_name, None) for tile_name in spec["cached_tile_names"](*bounds)]
+        cached_tile_names = spec["cached_tile_names"]
+        cached_tile_names_kwargs = spec.get("cached_tile_names_kwargs", {})
+        tiles = [
+            (tile_name, None)
+            for tile_name in cached_tile_names(*bounds, **cached_tile_names_kwargs)
+        ]
     else:
         tiles = list(zarr_chunks(grid, *bounds))
     # FIXME: emergency hack to enforce the no-bulk-download policy

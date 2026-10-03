@@ -66,6 +66,20 @@ def test_latlon_to_indeces_EDH_L2_CHUNK_INDECES_TRANSFORM() -> None:
     assert datasource.latlon_to_indeces(transform, 13.0, 41.5) == (193, 97)
 
 
+def test_latlon_to_indeces_EDH_L1_CHUNK_INDECES_TRANSFORM() -> None:
+    transform = datasource.EDH_L1_CHUNK_INDECES_TRANSFORM
+    # the chunks of the Copernicus store are 2 by 2 degrees at 3 arc seconds,
+    # 96_24 is the Rome region of the integration tests
+    assert datasource.latlon_to_indeces(transform, 12.4, 41.9) == (96, 24)
+    assert datasource.latlon_to_indeces(transform, 15.0, 39.9) == (97, 25)
+    # the chunks at the north west and the south east corner of the store
+    assert datasource.latlon_to_indeces(transform, -180.0, 90.0) == (0, 0)
+    assert datasource.latlon_to_indeces(transform, 179.9, -89.9) == (179, 89)
+    # an even degree is a chunk boundary, half a pixel west of it, so a bound
+    # that lands on one, like 14.0, reaches the chunk that starts there
+    assert datasource.latlon_to_indeces(transform, 14.0, 41.9) == (97, 24)
+
+
 def test_dted_l2_tiles_names() -> None:
     assert list(datasource.dted_l2_tiles_names(10.1, 44.9, 10.1, 44.9)) == [
         "N44E010.tif"
@@ -75,11 +89,14 @@ def test_dted_l2_tiles_names() -> None:
 
 
 def test_mapzen_tiles_names() -> None:
-    assert list(datasource.mapzen_tiles_names(10.1, 44.9, 10.1, 44.9)) == [
-        "N44/N44E010.tif"
-    ]
+    # MAPZEN is the DTED L2 lattice with a subfolder in the tile name
+    spec = datasource.MAPZEN_SPEC
+    tile_names = spec["cached_tile_names"]
+    kwargs = spec["cached_tile_names_kwargs"]
+
+    assert list(tile_names(10.1, 44.9, 10.1, 44.9, **kwargs)) == ["N44/N44E010.tif"]
     # NOTE this also tests int (not float) input
-    assert list(datasource.mapzen_tiles_names(10, 44, 11, 45)) == ["N44/N44E010.tif"]
+    assert list(tile_names(10, 44, 11, 45, **kwargs)) == ["N44/N44E010.tif"]
 
 
 def test_zarr_source() -> None:
