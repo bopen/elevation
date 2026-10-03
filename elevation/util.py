@@ -65,12 +65,11 @@ def lock_vrt(datasource_root: Path, product: str) -> Generator[None]:
         yield
 
 
-def ensure_setup(root: Path, folders: Iterable[str] = ()) -> list[Path]:
-    """Create *root* and the *folders* in it, returning the created folders."""
+def ensure_setup(root: Path) -> None:
+    """Create the product folder and its ``cache`` subfolder.
+
+    The ``spool`` folder is created on demand by the tile download.
+    """
     with fasteners.InterProcessLock(root / FOLDER_LOCKFILE_NAME):
-        created_folders = []
-        for path in [root] + [root / p for p in folders]:
-            if not path.exists():
-                path.mkdir(parents=True)
-                created_folders.append(path)
-    return created_folders
+        for path in (root, root / "cache"):
+            path.mkdir(parents=True, exist_ok=True)

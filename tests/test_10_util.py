@@ -27,17 +27,9 @@ def test_lock_vrt(tmp_path: Path) -> None:
 
 def test_ensure_setup(tmp_path: Path) -> None:
     root = tmp_path / "root"
-    created_folders = util.ensure_setup(root)
-    assert len(created_folders) == 0
-    assert len(list(tmp_path.iterdir())) == 1
 
-    folders = ["etc", "lib"]
-    created_folders = util.ensure_setup(root, folders=folders)
-    assert len(created_folders) == 2
-    assert created_folders[0].name == "etc"
-    assert created_folders[1].name == "lib"
-    assert len(list(root.iterdir())) == 3
+    util.ensure_setup(root)
 
-    created_folders = util.ensure_setup(root, folders=folders)
-    assert len(created_folders) == 0
-    assert len(list(root.iterdir())) == 3
+    assert (root / "cache").is_dir()
+    # the spool folder is created on demand by the tile download
+    assert not (root / "spool").exists()

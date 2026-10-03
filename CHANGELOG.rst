@@ -16,6 +16,11 @@
 - Download the original SRTM GL1 data from OpenTopography for the ``SRTM1_GEOID`` product.
 - Add the ``MAPZEN`` product for the global Mapzen terrain tiles mosaic and make
   it the default product.
+- Add the ``GLO-30`` and ``GLO-90`` products for the Copernicus DEM global 30m and 90m
+  DSM on the EGM2008 geoid. They are distributed by the Earth Data Hub as a cloud-hosted
+  Zarr store that is read in place, one chunk at a time, and cached as GeoTIFF tiles
+  like the other products, so the credentials in ``~/.netrc`` are used and GDAL 3.8 or
+  later is required.
 - Retire the ``SRTM1`` product name: requesting it raises an error pointing to the
   migration notes.
 - Accept ``str`` or ``Path`` for all path-valued arguments.

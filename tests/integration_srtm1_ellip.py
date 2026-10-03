@@ -7,7 +7,7 @@
 The tile names of this product are grouped in ``North/North_30_60``,
 ``North/North_0_29`` and ``South`` folders, all of them are covered here.
 Each test clips a ~100x100 pixel DEM and compares it with the reference GeoTIFF
-committed in ``tests/data/srtm1_ellip``, see ``CONTRIBUTING.rst`` to regenerate them.
+committed in ``tests/data/SRTM1_ELLIP``, see ``CONTRIBUTING.rst`` to regenerate them.
 """
 
 from collections.abc import Callable

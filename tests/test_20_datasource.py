@@ -30,38 +30,90 @@ def gdalinfo_json(path: Path) -> dict[str, Any]:
     return info
 
 
-def test_srtm3_tile_ilonlat() -> None:
+def test_latlon_to_indeces_CGIAR_L1_TILE_INDECES_TRANSFORM() -> None:
+    transform = datasource.CGIAR_L1_TILE_INDECES_TRANSFORM
     # values from https://srtm.csi.cgiar.org/SELECTION/inputCoord.asp
-    assert datasource.srtm3_tile_ilonlat(-177.5, 52.5) == (1, 2)
-    assert datasource.srtm3_tile_ilonlat(177.5, -47.5) == (72, 22)
-    assert datasource.srtm3_tile_ilonlat(10.1, 44.9) == (39, 4)
-    assert datasource.srtm3_tile_ilonlat(14.9, 44.9) == (39, 4)
-    assert datasource.srtm3_tile_ilonlat(10.1, 40.1) == (39, 4)
-    assert datasource.srtm3_tile_ilonlat(14.9, 40.1) == (39, 4)
+    assert datasource.latlon_to_indeces(transform, -177.5, 52.5) == (1, 2)
+    assert datasource.latlon_to_indeces(transform, 177.5, -47.5) == (72, 22)
+    assert datasource.latlon_to_indeces(transform, 10.1, 44.9) == (39, 4)
+    assert datasource.latlon_to_indeces(transform, 14.9, 44.9) == (39, 4)
+    assert datasource.latlon_to_indeces(transform, 10.1, 40.1) == (39, 4)
+    assert datasource.latlon_to_indeces(transform, 14.9, 40.1) == (39, 4)
 
 
-def test_srtm1_tiles_names() -> None:
-    assert list(datasource.srtm1_tiles_names(10.1, 44.9, 10.1, 44.9)) == ["N44E010.tif"]
+def test_latlon_to_indeces_DTED_L2_TILE_INDECES_TRANSFORM() -> None:
+    transform = datasource.DTED_L2_TILE_INDECES_TRANSFORM
+    # the 1 degree tiles of the SRTM1 products, e.g. N44E010 covers 10E-11E
+    assert datasource.latlon_to_indeces(transform, 10.1, 44.9) == (10, 44)
+    assert datasource.latlon_to_indeces(transform, -73.99, 7.056) == (-74, 7)
+    assert datasource.latlon_to_indeces(transform, 15.931, -19.194) == (15, -20)
+    # a whole degree is a tile node, shared by the two tiles that meet there,
+    # and the half pixel makes it belong to the one that starts at the node
+    assert datasource.latlon_to_indeces(transform, 10.0, 44.0) == (10, 44)
+
+
+def test_latlon_to_indeces_EDH_L2_CHUNK_INDECES_TRANSFORM() -> None:
+    transform = datasource.EDH_L2_CHUNK_INDECES_TRANSFORM
+    # the chunks of the Copernicus store are 1 by 0.5 degrees and 192_96 is
+    # the Rome region of the integration tests
+    assert datasource.latlon_to_indeces(transform, 12.4, 41.9) == (192, 96)
+    assert datasource.latlon_to_indeces(transform, 12.4, 41.4) == (192, 97)
+    # the chunks at the north west and the south east corner of the store
+    assert datasource.latlon_to_indeces(transform, -180.0, 90.0) == (0, 0)
+    assert datasource.latlon_to_indeces(transform, 179.9, -89.9) == (359, 359)
+    # the chunk boundaries are half a pixel outside the whole degrees, so a
+    # bound on a whole degree falls in the chunk that starts there
+    assert datasource.latlon_to_indeces(transform, 13.0, 41.5) == (193, 97)
+
+
+def test_latlon_to_indeces_EDH_L1_CHUNK_INDECES_TRANSFORM() -> None:
+    transform = datasource.EDH_L1_CHUNK_INDECES_TRANSFORM
+    # the chunks of the Copernicus store are 2 by 2 degrees at 3 arc seconds,
+    # 96_24 is the Rome region of the integration tests
+    assert datasource.latlon_to_indeces(transform, 12.4, 41.9) == (96, 24)
+    assert datasource.latlon_to_indeces(transform, 15.0, 39.9) == (97, 25)
+    # the chunks at the north west and the south east corner of the store
+    assert datasource.latlon_to_indeces(transform, -180.0, 90.0) == (0, 0)
+    assert datasource.latlon_to_indeces(transform, 179.9, -89.9) == (179, 89)
+    # an even degree is a chunk boundary, half a pixel west of it, so a bound
+    # that lands on one, like 14.0, reaches the chunk that starts there
+    assert datasource.latlon_to_indeces(transform, 14.0, 41.9) == (97, 24)
+
+
+def test_dted_l2_tiles_names() -> None:
+    assert list(datasource.dted_l2_tiles_names(10.1, 44.9, 10.1, 44.9)) == [
+        "N44E010.tif"
+    ]
     # NOTE this also tests int (not float) input
-    assert list(datasource.srtm1_tiles_names(10, 44, 11, 45)) == ["N44E010.tif"]
+    assert list(datasource.dted_l2_tiles_names(10, 44, 11, 45)) == ["N44E010.tif"]
 
 
 def test_mapzen_tiles_names() -> None:
-    assert list(datasource.mapzen_tiles_names(10.1, 44.9, 10.1, 44.9)) == [
-        "N44/N44E010.tif"
-    ]
+    # MAPZEN is the DTED L2 lattice with a subfolder in the tile name
+    spec = datasource.MAPZEN_SPEC
+    tile_names = spec["cached_tile_names"]
+    kwargs = spec["cached_tile_names_kwargs"]
+
+    assert list(tile_names(10.1, 44.9, 10.1, 44.9, **kwargs)) == ["N44/N44E010.tif"]
     # NOTE this also tests int (not float) input
-    assert list(datasource.mapzen_tiles_names(10, 44, 11, 45)) == ["N44/N44E010.tif"]
+    assert list(tile_names(10, 44, 11, 45, **kwargs)) == ["N44/N44E010.tif"]
 
 
-def test_srtm3_tiles_names() -> None:
-    assert next(datasource.srtm3_tiles_names(10.1, 44.9, 10.1, 44.9)).endswith(
+def test_zarr_source() -> None:
+    assert (
+        datasource.zarr_source("https://example.org/store.zarr/dsm")
+        == 'ZARR:"/vsicurl/https://example.org/store.zarr":/dsm'
+    )
+
+
+def test_cgiar_l1_tiles_names() -> None:
+    assert next(datasource.cgiar_l1_tiles_names(10.1, 44.9, 10.1, 44.9)).endswith(
         "srtm_39_04.tif"
     )
-    assert next(datasource.srtm3_tiles_names(25.50, 58.40, 27.67, 60.06)).endswith(
+    assert next(datasource.cgiar_l1_tiles_names(25.50, 58.40, 27.67, 60.06)).endswith(
         "srtm_42_01.tif"
     )
-    assert len(list(datasource.srtm3_tiles_names(9.9, 39.1, 15.1, 45.1))) == 9
+    assert len(list(datasource.cgiar_l1_tiles_names(9.9, 39.1, 15.1, 45.1))) == 9
 
 
 def test_srtm_ellip_tiles_names() -> None:
@@ -73,25 +125,42 @@ def test_srtm_ellip_tiles_names() -> None:
     assert (
         list(datasource.srtm_ellip_tiles_names(15.931, -19.194, 15.329, -19.961)) == ds3
     )
+    # the tiles share their edge row and column, so a bound on a whole degree
+    # does not reach the tiles that start there
+    assert list(datasource.srtm_ellip_tiles_names(10.1, 44.1, 12.0, 46.0)) == [
+        "North/North_30_60/N44E010_wgs84.tif",
+        "North/North_30_60/N45E010_wgs84.tif",
+        "North/North_30_60/N44E011_wgs84.tif",
+        "North/North_30_60/N45E011_wgs84.tif",
+    ]
 
 
 def test_tile_source() -> None:
+    # a product that serves plain tiles uses the defaults
+    assert "tile_source_kwargs" not in datasource.SRTM1_GEOID_SPEC
+
+    spec = datasource.MAPZEN_SPEC
     url, spooled, member = datasource.tile_source(
-        datasource.MAPZEN_SPEC, "N41/N41E012.tif"
+        spec["datasource_url"], "N41/N41E012.tif", **spec["tile_source_kwargs"]
     )
     assert url.endswith("/skadi/N41/N41E012.hgt.gz")
     assert spooled == "N41/N41E012.hgt"
     assert member is None
 
+    # the SRTM3 tiles are served inside a .zip, that the spec has to declare or
+    # seed asks for a plain .tif that the provider does not have
+    spec = datasource.SRTM3_SPEC
+    assert spec.get("tile_source_kwargs") == {"compressed_ext": ".zip"}
     url, spooled, member = datasource.tile_source(
-        datasource.SRTM3_SPEC, "srtm_39_04.tif"
+        spec["datasource_url"], "srtm_39_04.tif", **spec["tile_source_kwargs"]
     )
     assert url.endswith("/srtm_39_04.zip")
     assert spooled == "srtm_39_04.tif"
     assert member == "srtm_39_04.tif"
 
+    spec = datasource.SRTM1_ELLIP_SPEC
     url, spooled, member = datasource.tile_source(
-        datasource.SRTM1_ELLIP_SPEC, "North/North_30_60/N44E010_wgs84.tif"
+        spec["datasource_url"], "North/North_30_60/N44E010_wgs84.tif"
     )
     assert url.endswith("/North/North_30_60/N44E010_wgs84.tif")
     assert spooled == "North/North_30_60/N44E010_wgs84.tif"
@@ -102,7 +171,11 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch("elevation.datasource.write_cache_tile")
 
-    datasource.ensure_tiles(tmp_path, datasource.SRTM1_GEOID_SPEC, ["N41E012.tif"])
+    datasource.ensure_tiles(
+        tmp_path,
+        ["N41E012.tif"],
+        datasource.SRTM1_GEOID_SPEC["datasource_url"],
+    )
 
     mock_fetch.assert_called_once_with(
         f"{datasource.SRTM1_GEOID_SPEC['datasource_url']}/N41E012.tif",
@@ -110,7 +183,9 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
         member=None,
     )
     mock_write.assert_called_once_with(
-        tmp_path / "spool" / "N41E012.tif", tmp_path / "cache" / "N41E012.tif"
+        tmp_path / "spool" / "N41E012.tif",
+        tmp_path / "cache" / "N41E012.tif",
+        gdal_options=datasource.TILE_GDAL_OPTIONS,
     )
 
 
@@ -121,10 +196,36 @@ def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> Non
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch("elevation.datasource.write_cache_tile")
 
-    datasource.ensure_tiles(tmp_path, datasource.SRTM1_GEOID_SPEC, ["N41E012.tif"])
+    datasource.ensure_tiles(
+        tmp_path,
+        ["N41E012.tif"],
+        datasource.SRTM1_GEOID_SPEC["datasource_url"],
+    )
 
     mock_fetch.assert_not_called()
     mock_write.assert_not_called()
+
+
+def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
+    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
+    mock_write = mocker.patch("elevation.datasource.write_cache_tile")
+    tile = "192/48.tif"
+
+    datasource.ensure_tiles(
+        tmp_path,
+        [tile],
+        datasource.GLO_90_SPEC["datasource_url"],
+        gdal_options=datasource.FLOAT_TILE_GDAL_OPTIONS,
+    )
+
+    # a remote product is read in place: no download, one chunk per tile
+    mock_fetch.assert_not_called()
+    mock_write.assert_called_once_with(
+        datasource.zarr_source(datasource.GLO_90_SPEC["datasource_url"]),
+        tmp_path / "cache" / "192_48.tif",
+        srcwin=(230400, 57600, 1200, 1200),
+        gdal_options=datasource.FLOAT_TILE_GDAL_OPTIONS,
+    )
 
 
 def test_fetch_tile(tmp_path: Path) -> None:
@@ -265,6 +366,7 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_write.assert_called_once_with(
         datasource_root / "spool" / "N43E013.tif",
         datasource_root / "cache" / "N43E013.tif",
+        gdal_options=datasource.TILE_GDAL_OPTIONS,
     )
     assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
 
@@ -273,6 +375,38 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
 
     with pytest.raises(TypeError, match="bounds must be supplied"):
         datasource.seed(cache_dir=root)
+
+
+def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    mock_check_call = mocker.patch("subprocess.check_call")
+    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
+    mock_write = mocker.patch("elevation.datasource.write_cache_tile")
+
+    datasource_root = datasource.seed(
+        cache_dir=root,
+        product="GLO-30",
+        bounds=(12.4, 41.8, 12.4 + 100 / 3600, 41.8 + 100 / 3600),
+    )
+
+    assert datasource_root == root / "GLO-30"
+    assert not (datasource_root / "spool").exists()
+    mock_fetch.assert_called_once_with(
+        f"{datasource.GLO_30_SPEC['datasource_url']}/96/192.tif",
+        datasource_root / "spool" / "96/192.tif",
+        member=None,
+    )
+    mock_write.assert_called_once_with(
+        datasource_root / "spool" / "96/192.tif",
+        datasource_root / "cache" / "96/192.tif",
+        gdal_options=datasource.FLOAT_TILE_GDAL_OPTIONS,
+    )
+    assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
+
+    with pytest.raises(RuntimeError):
+        datasource.seed(
+            cache_dir=root, product="GLO-30", bounds=(0.0, -100.0, 100.0, 0.0)
+        )
 
 
 def test_build_bounds() -> None:
@@ -372,9 +506,9 @@ def test_info(tmp_path: Path) -> None:
 
 def test_dataset() -> None:
     assert "id: SRTM3\n" in elevation.dataset("SRTM3")
+    assert "id: GLO-30\n" in elevation.dataset("GLO-30")
     text = elevation.dataset()
     assert text.count("id: ") == len(elevation.PRODUCTS)
-    assert "GLO-30" not in text
     assert text.endswith("\n")
     assert text.count("\n---\n") == len(elevation.PRODUCTS) - 1
     assert "\n\n---\nid: SRTM1_GEOID\n" in text
