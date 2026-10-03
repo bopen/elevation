@@ -56,6 +56,13 @@ FLOAT_TILE_GDAL_OPTIONS = (
 )
 MARGIN = "0"
 
+# NOTE:
+#   0.0001388888889 == 0.5" is half pixel for DEMs with 1" spacing (DTED L2)
+#   0.0004166666667 == 1.5" is half pixel for DEMs with 3" spacing (DTED L1)
+EDH_L2_CHUNK_INDECES_TRANSFORM = (180.0001388888889, 1.0, 90.00013888888888, -0.5)
+DTED_L2_TILE_INDECES_TRANSFORM = (-0.0001388888889, 1.0, -0.0001388888889, 1.0)
+CGIAR_L1_TILE_INDECES_TRANSFORM = (-185.0004166666667, 5.0, 65.0004166666667, -5.0)
+
 
 def resolve_cache_dir(cache_dir: str | Path | None) -> Path:
     """Return the DEM cache folder to use, as an absolute path.
@@ -69,7 +76,7 @@ def resolve_cache_dir(cache_dir: str | Path | None) -> Path:
 
 
 def latlon_to_indeces(
-    lon: float, lat: float, transform: tuple[float, float, float, float]
+    transform: tuple[float, float, float, float], lon: float, lat: float
 ) -> tuple[int, int]:
     lon_start, lon_step, lat_start, lat_step = transform
     ilon = math.floor((lon - lon_start) / lon_step)
@@ -77,20 +84,15 @@ def latlon_to_indeces(
     return ilon, ilat
 
 
-def srtm1_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
-    # NOTE: 0.5" is half a pixel
-    return latlon_to_indeces(lon, lat, (-0.0001388888889, 1.0, -0.0001388888889, 1.0))
-
-
-def srtm1_tiles_names(
+def dted_l2_tiles_names(
     left: float,
     bottom: float,
     right: float,
     top: float,
     tile_name_template: str = "{slat}{slon}.tif",
 ) -> Iterator[str]:
-    ileft, itop = srtm1_tile_ilonlat(left, top)
-    iright, ibottom = srtm1_tile_ilonlat(right, bottom)
+    ileft, itop = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, left, top)
+    iright, ibottom = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, right, bottom)
     # special case often used *integer* top and right to avoid downloading unneeded tiles
     if isinstance(top, int) or top.is_integer():
         itop -= 1
@@ -103,20 +105,15 @@ def srtm1_tiles_names(
             yield tile_name_template.format(**locals())
 
 
-def srtm3_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
-    # NOTE: 1.5" is half a pixel
-    return latlon_to_indeces(lon, lat, (-185.00041666666, 5.0, 65.00041666666, -5.0))
-
-
-def srtm3_tiles_names(
+def cgiar_l1_tiles_names(
     left: float,
     bottom: float,
     right: float,
     top: float,
     tile_template: str = "srtm_{ilon:02d}_{ilat:02d}.tif",
 ) -> Iterator[str]:
-    ileft, itop = srtm3_tile_ilonlat(left, top)
-    iright, ibottom = srtm3_tile_ilonlat(right, bottom)
+    ileft, itop = latlon_to_indeces(CGIAR_L1_TILE_INDECES_TRANSFORM, left, top)
+    iright, ibottom = latlon_to_indeces(CGIAR_L1_TILE_INDECES_TRANSFORM, right, bottom)
     for ilon in range(ileft, iright + 1):
         for ilat in range(itop, ibottom + 1):
             if ilon > 0 and ilat > 0:
@@ -130,8 +127,8 @@ def srtm_ellip_tiles_names(
     top: float,
     tile_name_template: str = "{slat}{slon}_wgs84.tif",
 ) -> Iterator[str]:
-    ileft, itop = srtm1_tile_ilonlat(left, top)
-    iright, ibottom = srtm1_tile_ilonlat(right, bottom)
+    ileft, itop = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, left, top)
+    iright, ibottom = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, right, bottom)
 
     for ilon in range(ileft, iright + 1):
         slon = f"{'E' if ilon >= 0 else 'W'}{abs(ilon):03d}"
@@ -147,20 +144,14 @@ def srtm_ellip_tiles_names(
                 yield f"{subdir}/{fname}"
 
 
-def glo_30_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
-    # NOTE: 0.5" is half a DEM pixel
-    transform = (180.0001388888889, 1.0, 90.00013888888888, -0.5)
-    return latlon_to_indeces(lon, lat, transform)
-
-
 def glo_30_tile_names(
     left: float,
     bottom: float,
     right: float,
     top: float,
 ) -> Iterator[str]:
-    ileft, itop = glo_30_tile_ilonlat(left, top)
-    iright, ibottom = glo_30_tile_ilonlat(right, bottom)
+    ileft, itop = latlon_to_indeces(EDH_L2_CHUNK_INDECES_TRANSFORM, left, top)
+    iright, ibottom = latlon_to_indeces(EDH_L2_CHUNK_INDECES_TRANSFORM, right, bottom)
     for ilon in range(ileft, iright + 1):
         for ilat in range(itop, ibottom + 1):
             if ilon > 0 and ilat > 0:
@@ -170,7 +161,7 @@ def glo_30_tile_names(
 def mapzen_tiles_names(
     left: float, bottom: float, right: float, top: float
 ) -> Iterator[str]:
-    yield from srtm1_tiles_names(left, bottom, right, top, "{slat}/{slat}{slon}.tif")
+    yield from dted_l2_tiles_names(left, bottom, right, top, "{slat}/{slat}{slon}.tif")
 
 
 # a cache tile is its name plus the source window, ``None`` for a whole download
@@ -256,7 +247,7 @@ MAPZEN_SPEC: DatasourceSpec = {
 SRTM1_GEOID_SPEC: DatasourceSpec = {
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
     "tile_ext": ".tif",
-    "cached_tile_names": srtm1_tiles_names,
+    "cached_tile_names": dted_l2_tiles_names,
 }
 
 SRTM1_ELLIP_SPEC: DatasourceSpec = {
@@ -269,7 +260,7 @@ SRTM3_SPEC: DatasourceSpec = {
     "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
     "tile_ext": ".tif",
     "compressed_ext": ".zip",
-    "cached_tile_names": srtm3_tiles_names,
+    "cached_tile_names": cgiar_l1_tiles_names,
 }
 
 # The Copernicus DEM products are distributed by the Earth Data Hub as a single

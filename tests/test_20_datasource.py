@@ -30,20 +30,21 @@ def gdalinfo_json(path: Path) -> dict[str, Any]:
     return info
 
 
-def test_srtm3_tile_ilonlat() -> None:
+def test_latlon_to_indeces_CGIAR_L1_TILE_INDECES_TRANSFORM() -> None:
+    transform = datasource.CGIAR_L1_TILE_INDECES_TRANSFORM
     # values from https://srtm.csi.cgiar.org/SELECTION/inputCoord.asp
-    assert datasource.srtm3_tile_ilonlat(-177.5, 52.5) == (1, 2)
-    assert datasource.srtm3_tile_ilonlat(177.5, -47.5) == (72, 22)
-    assert datasource.srtm3_tile_ilonlat(10.1, 44.9) == (39, 4)
-    assert datasource.srtm3_tile_ilonlat(14.9, 44.9) == (39, 4)
-    assert datasource.srtm3_tile_ilonlat(10.1, 40.1) == (39, 4)
-    assert datasource.srtm3_tile_ilonlat(14.9, 40.1) == (39, 4)
+    assert datasource.latlon_to_indeces(transform, -177.5, 52.5) == (1, 2)
+    assert datasource.latlon_to_indeces(transform, 177.5, -47.5) == (72, 22)
+    assert datasource.latlon_to_indeces(transform, 10.1, 44.9) == (39, 4)
+    assert datasource.latlon_to_indeces(transform, 14.9, 44.9) == (39, 4)
+    assert datasource.latlon_to_indeces(transform, 10.1, 40.1) == (39, 4)
+    assert datasource.latlon_to_indeces(transform, 14.9, 40.1) == (39, 4)
 
 
-def test_srtm1_tiles_names() -> None:
-    assert list(datasource.srtm1_tiles_names(10.1, 44.9, 10.1, 44.9)) == ["N44E010.tif"]
+def test_dted_tiles_names() -> None:
+    assert list(datasource.dted_tiles_names(10.1, 44.9, 10.1, 44.9)) == ["N44E010.tif"]
     # NOTE this also tests int (not float) input
-    assert list(datasource.srtm1_tiles_names(10, 44, 11, 45)) == ["N44E010.tif"]
+    assert list(datasource.dted_tiles_names(10, 44, 11, 45)) == ["N44E010.tif"]
 
 
 def test_mapzen_tiles_names() -> None:
