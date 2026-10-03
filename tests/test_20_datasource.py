@@ -41,10 +41,37 @@ def test_latlon_to_indeces_CGIAR_L1_TILE_INDECES_TRANSFORM() -> None:
     assert datasource.latlon_to_indeces(transform, 14.9, 40.1) == (39, 4)
 
 
-def test_dted_tiles_names() -> None:
-    assert list(datasource.dted_tiles_names(10.1, 44.9, 10.1, 44.9)) == ["N44E010.tif"]
+def test_latlon_to_indeces_DTED_L2_TILE_INDECES_TRANSFORM() -> None:
+    transform = datasource.DTED_L2_TILE_INDECES_TRANSFORM
+    # the 1 degree tiles of the SRTM1 products, e.g. N44E010 covers 10E-11E
+    assert datasource.latlon_to_indeces(transform, 10.1, 44.9) == (10, 44)
+    assert datasource.latlon_to_indeces(transform, -73.99, 7.056) == (-74, 7)
+    assert datasource.latlon_to_indeces(transform, 15.931, -19.194) == (15, -20)
+    # a whole degree is a tile node, shared by the two tiles that meet there,
+    # and the half pixel makes it belong to the one that starts at the node
+    assert datasource.latlon_to_indeces(transform, 10.0, 44.0) == (10, 44)
+
+
+def test_latlon_to_indeces_EDH_L2_CHUNK_INDECES_TRANSFORM() -> None:
+    transform = datasource.EDH_L2_CHUNK_INDECES_TRANSFORM
+    # the chunks of the Copernicus store are 1 by 0.5 degrees and 192_96 is
+    # the Rome region of the integration tests
+    assert datasource.latlon_to_indeces(transform, 12.4, 41.9) == (192, 96)
+    assert datasource.latlon_to_indeces(transform, 12.4, 41.4) == (192, 97)
+    # the chunks at the north west and the south east corner of the store
+    assert datasource.latlon_to_indeces(transform, -180.0, 90.0) == (0, 0)
+    assert datasource.latlon_to_indeces(transform, 179.9, -89.9) == (359, 359)
+    # the chunk boundaries are half a pixel outside the whole degrees, so a
+    # bound on a whole degree falls in the chunk that starts there
+    assert datasource.latlon_to_indeces(transform, 13.0, 41.5) == (193, 97)
+
+
+def test_dted_l2_tiles_names() -> None:
+    assert list(datasource.dted_l2_tiles_names(10.1, 44.9, 10.1, 44.9)) == [
+        "N44E010.tif"
+    ]
     # NOTE this also tests int (not float) input
-    assert list(datasource.dted_tiles_names(10, 44, 11, 45)) == ["N44E010.tif"]
+    assert list(datasource.dted_l2_tiles_names(10, 44, 11, 45)) == ["N44E010.tif"]
 
 
 def test_mapzen_tiles_names() -> None:
@@ -105,14 +132,14 @@ def test_zarr_grids() -> None:
     assert [name for name, _ in tiles] == ["192_96.tif", "193_96.tif"]
 
 
-def test_srtm3_tiles_names() -> None:
-    assert next(datasource.srtm3_tiles_names(10.1, 44.9, 10.1, 44.9)).endswith(
+def test_cgiar_l1_tiles_names() -> None:
+    assert next(datasource.cgiar_l1_tiles_names(10.1, 44.9, 10.1, 44.9)).endswith(
         "srtm_39_04.tif"
     )
-    assert next(datasource.srtm3_tiles_names(25.50, 58.40, 27.67, 60.06)).endswith(
+    assert next(datasource.cgiar_l1_tiles_names(25.50, 58.40, 27.67, 60.06)).endswith(
         "srtm_42_01.tif"
     )
-    assert len(list(datasource.srtm3_tiles_names(9.9, 39.1, 15.1, 45.1))) == 9
+    assert len(list(datasource.cgiar_l1_tiles_names(9.9, 39.1, 15.1, 45.1))) == 9
 
 
 def test_srtm_ellip_tiles_names() -> None:

@@ -59,7 +59,7 @@ MARGIN = "0"
 # NOTE:
 #   0.0001388888889 == 0.5" is half pixel for DEMs with 1" spacing (DTED L2)
 #   0.0004166666667 == 1.5" is half pixel for DEMs with 3" spacing (DTED L1)
-EDH_L2_CHUNK_INDECES_TRANSFORM = (180.0001388888889, 1.0, 90.00013888888888, -0.5)
+EDH_L2_CHUNK_INDECES_TRANSFORM = (-180.0001388888889, 1.0, 90.00013888888888, -0.5)
 DTED_L2_TILE_INDECES_TRANSFORM = (-0.0001388888889, 1.0, -0.0001388888889, 1.0)
 CGIAR_L1_TILE_INDECES_TRANSFORM = (-185.0004166666667, 5.0, 65.0004166666667, -5.0)
 
@@ -154,7 +154,7 @@ def glo_30_tile_names(
     iright, ibottom = latlon_to_indeces(EDH_L2_CHUNK_INDECES_TRANSFORM, right, bottom)
     for ilon in range(ileft, iright + 1):
         for ilat in range(itop, ibottom + 1):
-            if ilon > 0 and ilat > 0:
+            if ilon >= 0 and ilat >= 0:
                 yield f"{ilat}/{ilon}.tif"
 
 
