@@ -168,6 +168,14 @@ def test_srtm_ellip_tiles_names() -> None:
     assert (
         list(datasource.srtm_ellip_tiles_names(15.931, -19.194, 15.329, -19.961)) == ds3
     )
+    # the tiles share their edge row and column, so a bound on a whole degree
+    # does not reach the tiles that start there
+    assert list(datasource.srtm_ellip_tiles_names(10.1, 44.1, 12.0, 46.0)) == [
+        "North/North_30_60/N44E010_wgs84.tif",
+        "North/North_30_60/N45E010_wgs84.tif",
+        "North/North_30_60/N44E011_wgs84.tif",
+        "North/North_30_60/N45E011_wgs84.tif",
+    ]
 
 
 def test_tile_source() -> None:

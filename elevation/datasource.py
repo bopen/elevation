@@ -130,6 +130,11 @@ def srtm_ellip_tiles_names(
 ) -> Iterator[str]:
     ileft, itop = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, left, top)
     iright, ibottom = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, right, bottom)
+    # special case often used *integer* top and right to avoid downloading unneeded tiles
+    if isinstance(top, int) or top.is_integer():
+        itop -= 1
+    if isinstance(right, int) or right.is_integer():
+        iright -= 1
 
     for ilon in range(ileft, iright + 1):
         slon = f"{'E' if ilon >= 0 else 'W'}{abs(ilon):03d}"
