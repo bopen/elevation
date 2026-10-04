@@ -20,7 +20,7 @@ import subprocess
 from collections.abc import Callable, Iterator, Sequence
 from importlib import resources
 from pathlib import Path
-from typing import TypedDict
+from typing import Any, NotRequired, TypedDict
 
 import appdirs
 
@@ -47,9 +47,19 @@ __all__ = [
 CACHE_DIR: str = appdirs.user_cache_dir("elevation", "bopen")
 DEFAULT_OUTPUT = "out.tif"
 DEFAULT_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
-# the VRT mosaic reads the cache tiles whole, the options only trade size for speed
-TILE_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
+CACHE_EXT = ".tif"
+TILE_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9"
+INT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=2"
+FLOAT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=3"
 MARGIN = "0"
+
+# NOTE:
+#   0.0001388888889 == 0.5" is half pixel for DEMs with 1" spacing (DTED L2)
+#   0.0004166666667 == 1.5" is half pixel for DEMs with 3" spacing (DTED L1)
+EDH_L2_CHUNK_INDECES_TRANSFORM = (-180.0001388888889, 1.0, 90.00013888888888, -0.5)
+EDH_L1_CHUNK_INDECES_TRANSFORM = (-180.00041666666667, 2.0, 90.00041666666667, -2.0)
+DTED_L2_TILE_INDECES_TRANSFORM = (-0.0001388888889, 1.0, -0.0001388888889, 1.0)
+CGIAR_L1_TILE_INDECES_TRANSFORM = (-185.0004166666667, 5.0, 65.0004166666667, -5.0)
 
 
 def resolve_cache_dir(cache_dir: str | Path | None) -> Path:
@@ -63,24 +73,27 @@ def resolve_cache_dir(cache_dir: str | Path | None) -> Path:
     return Path(cache_dir).resolve()
 
 
-def srtm1_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
-    return math.floor(lon), math.floor(lat)
+def latlon_to_indeces(
+    transform: tuple[float, float, float, float], lon: float, lat: float
+) -> tuple[int, int]:
+    lon_start, lon_step, lat_start, lat_step = transform
+    ilon = math.floor((lon - lon_start) / lon_step)
+    ilat = math.floor((lat - lat_start) / lat_step)
+    return ilon, ilat
 
 
-def srtm3_tile_ilonlat(lon: float, lat: float) -> tuple[int, int]:
-    ilon, ilat = srtm1_tile_ilonlat(lon, lat)
-    return (ilon + 180) // 5 + 1, (64 - ilat) // 5
+Tile = tuple[tuple[int, int], str]
 
 
-def srtm1_tiles_names(
+def dted_l2_tiles(
     left: float,
     bottom: float,
     right: float,
     top: float,
     tile_name_template: str = "{slat}{slon}.tif",
-) -> Iterator[str]:
-    ileft, itop = srtm1_tile_ilonlat(left, top)
-    iright, ibottom = srtm1_tile_ilonlat(right, bottom)
+) -> Iterator[Tile]:
+    ileft, itop = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, left, top)
+    iright, ibottom = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, right, bottom)
     # special case often used *integer* top and right to avoid downloading unneeded tiles
     if isinstance(top, int) or top.is_integer():
         itop -= 1
@@ -90,34 +103,38 @@ def srtm1_tiles_names(
         slon = f"{'E' if ilon >= 0 else 'W'}{abs(ilon):03d}"
         for ilat in range(ibottom, itop + 1):
             slat = f"{'N' if ilat >= 0 else 'S'}{abs(ilat):02d}"
-            yield tile_name_template.format(**locals())
+            yield (ilon, ilat), tile_name_template.format(**locals())
 
 
-def srtm3_tiles_names(
+def cgiar_l1_tiles(
     left: float,
     bottom: float,
     right: float,
     top: float,
     tile_template: str = "srtm_{ilon:02d}_{ilat:02d}.tif",
-) -> Iterator[str]:
-    ileft, itop = srtm3_tile_ilonlat(left, top)
-    iright, ibottom = srtm3_tile_ilonlat(right, bottom)
+) -> Iterator[Tile]:
+    ileft, itop = latlon_to_indeces(CGIAR_L1_TILE_INDECES_TRANSFORM, left, top)
+    iright, ibottom = latlon_to_indeces(CGIAR_L1_TILE_INDECES_TRANSFORM, right, bottom)
     for ilon in range(ileft, iright + 1):
         for ilat in range(itop, ibottom + 1):
             if ilon > 0 and ilat > 0:
-                yield tile_template.format(**locals())
+                yield (ilon, ilat), tile_template.format(**locals())
 
 
-def srtm_ellip_tiles_names(
+def srtm_ellip_tiles(
     left: float,
     bottom: float,
     right: float,
     top: float,
     tile_name_template: str = "{slat}{slon}_wgs84.tif",
-) -> Iterator[str]:
-    ileft, itop = srtm1_tile_ilonlat(left, top)
-    iright, ibottom = srtm1_tile_ilonlat(right, bottom)
-
+) -> Iterator[Tile]:
+    ileft, itop = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, left, top)
+    iright, ibottom = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, right, bottom)
+    # special case often used *integer* top and right to avoid downloading unneeded tiles
+    if isinstance(top, int) or top.is_integer():
+        itop -= 1
+    if isinstance(right, int) or right.is_integer():
+        iright -= 1
     for ilon in range(ileft, iright + 1):
         slon = f"{'E' if ilon >= 0 else 'W'}{abs(ilon):03d}"
         for ilat in range(ibottom, itop + 1):
@@ -127,59 +144,136 @@ def srtm_ellip_tiles_names(
             fname = tile_name_template.format(**locals())
 
             if ilat >= 0:
-                yield f"{subdir}/{north_subdir}/{fname}"
+                yield (ilon, ilat), f"{subdir}/{north_subdir}/{fname}"
             else:
-                yield f"{subdir}/{fname}"
+                yield (ilon, ilat), f"{subdir}/{fname}"
 
 
-def mapzen_tiles_names(
-    left: float, bottom: float, right: float, top: float
-) -> Iterator[str]:
-    yield from srtm1_tiles_names(left, bottom, right, top, "{slat}/{slat}{slon}.tif")
+def prepare_tile_download_uncompress(
+    tile_name: str,
+    spool: Path,
+    datasource_url: str,
+    ilon: int,
+    ilat: int,
+    **kwargs: Any,
+) -> tuple[list[str], Path | None]:
+    source, spool_name, member = tile_source(datasource_url, tile_name, **kwargs)
+    spooled = spool / spool_name
+    fetch_tile(source, spooled, member=member)
+    return [str(spooled)], spooled
+
+
+def zarr_tiles(
+    left: float,
+    bottom: float,
+    right: float,
+    top: float,
+    transform: tuple[float, float, float, float],
+) -> Iterator[Tile]:
+    ileft, itop = latlon_to_indeces(transform, left, top)
+    iright, ibottom = latlon_to_indeces(transform, right, bottom)
+    for ilon in range(ileft, iright + 1):
+        for ilat in range(itop, ibottom + 1):
+            if ilon >= 0 and ilat >= 0:
+                yield (ilon, ilat), f"{ilat}/{ilon}.tif"
+
+
+def prepare_tile_zarr(
+    tile_name: str,
+    spool: Path,
+    datasource_url: str,
+    ilat: int,
+    ilon: int,
+    chunks: tuple[int, int],
+    **kwargs: Any,
+) -> tuple[list[str], Path | None]:
+    srcwin = [ilon * chunks[0], ilat * chunks[1], chunks[0], chunks[1]]
+    gdal_source = [
+        "-srcwin",
+        *map(str, srcwin),
+        f'ZARR:"/vsicurl/{datasource_url}":/dsm',
+    ]
+    return gdal_source, None
 
 
 class DatasourceSpec(TypedDict):
-    folders: tuple[str, ...]
-    datasource_url: str
-    tile_ext: str
-    compressed_ext: str
-    tile_names: Callable[..., Iterator[str]]
+    # a local product has one URL per tile (``tiles``), a remote one is a
+    # single chunked source (``grid``): the key tells the two apart
+    cached_tiles: Callable[..., Iterator[Tile]]
+    # keyword arguments for ``cached_tiles``, e.g. the tile name template
+    # of a product that keeps its tiles in subfolders
+    cached_tiles_kwargs: NotRequired[dict[str, Any]]
+    # prepare the tile for GDAL, downloading it or reading the window of the
+    # chunked source, next to the spool file to remove once it is cached
+    prepare_tile: Callable[..., tuple[list[str], Path | None]]
+    # keyword arguments for ``prepare_tile``: the datasource URL, the source
+    # extension, the archive the provider serves it in, the chunk size
+    prepare_tile_kwargs: dict[str, Any]
+    tile_gdal_options: NotRequired[str]
 
 
 MAPZEN_SPEC: DatasourceSpec = {
-    "folders": ("spool", "cache"),
-    "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
-    "tile_ext": ".hgt",
-    "compressed_ext": ".hgt.gz",
-    "tile_names": mapzen_tiles_names,
+    "prepare_tile": prepare_tile_download_uncompress,
+    "prepare_tile_kwargs": {
+        "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
+        "tile_ext": ".hgt",
+        "compressed_ext": ".hgt.gz",
+    },
+    "cached_tiles": dted_l2_tiles,
+    "cached_tiles_kwargs": {"tile_name_template": "{slat}/{slat}{slon}.tif"},
 }
 
 SRTM1_GEOID_SPEC: DatasourceSpec = {
-    "folders": ("spool", "cache"),
-    "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
-    "tile_ext": ".tif",
-    "compressed_ext": "",
-    "tile_names": srtm1_tiles_names,
+    "prepare_tile": prepare_tile_download_uncompress,
+    "prepare_tile_kwargs": {
+        "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
+    },
+    "cached_tiles": dted_l2_tiles,
 }
 
 SRTM1_ELLIP_SPEC: DatasourceSpec = {
-    "folders": ("spool", "cache"),
-    "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
-    "tile_ext": ".tif",
-    "compressed_ext": "",
-    "tile_names": srtm_ellip_tiles_names,
+    "prepare_tile": prepare_tile_download_uncompress,
+    "prepare_tile_kwargs": {
+        "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
+    },
+    "cached_tiles": srtm_ellip_tiles,
 }
 
 SRTM3_SPEC: DatasourceSpec = {
-    "folders": ("spool", "cache"),
-    "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
-    "tile_ext": ".tif",
-    "compressed_ext": ".zip",
-    "tile_names": srtm3_tiles_names,
+    "prepare_tile_kwargs": {
+        "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
+        "compressed_ext": ".zip",
+    },
+    "cached_tiles": cgiar_l1_tiles,
+    "prepare_tile": prepare_tile_download_uncompress,
+}
+
+GLO_30_SPEC: DatasourceSpec = {
+    "prepare_tile": prepare_tile_zarr,
+    "prepare_tile_kwargs": {
+        "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-30-v1.zarr",
+        "chunks": (3600, 1800),
+    },
+    "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
+    "cached_tiles": zarr_tiles,
+    "cached_tiles_kwargs": {"transform": EDH_L2_CHUNK_INDECES_TRANSFORM},
+}
+
+GLO_90_SPEC: DatasourceSpec = {
+    "prepare_tile": prepare_tile_zarr,
+    "prepare_tile_kwargs": {
+        "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-90-v1.zarr",
+        "chunks": (2400, 2400),
+    },
+    "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
+    "cached_tiles": zarr_tiles,
+    "cached_tiles_kwargs": {"transform": EDH_L1_CHUNK_INDECES_TRANSFORM},
 }
 
 PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
     "MAPZEN": MAPZEN_SPEC,
+    "GLO-30": GLO_30_SPEC,
+    "GLO-90": GLO_90_SPEC,
     "SRTM1_GEOID": SRTM1_GEOID_SPEC,
     "SRTM1_ELLIP": SRTM1_ELLIP_SPEC,
     "SRTM3": SRTM3_SPEC,
@@ -210,10 +304,12 @@ RETIRED_PRODUCTS: dict[str, str] = {
 }
 
 
-CACHE_EXT = ".tif"
-
-
-def tile_source(spec: DatasourceSpec, tile_name: str) -> tuple[str, str, str | None]:
+def tile_source(
+    datasource_url: str,
+    tile_name: str,
+    tile_ext: str = ".tif",
+    compressed_ext: str | None = None,
+) -> tuple[str, str, str | None]:
     """Return the ``(url, spool_name, member)`` of the tile for *tile_name*.
 
     *tile_name* is the cache tile name, always a ``.tif``; the spool name is the
@@ -222,11 +318,10 @@ def tile_source(spec: DatasourceSpec, tile_name: str) -> tuple[str, str, str | N
     to read inside a ``.zip`` archive and ``None`` otherwise.
     """
     stem = tile_name.removesuffix(CACHE_EXT)
-    spool_name = f"{stem}{spec['tile_ext']}"
-    compressed_ext = spec["compressed_ext"]
-    remote = spool_name if not compressed_ext else f"{stem}{compressed_ext}"
+    spool_name = f"{stem}{tile_ext}"
+    remote = spool_name if compressed_ext is None else f"{stem}{compressed_ext}"
     member = Path(spool_name).name if compressed_ext == ".zip" else None
-    return f"{spec['datasource_url']}/{remote}", spool_name, member
+    return f"{datasource_url}/{remote}", spool_name, member
 
 
 def fetch_tile(source: str, destination: Path, *, member: str | None = None) -> None:
@@ -259,10 +354,9 @@ def fetch_tile(source: str, destination: Path, *, member: str | None = None) -> 
 
 
 def write_cache_tile(
-    source: str | Path,
+    gdal_source: Sequence[str],
     destination: Path,
     *,
-    srcwin: Sequence[int] | None = None,
     gdal_options: str = TILE_GDAL_OPTIONS,
 ) -> list[str]:
     """Write *source* to *destination* as the internal compressed GeoTIFF tile.
@@ -278,30 +372,49 @@ def write_cache_tile(
     :return: The command arguments.
     """
     destination.parent.mkdir(parents=True, exist_ok=True)
-    window = [] if srcwin is None else ["-srcwin", *map(str, srcwin)]
     cmd = [
         "gdal_translate",
         "-q",
         *gdal_options.split(),
-        *window,
-        str(source),
+        *gdal_source,
         str(destination),
     ]
     subprocess.check_call(cmd)
     return cmd
 
 
-def ensure_tiles(root: Path, spec: DatasourceSpec, tile_names: Sequence[str]) -> None:
-    """Fetch and cache *tile_names*, skipping the tiles already in the cache."""
-    for tile_name in tile_names:
+def ensure_tiles(
+    root: Path,
+    tiles: Sequence[Tile],
+    prepare_tile: Callable[..., tuple[list[str], Path | None]],
+    gdal_options: str = TILE_GDAL_OPTIONS,
+    **kwargs: Any,
+) -> None:
+    """Fetch and cache *tiles*, skipping the tiles already in the cache.
+
+    A tile is a ``(name, window)`` pair: a tile with a window is read in place
+    from ``datasource_url``, a tile without one is downloaded whole from its own
+    URL and goes through the spool.
+    """
+    for (ilon, ilat), tile_name in tiles:
         cached = root / "cache" / tile_name
         if cached.exists() and cached.stat().st_size > 0:
             continue
-        source, spool_name, member = tile_source(spec, tile_name)
-        spooled = root / "spool" / spool_name
-        fetch_tile(source, spooled, member=member)
-        write_cache_tile(spooled, cached)
-        spooled.unlink(missing_ok=True)
+
+        # prepare the data if GDAL cannot download it / read it as it is
+        gdal_source, spooled = prepare_tile(
+            tile_name, root / "spool", ilat=ilat, ilon=ilon, **kwargs
+        )
+
+        # convert the data to the internal cache format
+        ready = root / "spool/ready" / tile_name
+        write_cache_tile(gdal_source, ready, gdal_options=gdal_options)
+        if spooled is not None:
+            spooled.unlink(missing_ok=True)
+
+        # finally move the data inside the cache. The move is atomic in most cases
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(ready, cached)
 
 
 def build_vrt(root: Path, product: str) -> list[str]:
@@ -327,7 +440,7 @@ def ensure_setup(
         raise ProductRetiredError(RETIRED_PRODUCTS[product])
     datasource_root = resolve_cache_dir(cache_dir) / product
     spec = PRODUCTS_SPECS[product]
-    util.ensure_setup(datasource_root, folders=spec["folders"])
+    util.ensure_setup(datasource_root)
     return datasource_root, spec
 
 
@@ -354,6 +467,9 @@ def seed(
 ) -> Path:
     """Seed the DEM to given bounds.
 
+    A remote product is not downloaded whole: only the chunks of the store that
+    cover the bounds are read in place and cached.
+
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
     :param bounds: Output bounds in 'left bottom right top' order.
@@ -362,19 +478,30 @@ def seed(
     if bounds is None:
         raise TypeError("bounds must be supplied")
     datasource_root, spec = ensure_setup(cache_dir, product)
-    ensure_tiles_names = list(spec["tile_names"](*bounds))
+    cached_tiles = spec["cached_tiles"]
+    cached_tiles_kwargs = spec.get("cached_tiles_kwargs", {})
+    tiles = list(cached_tiles(*bounds, **cached_tiles_kwargs))
     # FIXME: emergency hack to enforce the no-bulk-download policy
-    if len(ensure_tiles_names) > max_download_tiles:
+    if len(tiles) > max_download_tiles:
         raise RuntimeError(
-            f"Too many tiles: {len(ensure_tiles_names)}. Please consult the "
+            f"Too many tiles: {len(tiles)}. Please consult the "
             "providers' websites for how to bulk download tiles."
         )
 
-    with util.lock_tiles(datasource_root, ensure_tiles_names):
-        ensure_tiles(datasource_root, spec, ensure_tiles_names)
+    prepare_tile = spec["prepare_tile"]
+    prepare_tile_kwargs = spec.get("prepare_tile_kwargs", {})
+    with util.lock_tiles(datasource_root, [name for _, name in tiles]):
+        ensure_tiles(
+            datasource_root,
+            tiles,
+            prepare_tile=prepare_tile,
+            gdal_options=spec.get("tile_gdal_options", TILE_GDAL_OPTIONS),
+            **prepare_tile_kwargs,
+        )
 
     with util.lock_vrt(datasource_root, product):
         build_vrt(datasource_root, product)
+
     return datasource_root
 
 
@@ -388,12 +515,13 @@ def build_bounds(
         margin_lat = (top - bottom) * margin_percent / 100
     else:
         margin_lon = margin_lat = float(margin)
-    return (
+    bounds = (
         left - margin_lon,
         bottom - margin_lat,
         right + margin_lon,
         top + margin_lat,
     )
+    return bounds
 
 
 def clip(

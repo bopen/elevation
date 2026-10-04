@@ -5,7 +5,7 @@
 """Integration tests for the ``SRTM1_GEOID`` product, i.e. SRTM GL1 on OpenTopography.
 
 Each test clips a ~100x100 pixel DEM and compares it with the reference GeoTIFF
-committed in ``tests/data/srtm1_geoid``, see ``CONTRIBUTING.rst`` to regenerate them.
+committed in ``tests/data/SRTM1_GEOID``, see ``CONTRIBUTING.rst`` to regenerate them.
 """
 
 from collections.abc import Callable
