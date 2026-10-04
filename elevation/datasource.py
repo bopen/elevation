@@ -150,7 +150,12 @@ def srtm_ellip_tiles(
 
 
 def prepare_tile_download_uncompress(
-    tile_name, spool, datasource_url, ilon, ilat, **kwargs
+    tile_name: str,
+    spool: Path,
+    datasource_url: str,
+    ilon: int,
+    ilat: int,
+    **kwargs: Any,
 ) -> tuple[list[str], Path | None]:
     source, spool_name, member = tile_source(datasource_url, tile_name, **kwargs)
     spooled = spool / spool_name
@@ -174,7 +179,13 @@ def zarr_tiles(
 
 
 def prepare_tile_zarr(
-    tile_name, spool, datasource_url, ilat, ilon, chunks, **kwargs
+    tile_name: str,
+    spool: Path,
+    datasource_url: str,
+    ilat: int,
+    ilon: int,
+    chunks: tuple[int, int],
+    **kwargs: Any,
 ) -> tuple[list[str], Path | None]:
     srcwin = [ilon * chunks[0], ilat * chunks[1], chunks[0], chunks[1]]
     gdal_source = [
@@ -186,23 +197,25 @@ def prepare_tile_zarr(
 
 
 class DatasourceSpec(TypedDict):
-    datasource_url: str
     # a local product has one URL per tile (``tiles``), a remote one is a
     # single chunked source (``grid``): the key tells the two apart
-    cached_tiles: NotRequired[Callable[..., Iterator[Tile]]]
+    cached_tiles: Callable[..., Iterator[Tile]]
     # keyword arguments for ``cached_tiles``, e.g. the tile name template
     # of a product that keeps its tiles in subfolders
     cached_tiles_kwargs: NotRequired[dict[str, Any]]
-    # keyword arguments for ``tile_source``, e.g. the source extension and the
-    # archive the provider serves it in
-    tile_source_kwargs: NotRequired[dict[str, Any]]
+    # prepare the tile for GDAL, downloading it or reading the window of the
+    # chunked source, next to the spool file to remove once it is cached
+    prepare_tile: Callable[..., tuple[list[str], Path | None]]
+    # keyword arguments for ``prepare_tile``: the datasource URL, the source
+    # extension, the archive the provider serves it in, the chunk size
+    prepare_tile_kwargs: dict[str, Any]
     tile_gdal_options: NotRequired[str]
 
 
 MAPZEN_SPEC: DatasourceSpec = {
-    "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
     "prepare_tile": prepare_tile_download_uncompress,
     "prepare_tile_kwargs": {
+        "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
         "tile_ext": ".hgt",
         "compressed_ext": ".hgt.gz",
     },
@@ -211,28 +224,34 @@ MAPZEN_SPEC: DatasourceSpec = {
 }
 
 SRTM1_GEOID_SPEC: DatasourceSpec = {
-    "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
-    "cached_tiles": dted_l2_tiles,
     "prepare_tile": prepare_tile_download_uncompress,
+    "prepare_tile_kwargs": {
+        "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
+    },
+    "cached_tiles": dted_l2_tiles,
 }
 
 SRTM1_ELLIP_SPEC: DatasourceSpec = {
-    "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
-    "cached_tiles": srtm_ellip_tiles,
     "prepare_tile": prepare_tile_download_uncompress,
+    "prepare_tile_kwargs": {
+        "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
+    },
+    "cached_tiles": srtm_ellip_tiles,
 }
 
 SRTM3_SPEC: DatasourceSpec = {
-    "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
-    "tile_source_kwargs": {"compressed_ext": ".zip"},
+    "prepare_tile_kwargs": {
+        "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
+        "compressed_ext": ".zip",
+    },
     "cached_tiles": cgiar_l1_tiles,
     "prepare_tile": prepare_tile_download_uncompress,
 }
 
 GLO_30_SPEC: DatasourceSpec = {
-    "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-30-v1.zarr",
     "prepare_tile": prepare_tile_zarr,
     "prepare_tile_kwargs": {
+        "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-30-v1.zarr",
         "chunks": (3600, 1800),
     },
     "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
@@ -241,9 +260,9 @@ GLO_30_SPEC: DatasourceSpec = {
 }
 
 GLO_90_SPEC: DatasourceSpec = {
-    "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-90-v1.zarr/dsm",
     "prepare_tile": prepare_tile_zarr,
     "prepare_tile_kwargs": {
+        "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-90-v1.zarr",
         "chunks": (2400, 2400),
     },
     "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
@@ -476,7 +495,6 @@ def seed(
             datasource_root,
             tiles,
             prepare_tile=prepare_tile,
-            datasource_url=spec["datasource_url"],
             gdal_options=spec.get("tile_gdal_options", TILE_GDAL_OPTIONS),
             **prepare_tile_kwargs,
         )
