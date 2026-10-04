@@ -386,7 +386,7 @@ def write_cache_tile(
 def ensure_tiles(
     root: Path,
     tiles: Sequence[Tile],
-    prepare_tile: Callable,
+    prepare_tile: Callable[..., tuple[list[str], Path | None]],
     gdal_options: str = TILE_GDAL_OPTIONS,
     **kwargs: Any,
 ) -> None:
