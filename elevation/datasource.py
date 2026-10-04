@@ -153,11 +153,13 @@ def prepare_tile_download_uncompress(
     tile_name: str,
     spool: Path,
     datasource_url: str,
-    ilon: int,
-    ilat: int,
+    tile_ext: str = ".tif",
+    compressed_ext: str | None = None,
     **kwargs: Any,
 ) -> tuple[list[str], Path | None]:
-    source, spool_name, member = tile_source(datasource_url, tile_name, **kwargs)
+    source, spool_name, member = tile_source(
+        datasource_url, tile_name, tile_ext, compressed_ext
+    )
     spooled = spool / spool_name
     fetch_tile(source, spooled, member=member)
     return [str(spooled)], spooled
@@ -179,9 +181,8 @@ def zarr_tiles(
 
 
 def prepare_tile_zarr(
-    tile_name: str,
-    spool: Path,
     datasource_url: str,
+    variable_path: str,
     ilat: int,
     ilon: int,
     chunks: tuple[int, int],
@@ -191,7 +192,7 @@ def prepare_tile_zarr(
     gdal_source = [
         "-srcwin",
         *map(str, srcwin),
-        f'ZARR:"/vsicurl/{datasource_url}":/dsm',
+        f'ZARR:"/vsicurl/{datasource_url}":{variable_path}',
     ]
     return gdal_source, None
 
@@ -206,8 +207,9 @@ class DatasourceSpec(TypedDict):
     # prepare the tile for GDAL, downloading it or reading the window of the
     # chunked source, next to the spool file to remove once it is cached
     prepare_tile: Callable[..., tuple[list[str], Path | None]]
-    # keyword arguments for ``prepare_tile``: the datasource URL, the source
-    # extension, the archive the provider serves it in, the chunk size
+    # keyword arguments for ``prepare_tile``: the datasource URL and the path
+    # of the variable in the store, the source extension, the archive the
+    # provider serves it in, the chunk size
     prepare_tile_kwargs: dict[str, Any]
     tile_gdal_options: NotRequired[str]
 
@@ -252,6 +254,7 @@ GLO_30_SPEC: DatasourceSpec = {
     "prepare_tile": prepare_tile_zarr,
     "prepare_tile_kwargs": {
         "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-30-v1.zarr",
+        "variable_path": "/dsm",
         "chunks": (3600, 1800),
     },
     "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
@@ -263,6 +266,7 @@ GLO_90_SPEC: DatasourceSpec = {
     "prepare_tile": prepare_tile_zarr,
     "prepare_tile_kwargs": {
         "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-90-v1.zarr",
+        "variable_path": "/dsm",
         "chunks": (2400, 2400),
     },
     "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
@@ -403,7 +407,7 @@ def ensure_tiles(
 
         # prepare the data if GDAL cannot download it / read it as it is
         gdal_source, spooled = prepare_tile(
-            tile_name, root / "spool", ilat=ilat, ilon=ilon, **kwargs
+            tile_name=tile_name, spool=root / "spool", ilat=ilat, ilon=ilon, **kwargs
         )
 
         # convert the data to the internal cache format
