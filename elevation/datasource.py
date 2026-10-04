@@ -149,6 +149,15 @@ def srtm_ellip_tiles(
                 yield (ilon, ilat), f"{subdir}/{fname}"
 
 
+def prepare_tile_download_uncompress(
+    tile_name, spool, datasource_url, ilon, ilat, **kwargs
+) -> tuple[list[str], Path | None]:
+    source, spool_name, member = tile_source(datasource_url, tile_name, **kwargs)
+    spooled = spool / spool_name
+    fetch_tile(source, spooled, member=member)
+    return [str(spooled)], spooled
+
+
 def zarr_tiles(
     left: float,
     bottom: float,
@@ -164,17 +173,16 @@ def zarr_tiles(
                 yield (ilon, ilat), f"{ilat}/{ilon}.tif"
 
 
-def zarr_source(url: str) -> str:
-    """Return the GDAL connection string that reads the Zarr array at *url*.
-
-    The array path must be given to the driver as the tag suffix. Addressing the
-    array as ``ZARR:"/vsicurl/<array>"`` reads the same raster but without any
-    CRS: the store keeps it in a separate ``spatial_ref`` variable, that GDAL
-    only reads through the store itself.
-    """
-    store, _, array = url.rpartition("/")
-    source = f'ZARR:"/vsicurl/{store}":/{array}'
-    return source
+def prepare_tile_zarr(
+    tile_name, spool, datasource_url, ilat, ilon, chunks, **kwargs
+) -> tuple[list[str], Path | None]:
+    srcwin = [ilon * chunks[0], ilat * chunks[1], chunks[0], chunks[1]]
+    gdal_source = [
+        "-srcwin",
+        *map(str, srcwin),
+        f'ZARR:"/vsicurl/{datasource_url}":/dsm',
+    ]
+    return gdal_source, None
 
 
 class DatasourceSpec(TypedDict):
@@ -193,7 +201,8 @@ class DatasourceSpec(TypedDict):
 
 MAPZEN_SPEC: DatasourceSpec = {
     "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
-    "tile_source_kwargs": {
+    "prepare_tile": prepare_tile_download_uncompress,
+    "prepare_tile_kwargs": {
         "tile_ext": ".hgt",
         "compressed_ext": ".hgt.gz",
     },
@@ -204,21 +213,28 @@ MAPZEN_SPEC: DatasourceSpec = {
 SRTM1_GEOID_SPEC: DatasourceSpec = {
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
     "cached_tiles": dted_l2_tiles,
+    "prepare_tile": prepare_tile_download_uncompress,
 }
 
 SRTM1_ELLIP_SPEC: DatasourceSpec = {
     "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
     "cached_tiles": srtm_ellip_tiles,
+    "prepare_tile": prepare_tile_download_uncompress,
 }
 
 SRTM3_SPEC: DatasourceSpec = {
     "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
     "tile_source_kwargs": {"compressed_ext": ".zip"},
     "cached_tiles": cgiar_l1_tiles,
+    "prepare_tile": prepare_tile_download_uncompress,
 }
 
 GLO_30_SPEC: DatasourceSpec = {
-    "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-30-v1.zarr/dsm",
+    "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-30-v1.zarr",
+    "prepare_tile": prepare_tile_zarr,
+    "prepare_tile_kwargs": {
+        "chunks": (3600, 1800),
+    },
     "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
     "cached_tiles": zarr_tiles,
     "cached_tiles_kwargs": {"transform": EDH_L2_CHUNK_INDECES_TRANSFORM},
@@ -226,6 +242,10 @@ GLO_30_SPEC: DatasourceSpec = {
 
 GLO_90_SPEC: DatasourceSpec = {
     "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-90-v1.zarr/dsm",
+    "prepare_tile": prepare_tile_zarr,
+    "prepare_tile_kwargs": {
+        "chunks": (2400, 2400),
+    },
     "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
     "cached_tiles": zarr_tiles,
     "cached_tiles_kwargs": {"transform": EDH_L1_CHUNK_INDECES_TRANSFORM},
@@ -315,10 +335,9 @@ def fetch_tile(source: str, destination: Path, *, member: str | None = None) -> 
 
 
 def write_cache_tile(
-    source: str | Path,
+    gdal_source: Sequence[str],
     destination: Path,
     *,
-    srcwin: Sequence[int] | None = None,
     gdal_options: str = TILE_GDAL_OPTIONS,
 ) -> list[str]:
     """Write *source* to *destination* as the internal compressed GeoTIFF tile.
@@ -334,13 +353,11 @@ def write_cache_tile(
     :return: The command arguments.
     """
     destination.parent.mkdir(parents=True, exist_ok=True)
-    window = [] if srcwin is None else ["-srcwin", *map(str, srcwin)]
     cmd = [
         "gdal_translate",
         "-q",
         *gdal_options.split(),
-        *window,
-        str(source),
+        *gdal_source,
         str(destination),
     ]
     subprocess.check_call(cmd)
@@ -349,8 +366,8 @@ def write_cache_tile(
 
 def ensure_tiles(
     root: Path,
-    tiles: Sequence[str],
-    datasource_url: str,
+    tiles: Sequence[Tile],
+    prepare_tile: Callable,
     gdal_options: str = TILE_GDAL_OPTIONS,
     **kwargs: Any,
 ) -> None:
@@ -360,17 +377,25 @@ def ensure_tiles(
     from ``datasource_url``, a tile without one is downloaded whole from its own
     URL and goes through the spool.
     """
-    for tile_name in tiles:
+    for (ilon, ilat), tile_name in tiles:
         cached = root / "cache" / tile_name
         if cached.exists() and cached.stat().st_size > 0:
             continue
 
-        source, spool_name, member = tile_source(datasource_url, tile_name, **kwargs)
-        spooled = root / "spool" / spool_name
-        fetch_tile(source, spooled, member=member)
+        # prepare the data if GDAL cannot download it / read it as it is
+        gdal_source, spooled = prepare_tile(
+            tile_name, root / "spool", ilat=ilat, ilon=ilon, **kwargs
+        )
 
-        write_cache_tile(spooled, cached, gdal_options=gdal_options)
-        spooled.unlink(missing_ok=True)
+        # convert the data to the internal cache format
+        ready = root / "spool/ready" / tile_name
+        write_cache_tile(gdal_source, ready, gdal_options=gdal_options)
+        if spooled is not None:
+            spooled.unlink(missing_ok=True)
+
+        # finally move the data inside the cache. The move is atomic in most cases
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(ready, cached)
 
 
 def build_vrt(root: Path, product: str) -> list[str]:
@@ -436,9 +461,7 @@ def seed(
     datasource_root, spec = ensure_setup(cache_dir, product)
     cached_tiles = spec["cached_tiles"]
     cached_tiles_kwargs = spec.get("cached_tiles_kwargs", {})
-    # the name is all the cache and the source URL need, the indeces of the
-    # product cell the tile comes from are not used yet
-    tiles = [tile_name for _, tile_name in cached_tiles(*bounds, **cached_tiles_kwargs)]
+    tiles = list(cached_tiles(*bounds, **cached_tiles_kwargs))
     # FIXME: emergency hack to enforce the no-bulk-download policy
     if len(tiles) > max_download_tiles:
         raise RuntimeError(
@@ -446,13 +469,16 @@ def seed(
             "providers' websites for how to bulk download tiles."
         )
 
-    with util.lock_tiles(datasource_root, tiles):
+    prepare_tile = spec["prepare_tile"]
+    prepare_tile_kwargs = spec.get("prepare_tile_kwargs", {})
+    with util.lock_tiles(datasource_root, [name for _, name in tiles]):
         ensure_tiles(
             datasource_root,
             tiles,
+            prepare_tile=prepare_tile,
             datasource_url=spec["datasource_url"],
             gdal_options=spec.get("tile_gdal_options", TILE_GDAL_OPTIONS),
-            **spec.get("tile_source_kwargs", {}),
+            **prepare_tile_kwargs,
         )
 
     with util.lock_vrt(datasource_root, product):

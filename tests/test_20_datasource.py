@@ -30,6 +30,12 @@ def gdalinfo_json(path: Path) -> dict[str, Any]:
     return info
 
 
+def write_ready_tile(source: str | Path, ready: Path, **kwargs: Any) -> None:
+    """Stand in for the mocked cache write: leave a tile for the cache move."""
+    ready.parent.mkdir(parents=True, exist_ok=True)
+    ready.write_bytes(b"tile")
+
+
 def test_latlon_to_indeces_CGIAR_L1_TILE_INDECES_TRANSFORM() -> None:
     transform = datasource.CGIAR_L1_TILE_INDECES_TRANSFORM
     # values from https://srtm.csi.cgiar.org/SELECTION/inputCoord.asp
@@ -101,13 +107,6 @@ def test_mapzen_tiles() -> None:
     assert list(tiles(10, 44, 11, 45, **kwargs)) == [((10, 44), "N44/N44E010.tif")]
 
 
-def test_zarr_source() -> None:
-    assert (
-        datasource.zarr_source("https://example.org/store.zarr/dsm")
-        == 'ZARR:"/vsicurl/https://example.org/store.zarr":/dsm'
-    )
-
-
 def test_cgiar_l1_tiles() -> None:
     assert next(datasource.cgiar_l1_tiles(10.1, 44.9, 10.1, 44.9)) == (
         (39, 4),
@@ -171,11 +170,13 @@ def test_tile_source() -> None:
 
 def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
-    mock_write = mocker.patch("elevation.datasource.write_cache_tile")
+    mock_write = mocker.patch(
+        "elevation.datasource.write_cache_tile", side_effect=write_ready_tile
+    )
 
     datasource.ensure_tiles(
         tmp_path,
-        ["N41E012.tif"],
+        [((12, 41), "N41E012.tif")],
         datasource.SRTM1_GEOID_SPEC["datasource_url"],
     )
 
@@ -186,9 +187,11 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
     )
     mock_write.assert_called_once_with(
         tmp_path / "spool" / "N41E012.tif",
-        tmp_path / "cache" / "N41E012.tif",
+        tmp_path / "spool" / "ready" / "N41E012.tif",
         gdal_options=datasource.TILE_GDAL_OPTIONS,
     )
+    # the tile reaches the cache only once it has been written in the spool
+    assert (tmp_path / "cache" / "N41E012.tif").read_bytes() == b"tile"
 
 
 def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> None:
@@ -200,22 +203,25 @@ def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> Non
 
     datasource.ensure_tiles(
         tmp_path,
-        ["N41E012.tif"],
+        [((12, 41), "N41E012.tif")],
         datasource.SRTM1_GEOID_SPEC["datasource_url"],
     )
 
     mock_fetch.assert_not_called()
     mock_write.assert_not_called()
+    assert cached.read_bytes() == b"cached"
 
 
 def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
-    mock_write = mocker.patch("elevation.datasource.write_cache_tile")
+    mock_write = mocker.patch(
+        "elevation.datasource.write_cache_tile", side_effect=write_ready_tile
+    )
     tile = "192/48.tif"
 
     datasource.ensure_tiles(
         tmp_path,
-        [tile],
+        [((192, 48), tile)],
         datasource.GLO_90_SPEC["datasource_url"],
         gdal_options=datasource.FLOAT_TILE_GDAL_OPTIONS,
     )
@@ -229,9 +235,10 @@ def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     )
     mock_write.assert_called_once_with(
         tmp_path / "spool" / tile,
-        tmp_path / "cache" / tile,
+        tmp_path / "spool" / "ready" / tile,
         gdal_options=datasource.FLOAT_TILE_GDAL_OPTIONS,
     )
+    assert (tmp_path / "cache" / tile).read_bytes() == b"tile"
 
 
 def test_fetch_tile(tmp_path: Path) -> None:
@@ -357,7 +364,9 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     bounds = (13.1, 43.1, 13.9, 43.9)
     mock_check_call = mocker.patch("subprocess.check_call")
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
-    mock_write = mocker.patch("elevation.datasource.write_cache_tile")
+    mock_write = mocker.patch(
+        "elevation.datasource.write_cache_tile", side_effect=write_ready_tile
+    )
 
     datasource_root = datasource.seed(
         cache_dir=root, product="SRTM1_GEOID", bounds=bounds
@@ -371,7 +380,7 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     )
     mock_write.assert_called_once_with(
         datasource_root / "spool" / "N43E013.tif",
-        datasource_root / "cache" / "N43E013.tif",
+        datasource_root / "spool" / "ready" / "N43E013.tif",
         gdal_options=datasource.TILE_GDAL_OPTIONS,
     )
     assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
@@ -387,7 +396,9 @@ def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     mock_check_call = mocker.patch("subprocess.check_call")
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
-    mock_write = mocker.patch("elevation.datasource.write_cache_tile")
+    mock_write = mocker.patch(
+        "elevation.datasource.write_cache_tile", side_effect=write_ready_tile
+    )
 
     datasource_root = datasource.seed(
         cache_dir=root,
@@ -396,7 +407,6 @@ def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     )
 
     assert datasource_root == root / "GLO-30"
-    assert not (datasource_root / "spool").exists()
     mock_fetch.assert_called_once_with(
         f"{datasource.GLO_30_SPEC['datasource_url']}/96/192.tif",
         datasource_root / "spool" / "96/192.tif",
@@ -404,9 +414,10 @@ def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     )
     mock_write.assert_called_once_with(
         datasource_root / "spool" / "96/192.tif",
-        datasource_root / "cache" / "96/192.tif",
+        datasource_root / "spool" / "ready" / "96/192.tif",
         gdal_options=datasource.FLOAT_TILE_GDAL_OPTIONS,
     )
+    assert (datasource_root / "cache" / "96/192.tif").read_bytes() == b"tile"
     assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
 
     with pytest.raises(RuntimeError):
@@ -438,7 +449,7 @@ def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     bounds = (13.1, 43.1, 14.9, 44.9)
     mock_check_call = mocker.patch("subprocess.check_call")
     mocker.patch("elevation.datasource.fetch_tile")
-    mocker.patch("elevation.datasource.write_cache_tile")
+    mocker.patch("elevation.datasource.write_cache_tile", side_effect=write_ready_tile)
 
     datasource.clip(cache_dir=root, bounds=bounds, output="out.tif")
 
