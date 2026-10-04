@@ -80,23 +80,25 @@ def test_latlon_to_indeces_EDH_L1_CHUNK_INDECES_TRANSFORM() -> None:
     assert datasource.latlon_to_indeces(transform, 14.0, 41.9) == (97, 24)
 
 
-def test_dted_l2_tiles_names() -> None:
-    assert list(datasource.dted_l2_tiles_names(10.1, 44.9, 10.1, 44.9)) == [
-        "N44E010.tif"
+def test_dted_l2_tiles() -> None:
+    assert list(datasource.dted_l2_tiles(10.1, 44.9, 10.1, 44.9)) == [
+        ((10, 44), "N44E010.tif")
     ]
     # NOTE this also tests int (not float) input
-    assert list(datasource.dted_l2_tiles_names(10, 44, 11, 45)) == ["N44E010.tif"]
+    assert list(datasource.dted_l2_tiles(10, 44, 11, 45)) == [((10, 44), "N44E010.tif")]
 
 
-def test_mapzen_tiles_names() -> None:
+def test_mapzen_tiles() -> None:
     # MAPZEN is the DTED L2 lattice with a subfolder in the tile name
     spec = datasource.MAPZEN_SPEC
-    tile_names = spec["cached_tile_names"]
-    kwargs = spec["cached_tile_names_kwargs"]
+    tiles = spec["cached_tiles"]
+    kwargs = spec["cached_tiles_kwargs"]
 
-    assert list(tile_names(10.1, 44.9, 10.1, 44.9, **kwargs)) == ["N44/N44E010.tif"]
+    assert list(tiles(10.1, 44.9, 10.1, 44.9, **kwargs)) == [
+        ((10, 44), "N44/N44E010.tif")
+    ]
     # NOTE this also tests int (not float) input
-    assert list(tile_names(10, 44, 11, 45, **kwargs)) == ["N44/N44E010.tif"]
+    assert list(tiles(10, 44, 11, 45, **kwargs)) == [((10, 44), "N44/N44E010.tif")]
 
 
 def test_zarr_source() -> None:
@@ -106,32 +108,32 @@ def test_zarr_source() -> None:
     )
 
 
-def test_cgiar_l1_tiles_names() -> None:
-    assert next(datasource.cgiar_l1_tiles_names(10.1, 44.9, 10.1, 44.9)).endswith(
-        "srtm_39_04.tif"
+def test_cgiar_l1_tiles() -> None:
+    assert next(datasource.cgiar_l1_tiles(10.1, 44.9, 10.1, 44.9)) == (
+        (39, 4),
+        "srtm_39_04.tif",
     )
-    assert next(datasource.cgiar_l1_tiles_names(25.50, 58.40, 27.67, 60.06)).endswith(
-        "srtm_42_01.tif"
+    assert next(datasource.cgiar_l1_tiles(25.50, 58.40, 27.67, 60.06)) == (
+        (42, 1),
+        "srtm_42_01.tif",
     )
-    assert len(list(datasource.cgiar_l1_tiles_names(9.9, 39.1, 15.1, 45.1))) == 9
+    assert len(list(datasource.cgiar_l1_tiles(9.9, 39.1, 15.1, 45.1))) == 9
 
 
-def test_srtm_ellip_tiles_names() -> None:
-    ds1 = ["North/North_30_60/N44E010_wgs84.tif"]
-    ds2 = ["North/North_0_29/N07W074_wgs84.tif"]
-    ds3 = ["South/S20E015_wgs84.tif"]
-    assert list(datasource.srtm_ellip_tiles_names(10.1, 44.9, 10.1, 44.9)) == ds1
-    assert list(datasource.srtm_ellip_tiles_names(-73.99, 7.056, -73.90, 7.660)) == ds2
-    assert (
-        list(datasource.srtm_ellip_tiles_names(15.931, -19.194, 15.329, -19.961)) == ds3
-    )
+def test_srtm_ellip_tiles() -> None:
+    ds1 = [((10, 44), "North/North_30_60/N44E010_wgs84.tif")]
+    ds2 = [((-74, 7), "North/North_0_29/N07W074_wgs84.tif")]
+    ds3 = [((15, -20), "South/S20E015_wgs84.tif")]
+    assert list(datasource.srtm_ellip_tiles(10.1, 44.9, 10.1, 44.9)) == ds1
+    assert list(datasource.srtm_ellip_tiles(-73.99, 7.056, -73.90, 7.660)) == ds2
+    assert list(datasource.srtm_ellip_tiles(15.931, -19.194, 15.329, -19.961)) == ds3
     # the tiles share their edge row and column, so a bound on a whole degree
     # does not reach the tiles that start there
-    assert list(datasource.srtm_ellip_tiles_names(10.1, 44.1, 12.0, 46.0)) == [
-        "North/North_30_60/N44E010_wgs84.tif",
-        "North/North_30_60/N45E010_wgs84.tif",
-        "North/North_30_60/N44E011_wgs84.tif",
-        "North/North_30_60/N45E011_wgs84.tif",
+    assert list(datasource.srtm_ellip_tiles(10.1, 44.1, 12.0, 46.0)) == [
+        ((10, 44), "North/North_30_60/N44E010_wgs84.tif"),
+        ((10, 45), "North/North_30_60/N45E010_wgs84.tif"),
+        ((11, 44), "North/North_30_60/N44E011_wgs84.tif"),
+        ((11, 45), "North/North_30_60/N45E011_wgs84.tif"),
     ]
 
 
@@ -218,12 +220,16 @@ def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
         gdal_options=datasource.FLOAT_TILE_GDAL_OPTIONS,
     )
 
-    # a remote product is read in place: no download, one chunk per tile
-    mock_fetch.assert_not_called()
+    # the chunks of a remote product are fetched and cached like any other
+    # tile, only the float creation options make them different
+    mock_fetch.assert_called_once_with(
+        f"{datasource.GLO_90_SPEC['datasource_url']}/{tile}",
+        tmp_path / "spool" / tile,
+        member=None,
+    )
     mock_write.assert_called_once_with(
-        datasource.zarr_source(datasource.GLO_90_SPEC["datasource_url"]),
-        tmp_path / "cache" / "192_48.tif",
-        srcwin=(230400, 57600, 1200, 1200),
+        tmp_path / "spool" / tile,
+        tmp_path / "cache" / tile,
         gdal_options=datasource.FLOAT_TILE_GDAL_OPTIONS,
     )
 
