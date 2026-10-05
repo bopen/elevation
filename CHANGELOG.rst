@@ -28,6 +28,7 @@
   directory.
 - Add the ``eio dataset`` command and the ``elevation.dataset`` function to show the
   STAC metadata of the datasets.
+- Add the ``--verbose`` option to ``eio selfcheck`` to show the tools as they are tested.
 - Drop support for Python 3.6-3.10: only Python >= 3.11 is supported.
 - Move the packaging metadata to ``pyproject.toml`` and remove ``setup.py``
   and ``setup.cfg``.

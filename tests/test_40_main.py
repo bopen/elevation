@@ -27,6 +27,16 @@ def test_eio_selfcheck(mocker: MockerFixture) -> None:
     assert mock_check_output.call_count == len(elevation.TOOLS)
 
 
+def test_eio_selfcheck_verbose(mocker: MockerFixture) -> None:
+    runner = typer.testing.CliRunner()
+    mock_check_output = mocker.patch("subprocess.check_output")
+    result = runner.invoke(__main__.app, ["selfcheck", "--verbose"])
+    assert not result.exception
+    assert mock_check_output.call_count == len(elevation.TOOLS)
+    for tool_name, _ in elevation.TOOLS:
+        assert f"Checking {tool_name!r} ..." in result.output
+
+
 def test_eio_dataset() -> None:
     runner = typer.testing.CliRunner()
     result = runner.invoke(__main__.app, ["dataset"])

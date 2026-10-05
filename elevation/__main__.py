@@ -81,8 +81,14 @@ def main(
 
 
 @app.command(short_help="Audit the system for common issues.")
-def selfcheck() -> None:
-    typer.echo(elevation.selfcheck())
+def selfcheck(
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        help="Report each tool as it is tested.",
+    ),
+) -> None:
+    typer.echo(elevation.selfcheck(verbose=verbose))
 
 
 @app.command(short_help="Show info about the product cache.")

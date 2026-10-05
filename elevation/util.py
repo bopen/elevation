@@ -29,18 +29,27 @@ TOOLS: list[tuple[str, str]] = [
 ]
 
 
-def selfcheck(tools: dict[str, str] | Iterable[tuple[str, str]] = TOOLS) -> str:
+def selfcheck(
+    tools: dict[str, str] | Iterable[tuple[str, str]] = TOOLS,
+    verbose: bool = False,
+) -> str:
     """Audit the system for issues.
 
     :param tools: Tools description, defaults to TOOLS.
+    :param verbose: Report each tool as it is tested.
     """
-    msg = []
+    report = []
+    issues = []
     for tool_name, check_cli in dict(tools).items():
+        if verbose:
+            report.append(f"Checking {tool_name!r} ...")
         try:
             subprocess.check_output(check_cli, shell=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError:
-            msg.append(f"{tool_name!r} not found or not usable.")
-    return "\n".join(msg) if msg else "Your system is ready."
+            issues.append(f"{tool_name!r} not found or not usable.")
+    report.append("\n".join(issues) if issues else "Your system is ready.")
+    result = "\n".join(report)
+    return result
 
 
 @contextmanager
