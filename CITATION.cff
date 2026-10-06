@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 type: software
 title: elevation
-abstract: "Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, SRTM 30m and 90m DEMs."
+abstract: "Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, Copernicus DEM and SRTM 30m and 90m DEMs."
 authors:
   - family-names: Amici
     given-names: Alessandro
@@ -16,6 +16,7 @@ repository-code: "https://github.com/bopen/elevation"
 url: "https://elevation.bopen.eu"
 license: Apache-2.0
 keywords:
+  - Copernicus DEM
   - DEM
   - DTM
   - SRTM

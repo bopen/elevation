@@ -45,6 +45,7 @@ dependencies = [
 description = "Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, Copernicus DEM and SRTM 30m and 90m DEMs."
 dynamic = ["version"]
 keywords = [
+  "Copernicus DEM",
   "DEM",
   "DTM",
   "SRTM",
