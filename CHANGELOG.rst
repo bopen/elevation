@@ -29,6 +29,10 @@
 - Add the ``eio dataset`` command and the ``elevation.dataset`` function to show the
   STAC metadata of the datasets.
 - Add the ``--verbose`` option to ``eio selfcheck`` to show the tools as they are tested.
+- Add the ``--max_download_tiles`` option and the ``EIO_SEED_MAX_DOWNLOAD_TILES``
+  and ``EIO_CLIP_MAX_DOWNLOAD_TILES`` variables to the ``seed`` and ``clip``
+  commands to limit the number of tiles to download, counting only the tiles that
+  are not cached yet; the default is raised from 9 to 25.
 - Drop support for Python 3.6-3.10: only Python >= 3.11 is supported.
 - Move the packaging metadata to ``pyproject.toml`` and remove ``setup.py``
   and ``setup.cfg``.
