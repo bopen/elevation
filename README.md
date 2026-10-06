@@ -269,10 +269,8 @@ Every command has a corresponding API function in the `elevation` module:
 | Resource | Link |
 | --- | --- |
 | Documentation | <https://elevation.bopen.eu> |
-| Support | <https://stackoverflow.com/search?q=python+elevation> |
 | Development | <https://github.com/bopen/elevation> |
 | Download | <https://pypi.org/project/elevation> |
-| Code quality | [![Coverage status on Codecov](https://codecov.io/gh/bopen/elevation/branch/main/graph/badge.svg)](https://codecov.io/gh/bopen/elevation) |
 
 ## Contributing
 
