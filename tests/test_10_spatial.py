@@ -51,6 +51,26 @@ def test_call_gdal_translate_command(tmp_path: Path, mocker: MockerFixture) -> N
     assert destination.parent.is_dir()
 
 
+def test_call_gdalbuildvrt_command(tmp_path: Path, mocker: MockerFixture) -> None:
+    check_call = mocker.patch("subprocess.check_call")
+    destination = tmp_path / "cache" / "destination.vrt"
+    sources = [
+        str(tmp_path / "cache" / "N41E012.tif"),
+        str(tmp_path / "cache" / "N42E012.tif"),
+    ]
+
+    cmd = spatial.call_gdalbuildvrt(sources, destination)
+
+    assert cmd == [
+        "gdalbuildvrt",
+        *spatial.VRT_GDAL_OPTIONS.split(),
+        str(destination),
+        *sources,
+    ]
+    check_call.assert_called_once_with(cmd)
+    assert destination.parent.is_dir()
+
+
 @requires_gdal
 def test_call_gdal_translate(tmp_path: Path) -> None:
     destination = tmp_path / "cache" / "destination.tif"

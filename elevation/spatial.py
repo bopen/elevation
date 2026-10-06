@@ -25,6 +25,7 @@ TILE_GDAL_OPTIONS = (
 )
 INT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=2"
 FLOAT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=3"
+VRT_GDAL_OPTIONS = DEFAULT_GDAL_OPTIONS + " -overwrite"
 
 
 def gdal_report(cmd: list[str]) -> Any:
@@ -50,6 +51,28 @@ def call_gdal_translate(
         *options.split(),
         *source.split(),
         str(destination),
+    ]
+    subprocess.check_call(cmd)
+    return cmd
+
+
+def call_gdalbuildvrt(
+    sources: list[str],
+    destination: Path,
+    options: str = VRT_GDAL_OPTIONS,
+) -> list[str]:
+    """Build the *destination* ``.vrt`` mosaic over *sources*.
+
+    :param sources: Paths of the raster tiles to mosaic.
+    :param destination: Path of the destination, parent folders are created.
+    :param options: GDAL options placed before the destination.
+    """
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [
+        "gdalbuildvrt",
+        *options.split(),
+        str(destination),
+        *sources,
     ]
     subprocess.check_call(cmd)
     return cmd

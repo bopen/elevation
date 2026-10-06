@@ -16,7 +16,6 @@
 import math
 import os
 import shutil
-import subprocess
 from collections.abc import Callable, Iterator, Sequence
 from importlib import resources
 from pathlib import Path
@@ -389,17 +388,11 @@ def ensure_tiles(
 
 def build_vrt(root: Path, product: str) -> list[str]:
     """Build the ``<product>.vrt`` mosaic over the non empty cache tiles."""
-    tiles = sorted(
-        tile for tile in (root / "cache").rglob("*.tif") if tile.stat().st_size > 0
-    )
-    cmd = [
-        "gdalbuildvrt",
-        "-q",
-        "-overwrite",
-        str(root / f"{product}.vrt"),
-        *map(str, tiles),
-    ]
-    subprocess.check_call(cmd)
+    tiles = []
+    for tile in (root / "cache").rglob("*.tif"):
+        if tile.stat().st_size > 0:
+            tiles.append(str(tile))
+    cmd = spatial.call_gdalbuildvrt(sorted(tiles), root / f"{product}.vrt")
     return cmd
 
 
