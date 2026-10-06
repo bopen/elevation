@@ -127,8 +127,18 @@ def seed(
         "--margin",
         help="Decimal degree margin added to the bounds. Use '%' for percent margin.",
     ),
+    max_download_tiles: int = typer.Option(
+        elevation.MAX_DOWNLOAD_TILES,
+        "--max_download_tiles",
+        help="Maximum number of tiles to process.",
+    ),
 ) -> None:
-    elevation.seed(**ctx.obj, bounds=bounds, margin=margin)
+    elevation.seed(
+        **ctx.obj,
+        bounds=bounds,
+        margin=margin,
+        max_download_tiles=max_download_tiles,
+    )
 
 
 @app.command(short_help="Clip the DEM to given bounds.")
@@ -166,6 +176,11 @@ def clip(
         "--gdal-options",
         help="GDAL creation options of the output file, e.g. '-co COMPRESS=LZW'.",
     ),
+    max_download_tiles: int = typer.Option(
+        elevation.MAX_DOWNLOAD_TILES,
+        "--max_download_tiles",
+        help="Maximum number of tiles to process.",
+    ),
 ) -> None:
     if bounds is None and reference is None:
         raise typer.BadParameter(
@@ -176,7 +191,12 @@ def clip(
         assert reference is not None
         bounds = spatial.import_bounds(reference)
     elevation.clip(
-        bounds, output=output, margin=margin, gdal_options=gdal_options, **ctx.obj
+        bounds,
+        output=output,
+        margin=margin,
+        gdal_options=gdal_options,
+        max_download_tiles=max_download_tiles,
+        **ctx.obj,
     )
 
 

@@ -25,6 +25,7 @@ from . import cache, spatial
 DEFAULT_OUTPUT = "out.tif"
 DEFAULT_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
 MARGIN = "0"
+MAX_DOWNLOAD_TILES = 25
 
 # NOTE:
 #   0.0001388888889 == 0.5" is half pixel for DEMs with 1" spacing (DTED L2)
@@ -324,7 +325,7 @@ def seed(
     product: str = DEFAULT_PRODUCT,
     bounds: tuple[float, float, float, float] | None = None,
     margin: str = MARGIN,
-    max_download_tiles: int = 9,
+    max_download_tiles: int = MAX_DOWNLOAD_TILES,
 ) -> tuple[Path, tuple[float, float, float, float]]:
     """Seed the DEM to given bounds.
 
@@ -395,6 +396,7 @@ def clip(
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
     gdal_options: str = DEFAULT_GDAL_OPTIONS,
+    max_download_tiles: int = MAX_DOWNLOAD_TILES,
 ) -> None:
     """Clip the DEM to given bounds.
 
@@ -404,10 +406,15 @@ def clip(
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
     :param gdal_options: GDAL creation options of the output file.
+    :param max_download_tiles: Maximum number of tiles to process.
     """
     output = Path(output).resolve()
     datasource_root, bounds = seed(
-        cache_dir=cache_dir, product=product, bounds=bounds, margin=margin
+        cache_dir=cache_dir,
+        product=product,
+        bounds=bounds,
+        margin=margin,
+        max_download_tiles=max_download_tiles,
     )
     left, bottom, right, top = bounds
     options = f"-q {gdal_options} -projwin {left} {top} {right} {bottom}"
