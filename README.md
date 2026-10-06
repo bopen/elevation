@@ -136,10 +136,22 @@ $ eio dataset
 
 The optional argument selects a single dataset by id, e.g. `eio dataset SRTM3`.
 
-To clean up stale temporary files and fix the cache in the event of a server error use:
+To show info about the product cache use:
+
+```console
+$ eio info
+```
+
+To clean up the product cache from temporary files use:
 
 ```console
 $ eio clean
+```
+
+To remove the product cache entirely use:
+
+```console
+$ eio distclean
 ```
 
 ## Command line reference
@@ -159,8 +171,7 @@ $ eio --help
 │                                                           [default: MAPZEN]                      │
 │ --cache_dir        <directory>                            Root of the DEM cache folder.          │
 │                                                           [env var: EIO_CACHE_DIR]               │
-│                                                           [default:                              │
-│                                                           /Users/amici/Library/Caches/elevation]  │
+│                                                           [default: <user cache folder>]         │
 │ --help                                                    Show this message and exit.            │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
@@ -238,6 +249,7 @@ $ eio seed --help
 Defaults can be defined by setting environment variables prefixed with `EIO`,
 e.g. `EIO_PRODUCT=SRTM3`, `EIO_CLIP_MARGIN=10%` and `EIO_CACHE_DIR=/tmp/elevation`.
 `EIO_CACHE_DIR` selects the DEM cache folder and is honoured by the Python API as well.
+The default is the `elevation` folder of the operating system user cache directory.
 
 ## Python API
 
@@ -247,7 +259,7 @@ Every command has a corresponding API function in the `elevation` module:
 >>> import elevation
 >>> # clip the 30m DEM of Rome and save it to Rome-DEM.tif
 >>> elevation.clip(bounds=(12.35, 41.8, 12.65, 42), output="Rome-DEM.tif")
->>> # clean up stale temporary files and fix the cache in the event of a server error
+>>> # clean up the product cache from temporary files
 >>> elevation.clean()
 
 ```
