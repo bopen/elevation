@@ -43,7 +43,7 @@ def test_call_gdal_translate_command(tmp_path: Path, mocker: MockerFixture) -> N
 
     assert cmd == [
         "gdal_translate",
-        *spatial.INT_TILE_GDAL_OPTIONS.split(),
+        *spatial.DEFAULT_GDAL_OPTIONS.split(),
         *source.split(),
         str(destination),
     ]
@@ -62,7 +62,6 @@ def test_call_gdal_translate(tmp_path: Path) -> None:
     assert tile["size"] == source["size"]
     assert tile["geoTransform"] == pytest.approx(source["geoTransform"])
     assert tile["coordinateSystem"] == source["coordinateSystem"]
-    assert tile["metadata"]["IMAGE_STRUCTURE"]["COMPRESSION"] == "DEFLATE"
     tile_band, source_band = tile["bands"][0], source["bands"][0]
     assert tile_band["type"] == source_band["type"]
     assert tile_band.get("noDataValue") == source_band.get("noDataValue")

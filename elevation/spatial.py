@@ -19,7 +19,10 @@ from pathlib import Path
 from typing import Any
 
 CORNERS = ("upperLeft", "lowerLeft", "upperRight", "lowerRight")
-TILE_GDAL_OPTIONS = "-q -co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9"
+DEFAULT_GDAL_OPTIONS = "-q"
+TILE_GDAL_OPTIONS = (
+    DEFAULT_GDAL_OPTIONS + " -co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9"
+)
 INT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=2"
 FLOAT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=3"
 
@@ -33,8 +36,7 @@ def gdal_report(cmd: list[str]) -> Any:
 def call_gdal_translate(
     source: str,
     destination: Path,
-    *,
-    options: str = INT_TILE_GDAL_OPTIONS,
+    options: str = DEFAULT_GDAL_OPTIONS,
 ) -> list[str]:
     """Write *source* to *destination* calling the gdal_translate binary.
 

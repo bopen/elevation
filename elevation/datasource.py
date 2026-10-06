@@ -465,7 +465,7 @@ def seed(
             datasource_root,
             tiles,
             prepare_tile=prepare_tile,
-            gdal_options=spec.get("tile_gdal_options", spatial.TILE_GDAL_OPTIONS),
+            gdal_options=spec.get("tile_gdal_options", spatial.INT_TILE_GDAL_OPTIONS),
             **prepare_tile_kwargs,
         )
 

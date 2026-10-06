@@ -353,7 +353,7 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_write.assert_called_once_with(
         str(datasource_root / "spool" / "N43E013.tif"),
         datasource_root / "spool" / "ready" / "N43E013.tif",
-        options=spatial.TILE_GDAL_OPTIONS,
+        options=spatial.INT_TILE_GDAL_OPTIONS,
     )
     assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
 
