@@ -22,22 +22,6 @@ from typing import Any, NotRequired, TypedDict
 
 from . import cache, spatial
 
-__all__ = [
-    "DEFAULT_GDAL_OPTIONS",
-    "DEFAULT_OUTPUT",
-    "DEFAULT_PRODUCT",
-    "MARGIN",
-    "PRODUCTS",
-    "RETIRED_PRODUCTS",
-    "ProductRetiredError",
-    "clean",
-    "clip",
-    "dataset",
-    "distclean",
-    "info",
-    "seed",
-]
-
 DEFAULT_OUTPUT = "out.tif"
 DEFAULT_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
 MARGIN = "0"
@@ -346,8 +330,9 @@ def seed(
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
     bounds: tuple[float, float, float, float] | None = None,
+    margin: str = MARGIN,
     max_download_tiles: int = 9,
-) -> Path:
+) -> tuple[Path, tuple[float, float, float, float]]:
     """Seed the DEM to given bounds.
 
     A remote product is not downloaded whole: only the chunks of the store that
@@ -356,10 +341,13 @@ def seed(
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
     :param bounds: Output bounds in 'left bottom right top' order.
+    :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
     :param max_download_tiles: Maximum number of tiles to process.
+    :return: The datasource root and the bounds with the margin applied.
     """
     if bounds is None:
         raise TypeError("bounds must be supplied")
+    bounds = build_bounds(bounds, margin=margin)
     datasource_root, spec = ensure_setup(cache_dir, product)
     cached_tiles = spec["cached_tiles"]
     cached_tiles_kwargs = spec.get("cached_tiles_kwargs", {})
@@ -385,7 +373,7 @@ def seed(
     with cache.lock_vrt(datasource_root, product):
         cache.build_vrt(datasource_root, product)
 
-    return datasource_root
+    return datasource_root, bounds
 
 
 def build_bounds(
@@ -425,8 +413,9 @@ def clip(
     :param gdal_options: GDAL creation options of the output file.
     """
     output = Path(output).resolve()
-    bounds = build_bounds(bounds, margin=margin)
-    datasource_root = seed(cache_dir=cache_dir, product=product, bounds=bounds)
+    datasource_root, bounds = seed(
+        cache_dir=cache_dir, product=product, bounds=bounds, margin=margin
+    )
     left, bottom, right, top = bounds
     options = f"-q {gdal_options} -projwin {left} {top} {right} {bottom}"
     source = str(datasource_root / f"{product}.vrt")

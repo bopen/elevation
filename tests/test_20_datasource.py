@@ -288,11 +288,12 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
 
-    datasource_root = datasource.seed(
+    datasource_root, seeded_bounds = datasource.seed(
         cache_dir=root, product="SRTM1_GEOID", bounds=bounds
     )
 
     assert datasource_root == root / "SRTM1_GEOID"
+    assert seeded_bounds == bounds
     mock_fetch.assert_called_once_with(
         f"{spec['prepare_tile_kwargs']['datasource_url']}/N43E013.tif",
         datasource_root / "spool" / "N43E013.tif",
@@ -320,7 +321,7 @@ def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
 
-    datasource_root = datasource.seed(
+    datasource_root, _ = datasource.seed(
         cache_dir=root,
         product="GLO-30",
         bounds=(12.4, 41.8, 12.4 + 100 / 3600, 41.8 + 100 / 3600),
