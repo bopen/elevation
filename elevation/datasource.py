@@ -156,18 +156,11 @@ def prepare_tile_zarr(
 
 
 class DatasourceSpec(TypedDict):
-    # a local product has one URL per tile (``tiles``), a remote one is a
-    # single chunked source (``grid``): the key tells the two apart
+    """How a DEM product lists, prepares and caches its tiles."""
+
     cached_tiles: Callable[..., Iterator[cache.Tile]]
-    # keyword arguments for ``cached_tiles``, e.g. the tile name template
-    # of a product that keeps its tiles in subfolders
     cached_tiles_kwargs: NotRequired[dict[str, Any]]
-    # prepare the tile for GDAL, downloading it or reading the window of the
-    # chunked source, next to the spool file to remove once it is cached
     prepare_tile: Callable[..., tuple[str, Path | None]]
-    # keyword arguments for ``prepare_tile``: the datasource URL and the path
-    # of the variable in the store, the source extension, the archive the
-    # provider serves it in, the chunk size
     prepare_tile_kwargs: dict[str, Any]
     tile_gdal_options: NotRequired[str]
 
