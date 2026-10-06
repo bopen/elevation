@@ -57,9 +57,9 @@ def selfcheck(
     return result
 
 
-def gdal_report(cmd: list[str]) -> Any:
-    """Run the *cmd* GDAL command and return its JSON report, or ``None``."""
-    output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
+def gdal_json(cmd: str, destination: str) -> Any:
+    """Run the *cmd* GDAL command on *destination* and return its JSON report."""
+    output = subprocess.check_output([*cmd.split(), destination])
     return json.loads(output)
 
 
@@ -109,7 +109,7 @@ def call_gdalbuildvrt(
 
 def raster_bounds(reference: str) -> tuple[float, float, float, float]:
     """Return the bounds of the raster *reference*, ``None`` if it is not a raster."""
-    report = gdal_report(["gdalinfo", "-json", "-nomd", "-norat", "-noct", reference])
+    report = gdal_json("gdalinfo -json -nomd -norat -noct", reference)
     if not isinstance(report, dict) or "cornerCoordinates" not in report:
         raise TypeError("'cornerCoordinates' not found")
     corners = report["cornerCoordinates"]
@@ -121,7 +121,7 @@ def raster_bounds(reference: str) -> tuple[float, float, float, float]:
 
 def vector_bounds(reference: str) -> tuple[float, float, float, float]:
     """Return the bounds of the vector *reference*, ``None`` if it is not a vector."""
-    report = gdal_report(["ogrinfo", "-json", "-al", "-so", reference])
+    report = gdal_json("ogrinfo -json -al -so", reference)
     if not isinstance(report, dict) or not report.get("layers"):
         raise TypeError("'layers' not found")
     layer = report["layers"][0]

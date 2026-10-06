@@ -91,8 +91,8 @@ def test_call_gdal_translate(tmp_path: Path) -> None:
 
     spatial.call_gdal_translate(str(RASTER), destination)
 
-    source = spatial.gdal_report(["gdalinfo", "-json", "-checksum", str(RASTER)])
-    tile = spatial.gdal_report(["gdalinfo", "-json", "-checksum", str(destination)])
+    source = spatial.gdal_json("gdalinfo -json -checksum", str(RASTER))
+    tile = spatial.gdal_json("gdalinfo -json -checksum", str(destination))
     assert tile["size"] == source["size"]
     assert tile["geoTransform"] == pytest.approx(source["geoTransform"])
     assert tile["coordinateSystem"] == source["coordinateSystem"]
