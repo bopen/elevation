@@ -67,6 +67,12 @@ def lock_tiles(datasource_root: Path, tile_names: list[str]) -> Generator[None]:
         lock.release()
 
 
+def is_cached(root: Path, tile_name: str) -> bool:
+    """Return whether *tile_name* is cached, i.e. present and not empty."""
+    cached = root / "cache" / tile_name
+    return cached.exists() and cached.stat().st_size > 0
+
+
 def ensure_tiles(
     root: Path,
     tiles: list[Tile],
@@ -81,9 +87,10 @@ def ensure_tiles(
     URL and goes through the spool.
     """
     for (ilon, ilat), tile_name in tiles:
-        cached = root / "cache" / tile_name
-        if cached.exists() and cached.stat().st_size > 0:
+        if is_cached(root, tile_name):
             continue
+
+        cached = root / "cache" / tile_name
 
         # prepare the data if GDAL cannot download it / read it as it is
         source, spooled = prepare_tile(

@@ -118,6 +118,18 @@ def test_eio_seed_margin(mocker: MockerFixture, tmp_path: Path) -> None:
     assert mock_seed.call_args.kwargs["margin"] == "1"
 
 
+def test_eio_seed_max_download_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    runner = typer.testing.CliRunner()
+    mock_seed = mocker.patch("elevation.seed")
+    options = (
+        f"--cache_dir {root!s} seed --bounds 12.5 42 12.5 42 --max_download_tiles 3"
+    )
+    result = runner.invoke(__main__.app, options.split())
+    assert not result.exception
+    assert mock_seed.call_args.kwargs["max_download_tiles"] == 3
+
+
 def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = typer.testing.CliRunner()
@@ -166,6 +178,18 @@ def test_eio_clip_gdal_options(mocker: MockerFixture, tmp_path: Path) -> None:
 
     assert not result.exception
     assert "COMPRESS=LZW" in mock_translate.call_args.kwargs["options"]
+
+
+def test_eio_clip_max_download_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    runner = typer.testing.CliRunner()
+    mock_clip = mocker.patch("elevation.clip")
+    options = (
+        f"--cache_dir {root!s} clip --bounds 12.5 42 12.5 42 --max_download_tiles 3"
+    )
+    result = runner.invoke(__main__.app, options.split())
+    assert not result.exception
+    assert mock_clip.call_args.kwargs["max_download_tiles"] == 3
 
 
 def test_eio_clean(tmp_path: Path) -> None:
