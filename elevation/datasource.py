@@ -16,7 +16,6 @@
 import math
 import os
 import shutil
-import subprocess
 from collections.abc import Callable, Iterator, Sequence
 from importlib import resources
 from pathlib import Path
@@ -24,7 +23,7 @@ from typing import Any, NotRequired, TypedDict
 
 import appdirs
 
-from . import util
+from . import spatial, util
 
 __all__ = [
     "CACHE_DIR",
@@ -48,9 +47,6 @@ CACHE_DIR: str = appdirs.user_cache_dir("elevation", "bopen")
 DEFAULT_OUTPUT = "out.tif"
 DEFAULT_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
 CACHE_EXT = ".tif"
-TILE_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9"
-INT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=2"
-FLOAT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=3"
 MARGIN = "0"
 
 # NOTE:
@@ -156,13 +152,13 @@ def prepare_tile_download_uncompress(
     tile_ext: str = ".tif",
     compressed_ext: str | None = None,
     **kwargs: Any,
-) -> tuple[list[str], Path | None]:
+) -> tuple[str, Path | None]:
     source, spool_name, member = tile_source(
         datasource_url, tile_name, tile_ext, compressed_ext
     )
     spooled = spool / spool_name
     fetch_tile(source, spooled, member=member)
-    return [str(spooled)], spooled
+    return str(spooled), spooled
 
 
 def zarr_tiles(
@@ -187,13 +183,12 @@ def prepare_tile_zarr(
     ilon: int,
     chunks: tuple[int, int],
     **kwargs: Any,
-) -> tuple[list[str], Path | None]:
+) -> tuple[str, Path | None]:
     srcwin = [ilon * chunks[0], ilat * chunks[1], chunks[0], chunks[1]]
-    gdal_source = [
-        "-srcwin",
-        *map(str, srcwin),
-        f'ZARR:"/vsicurl/{datasource_url}":{variable_path}',
-    ]
+    gdal_source = (
+        f"-srcwin {' '.join(map(str, srcwin))} "
+        + f'ZARR:"/vsicurl/{datasource_url}":{variable_path}'
+    )
     return gdal_source, None
 
 
@@ -206,7 +201,7 @@ class DatasourceSpec(TypedDict):
     cached_tiles_kwargs: NotRequired[dict[str, Any]]
     # prepare the tile for GDAL, downloading it or reading the window of the
     # chunked source, next to the spool file to remove once it is cached
-    prepare_tile: Callable[..., tuple[list[str], Path | None]]
+    prepare_tile: Callable[..., tuple[str, Path | None]]
     # keyword arguments for ``prepare_tile``: the datasource URL and the path
     # of the variable in the store, the source extension, the archive the
     # provider serves it in, the chunk size
@@ -257,7 +252,7 @@ GLO_30_SPEC: DatasourceSpec = {
         "variable_path": "/dsm",
         "chunks": (3600, 1800),
     },
-    "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
+    "tile_gdal_options": spatial.FLOAT_TILE_GDAL_OPTIONS,
     "cached_tiles": zarr_tiles,
     "cached_tiles_kwargs": {"transform": EDH_L2_CHUNK_INDECES_TRANSFORM},
 }
@@ -269,7 +264,7 @@ GLO_90_SPEC: DatasourceSpec = {
         "variable_path": "/dsm",
         "chunks": (2400, 2400),
     },
-    "tile_gdal_options": FLOAT_TILE_GDAL_OPTIONS,
+    "tile_gdal_options": spatial.FLOAT_TILE_GDAL_OPTIONS,
     "cached_tiles": zarr_tiles,
     "cached_tiles_kwargs": {"transform": EDH_L1_CHUNK_INDECES_TRANSFORM},
 }
@@ -357,41 +352,11 @@ def fetch_tile(source: str, destination: Path, *, member: str | None = None) -> 
         temporary.unlink(missing_ok=True)
 
 
-def write_cache_tile(
-    gdal_source: Sequence[str],
-    destination: Path,
-    *,
-    gdal_options: str = TILE_GDAL_OPTIONS,
-) -> list[str]:
-    """Write *source* to *destination* as the internal compressed GeoTIFF tile.
-
-    The data, its dtype, its nodata value, its georeferencing and its metadata are
-    preserved unchanged, only compression is added. ``PREDICTOR=2`` in the default
-    options suits the integer products, pass ``PREDICTOR=3`` for float ones.
-
-    :param source: Any GDAL readable raster, local or remote.
-    :param destination: Path of the cache GeoTIFF, parent folders are created.
-    :param srcwin: Window of *source* to write, e.g. a single ``Zarr`` chunk.
-    :param gdal_options: GDAL creation options of the cache tile.
-    :return: The command arguments.
-    """
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    cmd = [
-        "gdal_translate",
-        "-q",
-        *gdal_options.split(),
-        *gdal_source,
-        str(destination),
-    ]
-    subprocess.check_call(cmd)
-    return cmd
-
-
 def ensure_tiles(
     root: Path,
     tiles: Sequence[Tile],
-    prepare_tile: Callable[..., tuple[list[str], Path | None]],
-    gdal_options: str = TILE_GDAL_OPTIONS,
+    prepare_tile: Callable[..., tuple[str, Path | None]],
+    gdal_options: str = spatial.INT_TILE_GDAL_OPTIONS,
     **kwargs: Any,
 ) -> None:
     """Fetch and cache *tiles*, skipping the tiles already in the cache.
@@ -406,13 +371,13 @@ def ensure_tiles(
             continue
 
         # prepare the data if GDAL cannot download it / read it as it is
-        gdal_source, spooled = prepare_tile(
+        source, spooled = prepare_tile(
             tile_name=tile_name, spool=root / "spool", ilat=ilat, ilon=ilon, **kwargs
         )
 
         # convert the data to the internal cache format
         ready = root / "spool/ready" / tile_name
-        write_cache_tile(gdal_source, ready, gdal_options=gdal_options)
+        spatial.call_gdal_translate(source, ready, options=gdal_options)
         if spooled is not None:
             spooled.unlink(missing_ok=True)
 
@@ -423,17 +388,12 @@ def ensure_tiles(
 
 def build_vrt(root: Path, product: str) -> list[str]:
     """Build the ``<product>.vrt`` mosaic over the non empty cache tiles."""
-    tiles = sorted(
-        tile for tile in (root / "cache").rglob("*.tif") if tile.stat().st_size > 0
-    )
-    cmd = [
-        "gdalbuildvrt",
-        "-q",
-        "-overwrite",
-        str(root / f"{product}.vrt"),
-        *map(str, tiles),
-    ]
-    subprocess.check_call(cmd)
+    tiles = []
+    for tile in (root / "cache").rglob("*.tif"):
+        if tile.stat().st_size > 0:
+            tiles.append(str(tile))
+    options = "-q -overwrite"
+    cmd = spatial.call_gdalbuildvrt(sorted(tiles), root / f"{product}.vrt", options)
     return cmd
 
 
@@ -456,10 +416,10 @@ def do_clip(
     gdal_options: str = DEFAULT_GDAL_OPTIONS,
 ) -> list[str]:
     left, bottom, right, top = bounds
-    options = f"gdal_translate -q {gdal_options} -projwin {left} {top} {right} {bottom}"
-    cmd = [*options.split(), str(path / f"{product}.vrt"), str(output)]
+    options = f"-q {gdal_options} -projwin {left} {top} {right} {bottom}"
+    source = str(path / f"{product}.vrt")
     with util.lock_vrt(path, product):
-        subprocess.check_call(cmd)
+        cmd = spatial.call_gdal_translate(source, output, options=options)
     return cmd
 
 
@@ -499,7 +459,7 @@ def seed(
             datasource_root,
             tiles,
             prepare_tile=prepare_tile,
-            gdal_options=spec.get("tile_gdal_options", TILE_GDAL_OPTIONS),
+            gdal_options=spec.get("tile_gdal_options", spatial.INT_TILE_GDAL_OPTIONS),
             **prepare_tile_kwargs,
         )
 

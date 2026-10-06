@@ -9,11 +9,9 @@ run, they only run when they are selected explicitly, as the ``integration-tests
 Makefile target does.
 """
 
-import json
 import os
 import re
 import shutil
-import subprocess
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
@@ -22,6 +20,7 @@ import appdirs
 import pytest
 
 import elevation
+from elevation import spatial
 
 REFERENCE_DATA_DIR = Path(__file__).parent / "data"
 INTEGRATION_CACHE_DIR = Path(appdirs.user_cache_dir("elevation-integration", "bopen"))
@@ -49,13 +48,6 @@ def pytest_report_header(config: pytest.Config) -> str | None:
     return None
 
 
-def gdalinfo_json(path: Path) -> dict[str, Any]:
-    """Run ``gdalinfo`` with checksums and return the parsed JSON report."""
-    cmd = ["gdalinfo", "-json", "-checksum", str(path)]
-    info: dict[str, Any] = json.loads(subprocess.check_output(cmd))
-    return info
-
-
 def raster_fingerprint(info: dict[str, Any]) -> dict[str, Any]:
     """Reduce a ``gdalinfo`` report to the fields that identify the raster content.
 
@@ -77,8 +69,8 @@ def raster_fingerprint(info: dict[str, Any]) -> dict[str, Any]:
 
 
 def assert_same_raster(produced: Path, reference: Path) -> None:
-    produced_info = gdalinfo_json(produced)
-    reference_info = gdalinfo_json(reference)
+    produced_info = spatial.gdal_json("gdalinfo -json -checksum", str(produced))
+    reference_info = spatial.gdal_json("gdalinfo -json -checksum", str(reference))
     message = f"{produced} differs from the reference data {reference}"
     fingerprint = raster_fingerprint(produced_info)
     assert fingerprint == raster_fingerprint(reference_info), message

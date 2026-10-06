@@ -2,9 +2,6 @@
 # Copyright (c) 2016-2026 B-Open Solutions srl - https://bopen.eu
 #
 
-import json
-import shutil
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -12,22 +9,10 @@ import pytest
 from pytest_mock import MockerFixture
 
 import elevation
-from elevation import datasource
+from elevation import datasource, spatial
 
 DATA_DIR = Path(__file__).parent / "data"
 REFERENCE = DATA_DIR / "reference.tif"
-
-requires_gdal = pytest.mark.skipif(
-    shutil.which("gdal_translate") is None,
-    reason="the GDAL command line tools are not installed",
-)
-
-
-def gdalinfo_json(path: Path) -> dict[str, Any]:
-    """Return the ``gdalinfo`` report of *path*, with the band checksums."""
-    report = subprocess.check_output(["gdalinfo", "-json", "-checksum", str(path)])
-    info: dict[str, Any] = json.loads(report)
-    return info
 
 
 def write_ready_tile(source: str | Path, ready: Path, **kwargs: Any) -> None:
@@ -190,7 +175,7 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
     spec = datasource.SRTM1_GEOID_SPEC
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch(
-        "elevation.datasource.write_cache_tile", side_effect=write_ready_tile
+        "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
 
     datasource.ensure_tiles(
@@ -206,9 +191,9 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
         member=None,
     )
     mock_write.assert_called_once_with(
-        [str(tmp_path / "spool" / "N41E012.tif")],
+        str(tmp_path / "spool" / "N41E012.tif"),
         tmp_path / "spool" / "ready" / "N41E012.tif",
-        gdal_options=datasource.TILE_GDAL_OPTIONS,
+        options=spatial.INT_TILE_GDAL_OPTIONS,
     )
     # the tile reaches the cache only once it has been written in the spool
     assert (tmp_path / "cache" / "N41E012.tif").read_bytes() == b"tile"
@@ -220,7 +205,7 @@ def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> Non
     cached.parent.mkdir(parents=True)
     cached.write_bytes(b"cached")
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
-    mock_write = mocker.patch("elevation.datasource.write_cache_tile")
+    mock_write = mocker.patch("elevation.spatial.call_gdal_translate")
 
     datasource.ensure_tiles(
         tmp_path,
@@ -238,7 +223,7 @@ def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     spec = datasource.GLO_90_SPEC
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch(
-        "elevation.datasource.write_cache_tile", side_effect=write_ready_tile
+        "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
     # the chunk the Rome bounds of the integration tests fall in
     tiles = list(
@@ -258,16 +243,11 @@ def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     # connection string keeps the CRS in the store, so no ``:/dsm`` suffix
     mock_fetch.assert_not_called()
     mock_write.assert_called_once_with(
-        [
-            "-srcwin",
-            "230400",
-            "57600",
-            "2400",
-            "2400",
-            'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu/copernicus-dem/GLO-90-v1.zarr":/dsm',
-        ],
+        "-srcwin 230400 57600 2400 2400 "
+        'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu'
+        '/copernicus-dem/GLO-90-v1.zarr":/dsm',
         tmp_path / "spool" / "ready" / "24/96.tif",
-        gdal_options=datasource.FLOAT_TILE_GDAL_OPTIONS,
+        options=spatial.FLOAT_TILE_GDAL_OPTIONS,
     )
     assert (tmp_path / "cache" / "24/96.tif").read_bytes() == b"tile"
 
@@ -296,42 +276,6 @@ def test_fetch_tile_zip(tmp_path: Path) -> None:
     )
 
     assert destination.read_bytes() == REFERENCE.read_bytes()
-
-
-def test_write_cache_tile_command(tmp_path: Path, mocker: MockerFixture) -> None:
-    check_call = mocker.patch("subprocess.check_call")
-    destination = tmp_path / "cache" / "destination.tif"
-    gdal_source = ["-srcwin", "0", "0", "1", "1", str(REFERENCE)]
-
-    cmd = datasource.write_cache_tile(gdal_source, destination)
-
-    assert cmd == [
-        "gdal_translate",
-        "-q",
-        *datasource.TILE_GDAL_OPTIONS.split(),
-        *gdal_source,
-        str(destination),
-    ]
-    check_call.assert_called_once_with(cmd)
-    assert destination.parent.is_dir()
-
-
-@requires_gdal
-def test_write_cache_tile(tmp_path: Path) -> None:
-    destination = tmp_path / "cache" / "destination.tif"
-
-    datasource.write_cache_tile([str(REFERENCE)], destination)
-
-    source = gdalinfo_json(REFERENCE)
-    tile = gdalinfo_json(destination)
-    assert tile["size"] == source["size"]
-    assert tile["geoTransform"] == pytest.approx(source["geoTransform"])
-    assert tile["coordinateSystem"] == source["coordinateSystem"]
-    assert tile["metadata"]["IMAGE_STRUCTURE"]["COMPRESSION"] == "DEFLATE"
-    tile_band, source_band = tile["bands"][0], source["bands"][0]
-    assert tile_band["type"] == source_band["type"]
-    assert tile_band.get("noDataValue") == source_band.get("noDataValue")
-    assert tile_band["checksum"] == source_band["checksum"]
 
 
 def test_do_clip(mocker: MockerFixture, tmp_path: Path) -> None:
@@ -393,7 +337,7 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_check_call = mocker.patch("subprocess.check_call")
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch(
-        "elevation.datasource.write_cache_tile", side_effect=write_ready_tile
+        "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
 
     datasource_root = datasource.seed(
@@ -407,9 +351,9 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
         member=None,
     )
     mock_write.assert_called_once_with(
-        [str(datasource_root / "spool" / "N43E013.tif")],
+        str(datasource_root / "spool" / "N43E013.tif"),
         datasource_root / "spool" / "ready" / "N43E013.tif",
-        gdal_options=datasource.TILE_GDAL_OPTIONS,
+        options=spatial.INT_TILE_GDAL_OPTIONS,
     )
     assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
 
@@ -425,7 +369,7 @@ def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_check_call = mocker.patch("subprocess.check_call")
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch(
-        "elevation.datasource.write_cache_tile", side_effect=write_ready_tile
+        "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
 
     datasource_root = datasource.seed(
@@ -439,16 +383,11 @@ def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     # grid, and the tile name mirrors the chunk layout
     mock_fetch.assert_not_called()
     mock_write.assert_called_once_with(
-        [
-            "-srcwin",
-            "691200",
-            "172800",
-            "3600",
-            "1800",
-            'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu/copernicus-dem/GLO-30-v1.zarr":/dsm',
-        ],
+        "-srcwin 691200 172800 3600 1800 "
+        'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu'
+        '/copernicus-dem/GLO-30-v1.zarr":/dsm',
         datasource_root / "spool" / "ready" / "96/192.tif",
-        gdal_options=datasource.FLOAT_TILE_GDAL_OPTIONS,
+        options=spatial.FLOAT_TILE_GDAL_OPTIONS,
     )
     assert (datasource_root / "cache" / "96/192.tif").read_bytes() == b"tile"
     assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
@@ -480,26 +419,23 @@ def test_build_bounds() -> None:
 def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 14.9, 44.9)
-    mock_check_call = mocker.patch("subprocess.check_call")
+    output = tmp_path / "out.tif"
+    mocker.patch("subprocess.check_call")
     mocker.patch("elevation.datasource.fetch_tile")
-    mocker.patch("elevation.datasource.write_cache_tile", side_effect=write_ready_tile)
+    mock_translate = mocker.patch(
+        "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
+    )
 
-    datasource.clip(cache_dir=root, bounds=bounds, output="out.tif")
+    datasource.clip(cache_dir=root, bounds=bounds, output=output)
 
     datasource_root = root / "MAPZEN"
-    expected_cmd = [
-        "gdal_translate",
-        "-q",
-        *datasource.DEFAULT_GDAL_OPTIONS.split(),
-        "-projwin",
-        "13.1",
-        "44.9",
-        "14.9",
-        "43.1",
-        str(datasource_root / "MAPZEN.vrt"),
-        str(Path("out.tif").resolve()),
-    ]
-    assert mock_check_call.call_args[0][0] == expected_cmd
+    # the clip is the last call, after the one call per cached tile
+    source, destination = mock_translate.call_args.args
+    assert source == str(datasource_root / "MAPZEN.vrt")
+    assert destination == output
+    assert mock_translate.call_args.kwargs["options"] == (
+        f"-q {datasource.DEFAULT_GDAL_OPTIONS} -projwin 13.1 44.9 14.9 43.1"
+    )
 
 
 def test_clean(tmp_path: Path) -> None:
