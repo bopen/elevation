@@ -13,13 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Generator
+import shutil
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any
 
 import fasteners
 
+from . import spatial
+
 FOLDER_LOCKFILE_NAME = ".folder_lock"
+Tile = tuple[tuple[int, int], str]
 
 
 @contextmanager
@@ -52,3 +57,37 @@ def ensure_setup(root: Path) -> None:
     with fasteners.InterProcessLock(root / FOLDER_LOCKFILE_NAME):
         for path in (root, root / "cache"):
             path.mkdir(parents=True, exist_ok=True)
+
+
+def ensure_tiles(
+    root: Path,
+    tiles: list[Tile],
+    prepare_tile: Callable[..., tuple[str, Path | None]],
+    gdal_options: str = spatial.INT_TILE_GDAL_OPTIONS,
+    **kwargs: Any,
+) -> None:
+    """Fetch and cache *tiles*, skipping the tiles already in the cache.
+
+    A tile is a ``(name, window)`` pair: a tile with a window is read in place
+    from ``datasource_url``, a tile without one is downloaded whole from its own
+    URL and goes through the spool.
+    """
+    for (ilon, ilat), tile_name in tiles:
+        cached = root / "cache" / tile_name
+        if cached.exists() and cached.stat().st_size > 0:
+            continue
+
+        # prepare the data if GDAL cannot download it / read it as it is
+        source, spooled = prepare_tile(
+            tile_name=tile_name, spool=root / "spool", ilat=ilat, ilon=ilon, **kwargs
+        )
+
+        # convert the data to the internal cache format
+        ready = root / "spool/ready" / tile_name
+        spatial.call_gdal_translate(source, ready, options=gdal_options)
+        if spooled is not None:
+            spooled.unlink(missing_ok=True)
+
+        # finally move the data inside the cache. The move is atomic in most cases
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(ready, cached)

@@ -9,7 +9,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 import elevation
-from elevation import datasource, spatial
+from elevation import cache, datasource, spatial
 
 DATA_DIR = Path(__file__).parent / "data"
 REFERENCE = DATA_DIR / "reference.tif"
@@ -178,7 +178,7 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
 
-    datasource.ensure_tiles(
+    cache.ensure_tiles(
         tmp_path,
         [((12, 41), "N41E012.tif")],
         prepare_tile=spec["prepare_tile"],
@@ -207,7 +207,7 @@ def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> Non
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch("elevation.spatial.call_gdal_translate")
 
-    datasource.ensure_tiles(
+    cache.ensure_tiles(
         tmp_path,
         [((12, 41), "N41E012.tif")],
         prepare_tile=spec["prepare_tile"],
@@ -231,7 +231,7 @@ def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     )
     assert tiles == [((96, 24), "24/96.tif")]
 
-    datasource.ensure_tiles(
+    cache.ensure_tiles(
         tmp_path,
         tiles,
         prepare_tile=spec["prepare_tile"],

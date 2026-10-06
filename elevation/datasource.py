@@ -78,16 +78,13 @@ def latlon_to_indeces(
     return ilon, ilat
 
 
-Tile = tuple[tuple[int, int], str]
-
-
 def dted_l2_tiles(
     left: float,
     bottom: float,
     right: float,
     top: float,
     tile_name_template: str = "{slat}{slon}.tif",
-) -> Iterator[Tile]:
+) -> Iterator[cache.Tile]:
     ileft, itop = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, left, top)
     iright, ibottom = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, right, bottom)
     # special case often used *integer* top and right to avoid downloading unneeded tiles
@@ -108,7 +105,7 @@ def cgiar_l1_tiles(
     right: float,
     top: float,
     tile_template: str = "srtm_{ilon:02d}_{ilat:02d}.tif",
-) -> Iterator[Tile]:
+) -> Iterator[cache.Tile]:
     ileft, itop = latlon_to_indeces(CGIAR_L1_TILE_INDECES_TRANSFORM, left, top)
     iright, ibottom = latlon_to_indeces(CGIAR_L1_TILE_INDECES_TRANSFORM, right, bottom)
     for ilon in range(ileft, iright + 1):
@@ -123,7 +120,7 @@ def srtm_ellip_tiles(
     right: float,
     top: float,
     tile_name_template: str = "{slat}{slon}_wgs84.tif",
-) -> Iterator[Tile]:
+) -> Iterator[cache.Tile]:
     ileft, itop = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, left, top)
     iright, ibottom = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, right, bottom)
     # special case often used *integer* top and right to avoid downloading unneeded tiles
@@ -167,7 +164,7 @@ def zarr_tiles(
     right: float,
     top: float,
     transform: tuple[float, float, float, float],
-) -> Iterator[Tile]:
+) -> Iterator[cache.Tile]:
     ileft, itop = latlon_to_indeces(transform, left, top)
     iright, ibottom = latlon_to_indeces(transform, right, bottom)
     for ilon in range(ileft, iright + 1):
@@ -195,7 +192,7 @@ def prepare_tile_zarr(
 class DatasourceSpec(TypedDict):
     # a local product has one URL per tile (``tiles``), a remote one is a
     # single chunked source (``grid``): the key tells the two apart
-    cached_tiles: Callable[..., Iterator[Tile]]
+    cached_tiles: Callable[..., Iterator[cache.Tile]]
     # keyword arguments for ``cached_tiles``, e.g. the tile name template
     # of a product that keeps its tiles in subfolders
     cached_tiles_kwargs: NotRequired[dict[str, Any]]
@@ -352,40 +349,6 @@ def fetch_tile(source: str, destination: Path, *, member: str | None = None) -> 
         temporary.unlink(missing_ok=True)
 
 
-def ensure_tiles(
-    root: Path,
-    tiles: list[Tile],
-    prepare_tile: Callable[..., tuple[str, Path | None]],
-    gdal_options: str = spatial.INT_TILE_GDAL_OPTIONS,
-    **kwargs: Any,
-) -> None:
-    """Fetch and cache *tiles*, skipping the tiles already in the cache.
-
-    A tile is a ``(name, window)`` pair: a tile with a window is read in place
-    from ``datasource_url``, a tile without one is downloaded whole from its own
-    URL and goes through the spool.
-    """
-    for (ilon, ilat), tile_name in tiles:
-        cached = root / "cache" / tile_name
-        if cached.exists() and cached.stat().st_size > 0:
-            continue
-
-        # prepare the data if GDAL cannot download it / read it as it is
-        source, spooled = prepare_tile(
-            tile_name=tile_name, spool=root / "spool", ilat=ilat, ilon=ilon, **kwargs
-        )
-
-        # convert the data to the internal cache format
-        ready = root / "spool/ready" / tile_name
-        spatial.call_gdal_translate(source, ready, options=gdal_options)
-        if spooled is not None:
-            spooled.unlink(missing_ok=True)
-
-        # finally move the data inside the cache. The move is atomic in most cases
-        cached.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(ready, cached)
-
-
 def build_vrt(root: Path, product: str) -> list[str]:
     """Build the ``<product>.vrt`` mosaic over the non empty cache tiles."""
     tiles = []
@@ -455,7 +418,7 @@ def seed(
     prepare_tile = spec["prepare_tile"]
     prepare_tile_kwargs = spec.get("prepare_tile_kwargs", {})
     with cache.lock_tiles(datasource_root, [name for _, name in tiles]):
-        ensure_tiles(
+        cache.ensure_tiles(
             datasource_root,
             tiles,
             prepare_tile=prepare_tile,
