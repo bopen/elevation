@@ -4,12 +4,11 @@ Global geographic elevation data made easy.
 Elevation provides easy download, cache and access of the global datasets:
 
 - `MAPZEN`: [Terrain Tiles global 30m v1](https://registry.opendata.aws/terrain-tiles/)
-  hosted on [Amazon S3](https://aws.amazon.com/public-data-sets/terrain),
-  1 arc second (30m) DEMs in the SRTM HGT format
-  assembled by Mapzen from several open data providers,
-  including NASA/NGA SRTM, USGS 3DEP, EUDEM, ArcticDEM, GMTED2010 and ETOPO1.
+  assembled by Mapzen from several open data providers and hosted on [Amazon](https://aws.amazon.com/public-data-sets/terrain),
+  with 30m heights on the EGM96 geoid,
+  includes data from NASA/NGA SRTM, USGS 3DEP, EUDEM, ArcticDEM, GMTED2010 and ETOPO1.
 - `GLO-30`: [Copernicus DEM global 30m (2021)](https://doi.org/10.5270/ESA-c5d3d65)
-  produced by ESA and the European Union, 30m heights on the EGM2008 geoid.
+  produced by ESA and the European Union and hosted on [Earth Data Hub](https://earthdatahub.destine.eu/collections/copernicus-dem), with 30m heights on the EGM2008 geoid.
 - `GLO-90`: [Copernicus DEM global 90m (2021)](https://doi.org/10.5270/ESA-c5d3d65)
   the 90m companion of `GLO-30`.
 - `SRTM1_GEOID`: [SRTM global 30m v3](https://lpdaac.usgs.gov/products/srtmgl1nv003/)
@@ -18,7 +17,7 @@ Elevation provides easy download, cache and access of the global datasets:
 - `SRTM1_ELLIP`: [SRTM global 30m v3 ellipsoidal](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1)
   the companion of `SRTM1_GEOID`, with 30m heights on the WGS84 ellipsoid.
 - `SRTM3`: [SRTM global 90m v4.1](https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/)
-  produced by CGIAR-CSI.
+  produced and hosted by CGIAR-CSI, with 90m heights on the EGM96 geoid.
 
 Note that any download policies and attribution requirements of the respective providers apply.
 
