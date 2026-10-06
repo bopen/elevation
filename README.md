@@ -8,17 +8,17 @@ Elevation provides easy download, cache and access of the global datasets:
   1 arc second (30m) DEMs in the SRTM HGT format
   assembled by Mapzen from several open data providers,
   including NASA/NGA SRTM, USGS 3DEP, EUDEM, ArcticDEM, GMTED2010 and ETOPO1.
-- `SRTM1_GEOID`: [SRTM global 30m v3](https://lpdaac.usgs.gov/products/srtmgl1nv003/)
-  produced by NASA and NGA hosted on [OpenTopography](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082015.4326.1),
-  with 30m heights on the EGM96 geoid.
-- `SRTM1_ELLIP`: [SRTM global 30m v3 ellipsoidal](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1)
-  hosted on OpenTopography, 30m heights on the WGS84 ellipsoid.
-- `SRTM3`: [SRTM global 90m v4.1](https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/)
-  produced by CGIAR-CSI.
 - `GLO-30`: [Copernicus DEM global 30m (2021)](https://doi.org/10.5270/ESA-c5d3d65)
   produced by ESA and the European Union, 30m heights on the EGM2008 geoid.
 - `GLO-90`: [Copernicus DEM global 90m (2021)](https://doi.org/10.5270/ESA-c5d3d65)
   the 90m companion of `GLO-30`.
+- `SRTM1_GEOID`: [SRTM global 30m v3](https://lpdaac.usgs.gov/products/srtmgl1nv003/)
+  produced by NASA and NGA hosted on [OpenTopography](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082015.4326.1),
+  with 30m heights on the EGM96 geoid.
+- `SRTM1_ELLIP`: [SRTM global 30m v3 ellipsoidal](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1)
+  the companion of `SRTM1_GEOID`, with 30m heights on the WGS84 ellipsoid.
+- `SRTM3`: [SRTM global 90m v4.1](https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/)
+  produced by CGIAR-CSI.
 
 Note that any download policies and attribution requirements of the respective providers apply.
 
@@ -65,18 +65,6 @@ using the default `MAPZEN` product:
 $ eio clip -o Rome-MAPZEN-DEM.tif --bounds 12.35 41.8 12.65 42
 ```
 
-For the SRTM global 30m v3 DEM use:
-
-```console
-$ eio --product SRTM1_GEOID clip -o Rome-SRTM1_GEOID-DEM.tif --bounds 12.35 41.8 12.65 42
-```
-
-For the SRTM global 90m v4.1 DEM use:
-
-```console
-$ eio --product SRTM3 clip -o Rome-SRTM3-DEM.tif --bounds 12.35 41.8 12.65 42
-```
-
 For the Copernicus DEM global 30m or 90m DEMs use:
 
 ```console
@@ -91,11 +79,26 @@ stored in `~/.netrc` are used to access it:
 
 ```console
 machine data.earthdatahub.destine.eu
-    login <your-username>
-    password <your-password>
+    password <your EDH API key>
 ```
 
+See the Earth Data Hub [Getting started](https://earthdatahub.destine.eu/getting-started)
+page to create an account and set up the credentials.
+
 Reading the store needs GDAL 3.8 or later.
+
+For the SRTM global 30m v3 geoid or ellipsoidal DEMs use:
+
+```console
+$ eio --product SRTM1_GEOID clip -o Rome-SRTM1_GEOID-DEM.tif --bounds 12.35 41.8 12.65 42
+$ eio --product SRTM1_ELLIP clip -o Rome-SRTM1_ELLIP-DEM.tif --bounds 12.35 41.8 12.65 42
+```
+
+For the SRTM global 90m v4.1 DEM use:
+
+```console
+$ eio --product SRTM3 clip -o Rome-SRTM3-DEM.tif --bounds 12.35 41.8 12.65 42
+```
 
 The `--bounds` option accepts latitude and longitude coordinates
 (more precisely in geodetic coordinates in the WGS84 reference system EPSG:4326 for those who care)
