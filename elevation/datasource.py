@@ -40,7 +40,6 @@ __all__ = [
 
 DEFAULT_OUTPUT = "out.tif"
 DEFAULT_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
-CACHE_EXT = ".tif"
 MARGIN = "0"
 
 # NOTE:
@@ -296,7 +295,7 @@ def tile_source(
     the ``compressed_ext`` when the source is compressed. The member is the file
     to read inside a ``.zip`` archive and ``None`` otherwise.
     """
-    stem = tile_name.removesuffix(CACHE_EXT)
+    stem = tile_name.removesuffix(".tif")
     spool_name = f"{stem}{tile_ext}"
     remote = spool_name if compressed_ext is None else f"{stem}{compressed_ext}"
     member = Path(spool_name).name if compressed_ext == ".zip" else None
