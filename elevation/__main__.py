@@ -119,7 +119,7 @@ def seed(
     bounds: tuple[float, float, float, float] | None = typer.Option(
         None,
         "--bounds",
-        help="Output bounds: left bottom right top.",
+        help="Output bounds in 'left bottom right top' order.",
     ),
     margin: str = typer.Option(
         elevation.MARGIN,
@@ -130,7 +130,7 @@ def seed(
     max_download_tiles: int = typer.Option(
         elevation.MAX_DOWNLOAD_TILES,
         "--max_download_tiles",
-        help="Maximum number of tiles to process.",
+        help="Maximum number of tiles to download.",
     ),
 ) -> None:
     elevation.seed(
@@ -179,7 +179,7 @@ def clip(
     max_download_tiles: int = typer.Option(
         elevation.MAX_DOWNLOAD_TILES,
         "--max_download_tiles",
-        help="Maximum number of tiles to process.",
+        help="Maximum number of tiles to download.",
     ),
 ) -> None:
     if bounds is None and reference is None:

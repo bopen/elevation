@@ -313,6 +313,29 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
         datasource.seed(cache_dir=root)
 
 
+def test_seed_max_download_tiles_counts_only_downloads(
+    mocker: MockerFixture, tmp_path: Path
+) -> None:
+    root = tmp_path / "root"
+    cached = root / "SRTM1_GEOID" / "cache"
+    cached.mkdir(parents=True)
+    (cached / "N43E013.tif").write_bytes(b"cached")
+    (cached / "N43E014.tif").write_bytes(b"cached")
+    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
+    mocker.patch("elevation.spatial.call_gdal_translate")
+    mocker.patch("subprocess.check_call")
+
+    datasource_root, _ = datasource.seed(
+        cache_dir=root,
+        product="SRTM1_GEOID",
+        bounds=(13.1, 43.1, 14.9, 43.9),
+        max_download_tiles=1,
+    )
+
+    assert datasource_root == root / "SRTM1_GEOID"
+    mock_fetch.assert_not_called()
+
+
 def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     mock_check_call = mocker.patch("subprocess.check_call")

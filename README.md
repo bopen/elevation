@@ -122,7 +122,8 @@ subsequent accesses to the same and nearby areas are much faster.
 The `GLO-30` and `GLO-90` products are the exception: they are read in place
 from the Earth Data Hub and cached one Zarr chunk at a time.
 
-The `clip` sub-command doesn't allow automatic download of a large amount of DEM tiles,
+The `seed` and `clip` sub-commands refuse to download more than `--max_download_tiles`
+(`25` by default) tiles at a time to prevent bulk downloads,
 please refer to the upstream providers' websites to learn the preferred procedures for bulk download.
 
 To show the STAC metadata of the datasets use:
@@ -157,7 +158,7 @@ $ eio --help
 │ --cache_dir        <directory>                            Root of the DEM cache folder.          │
 │                                                           [env var: EIO_CACHE_DIR]               │
 │                                                           [default:                              │
-│                                                           /Users/amici/Library/Caches/elevation] │
+│                                                           /Users/amici/Library/Caches/elevation]  │
 │ --help                                                    Show this message and exit.            │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
@@ -179,27 +180,56 @@ $ eio clip --help
  Usage: eio clip [OPTIONS]
 
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --output        -o      <file>                        Path to output file. Existing files will   │
-│                                                       be overwritten.                            │
-│                                                       [env var: EIO_CLIP_OUTPUT]                 │
-│                                                       [default: out.tif]                         │
-│ --bounds                <float float float float>...  Output bounds in 'left bottom right top'   │
-│                                                       order.                                     │
-│                                                       [env var: EIO_CLIP_BOUNDS]                 │
-│ --margin        -m      <str>                         Decimal degree margin added to the bounds. │
-│                                                       Use '%' for percent margin.                │
-│                                                       [env var: EIO_CLIP_MARGIN]                 │
-│                                                       [default: 0]                               │
-│ --reference     -r      <path>                        Use the extent of a reference GDAL/OGR     │
-│                                                       data source as output bounds.              │
-│                                                       [env var: EIO_CLIP_REFERENCE]              │
-│ --gdal-options          <str>                         GDAL creation options of the output file,  │
-│                                                       e.g. '-co COMPRESS=LZW'.                   │
-│                                                       [env var: EIO_CLIP_GDAL_OPTIONS]           │
-│                                                       [default: -co TILED=YES -co                │
-│                                                       COMPRESS=DEFLATE -co ZLEVEL=9 -co          │
-│                                                       PREDICTOR=2]                               │
-│ --help                                                Show this message and exit.                │
+│ --output              -o      <file>                        Path to output file. Existing files  │
+│                                                             will be overwritten.                 │
+│                                                             [env var: EIO_CLIP_OUTPUT]           │
+│                                                             [default: out.tif]                   │
+│ --bounds                      <float float float float>...  Output bounds in 'left bottom right  │
+│                                                             top' order.                          │
+│                                                             [env var: EIO_CLIP_BOUNDS]           │
+│ --margin              -m      <str>                         Decimal degree margin added to the   │
+│                                                             bounds. Use '%' for percent margin.  │
+│                                                             [env var: EIO_CLIP_MARGIN]           │
+│                                                             [default: 0]                         │
+│ --reference           -r      <path>                        Use the extent of a reference        │
+│                                                             GDAL/OGR data source as output       │
+│                                                             bounds.                              │
+│                                                             [env var: EIO_CLIP_REFERENCE]        │
+│ --gdal-options                <str>                         GDAL creation options of the output  │
+│                                                             file, e.g. '-co COMPRESS=LZW'.       │
+│                                                             [env var: EIO_CLIP_GDAL_OPTIONS]     │
+│                                                             [default: -co TILED=YES -co          │
+│                                                             COMPRESS=DEFLATE -co ZLEVEL=9 -co    │
+│                                                             PREDICTOR=2]                         │
+│ --max_download_tiles          <int>                         Maximum number of tiles to download. │
+│                                                             [env var:                            │
+│                                                             EIO_CLIP_MAX_DOWNLOAD_TILES]         │
+│                                                             [default: 25]                        │
+│ --help                                                      Show this message and exit.          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+The `seed` sub-command downloads and caches the tiles that cover the bounds
+without producing any output file:
+
+```text
+$ eio seed --help
+
+ Usage: eio seed [OPTIONS]
+
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --bounds                      <float float float float>...  Output bounds in 'left bottom right  │
+│                                                             top' order.                          │
+│                                                             [env var: EIO_SEED_BOUNDS]           │
+│ --margin              -m      <str>                         Decimal degree margin added to the   │
+│                                                             bounds. Use '%' for percent margin.  │
+│                                                             [env var: EIO_SEED_MARGIN]           │
+│                                                             [default: 0]                         │
+│ --max_download_tiles          <int>                         Maximum number of tiles to download. │
+│                                                             [env var:                            │
+│                                                             EIO_SEED_MAX_DOWNLOAD_TILES]         │
+│                                                             [default: 25]                        │
+│ --help                                                      Show this message and exit.          │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 

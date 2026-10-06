@@ -336,7 +336,7 @@ def seed(
     :param product: DEM product choice.
     :param bounds: Output bounds in 'left bottom right top' order.
     :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
-    :param max_download_tiles: Maximum number of tiles to process.
+    :param max_download_tiles: Maximum number of tiles to download.
     :return: The datasource root and the bounds with the margin applied.
     """
     if bounds is None:
@@ -346,19 +346,22 @@ def seed(
     cached_tiles = spec["cached_tiles"]
     cached_tiles_kwargs = spec.get("cached_tiles_kwargs", {})
     tiles = list(cached_tiles(*bounds, **cached_tiles_kwargs))
+    downloads = [
+        tile for tile in tiles if not cache.is_cached(datasource_root, tile[1])
+    ]
     # FIXME: emergency hack to enforce the no-bulk-download policy
-    if len(tiles) > max_download_tiles:
+    if len(downloads) > max_download_tiles:
         raise RuntimeError(
-            f"Too many tiles: {len(tiles)}. Please consult the "
+            f"Too many tiles to download: {len(downloads)}. Please consult the "
             "providers' websites for how to bulk download tiles."
         )
 
     prepare_tile = spec["prepare_tile"]
     prepare_tile_kwargs = spec.get("prepare_tile_kwargs", {})
-    with cache.lock_tiles(datasource_root, [name for _, name in tiles]):
+    with cache.lock_tiles(datasource_root, [name for _, name in downloads]):
         cache.ensure_tiles(
             datasource_root,
-            tiles,
+            downloads,
             prepare_tile=prepare_tile,
             gdal_options=spec.get("tile_gdal_options", spatial.INT_TILE_GDAL_OPTIONS),
             **prepare_tile_kwargs,
@@ -405,8 +408,8 @@ def clip(
     :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
-    :param gdal_options: GDAL creation options of the output file.
-    :param max_download_tiles: Maximum number of tiles to process.
+    :param gdal_options: GDAL creation options of the output file, e.g. '-co COMPRESS=LZW'.
+    :param max_download_tiles: Maximum number of tiles to download.
     """
     output = Path(output).resolve()
     datasource_root, bounds = seed(
