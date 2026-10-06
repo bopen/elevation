@@ -18,14 +18,12 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-CORNERS = ("upperLeft", "lowerLeft", "upperRight", "lowerRight")
 DEFAULT_GDAL_OPTIONS = "-q"
 TILE_GDAL_OPTIONS = (
     DEFAULT_GDAL_OPTIONS + " -co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9"
 )
 INT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=2"
 FLOAT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=3"
-VRT_GDAL_OPTIONS = DEFAULT_GDAL_OPTIONS + " -overwrite"
 TOOLS: list[tuple[str, str]] = [
     ("gdal_translate", "gdal_translate --version"),
     ("gdalbuildvrt", "gdalbuildvrt --version"),
@@ -88,7 +86,7 @@ def call_gdal_translate(
 def call_gdalbuildvrt(
     sources: list[str],
     destination: Path,
-    options: str = VRT_GDAL_OPTIONS,
+    options: str = DEFAULT_GDAL_OPTIONS,
 ) -> list[str]:
     """Build the *destination* ``.vrt`` mosaic over *sources*.
 
@@ -109,13 +107,15 @@ def call_gdalbuildvrt(
 
 def raster_bounds(reference: str) -> tuple[float, float, float, float]:
     """Return the bounds of the raster *reference*, ``None`` if it is not a raster."""
+    corners_keys = ("upperLeft", "lowerLeft", "upperRight", "lowerRight")
+
     report = gdal_json("gdalinfo -json -nomd -norat -noct", reference)
     if not isinstance(report, dict) or "cornerCoordinates" not in report:
         raise TypeError("'cornerCoordinates' not found")
     corners = report["cornerCoordinates"]
     # all four corners make the bounds of a rotated raster exact
-    xs = [corners[key][0] for key in CORNERS]
-    ys = [corners[key][1] for key in CORNERS]
+    xs = [corners[key][0] for key in corners_keys]
+    ys = [corners[key][1] for key in corners_keys]
     return min(xs), min(ys), max(xs), max(ys)
 
 

@@ -392,7 +392,8 @@ def build_vrt(root: Path, product: str) -> list[str]:
     for tile in (root / "cache").rglob("*.tif"):
         if tile.stat().st_size > 0:
             tiles.append(str(tile))
-    cmd = spatial.call_gdalbuildvrt(sorted(tiles), root / f"{product}.vrt")
+    options = "-q -overwrite"
+    cmd = spatial.call_gdalbuildvrt(sorted(tiles), root / f"{product}.vrt", options)
     return cmd
 
 

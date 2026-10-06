@@ -77,7 +77,7 @@ def test_call_gdalbuildvrt_command(tmp_path: Path, mocker: MockerFixture) -> Non
 
     assert cmd == [
         "gdalbuildvrt",
-        *spatial.VRT_GDAL_OPTIONS.split(),
+        *spatial.DEFAULT_GDAL_OPTIONS.split(),
         str(destination),
         *sources,
     ]
