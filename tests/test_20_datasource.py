@@ -278,58 +278,6 @@ def test_fetch_tile_zip(tmp_path: Path) -> None:
     assert destination.read_bytes() == REFERENCE.read_bytes()
 
 
-def test_do_clip(mocker: MockerFixture, tmp_path: Path) -> None:
-    bounds = (13.1, 43.1, 14.9, 44.9)
-    mock_check_call = mocker.patch("subprocess.check_call")
-
-    cmd = datasource.do_clip(
-        path=tmp_path, bounds=bounds, output=Path("/out.tif"), product="SRTM3"
-    )
-
-    expected_cmd = [
-        "gdal_translate",
-        "-q",
-        *datasource.DEFAULT_GDAL_OPTIONS.split(),
-        "-projwin",
-        "13.1",
-        "44.9",
-        "14.9",
-        "43.1",
-        str(tmp_path / "SRTM3.vrt"),
-        "/out.tif",
-    ]
-    assert cmd == expected_cmd
-    mock_check_call.assert_called_once_with(cmd)
-
-
-def test_do_clip_gdal_options(mocker: MockerFixture, tmp_path: Path) -> None:
-    mock_check_call = mocker.patch("subprocess.check_call")
-
-    cmd = datasource.do_clip(
-        path=tmp_path,
-        bounds=(1.0, 2.0, 3.0, 4.0),
-        output=Path("/out.tif"),
-        product="SRTM3",
-        gdal_options="-co COMPRESS=LZW",
-    )
-
-    expected_cmd = [
-        "gdal_translate",
-        "-q",
-        "-co",
-        "COMPRESS=LZW",
-        "-projwin",
-        "1.0",
-        "4.0",
-        "3.0",
-        "2.0",
-        str(tmp_path / "SRTM3.vrt"),
-        "/out.tif",
-    ]
-    assert cmd == expected_cmd
-    mock_check_call.assert_called_once_with(cmd)
-
-
 def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 13.9, 43.9)

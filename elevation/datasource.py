@@ -354,21 +354,6 @@ def ensure_setup(
     return datasource_root, spec
 
 
-def do_clip(
-    path: Path,
-    bounds: tuple[float, float, float, float],
-    output: Path,
-    product: str,
-    gdal_options: str = DEFAULT_GDAL_OPTIONS,
-) -> list[str]:
-    left, bottom, right, top = bounds
-    options = f"-q {gdal_options} -projwin {left} {top} {right} {bottom}"
-    source = str(path / f"{product}.vrt")
-    with cache.lock_vrt(path, product):
-        cmd = spatial.call_gdal_translate(source, output, options=options)
-    return cmd
-
-
 def seed(
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
@@ -454,7 +439,11 @@ def clip(
     output = Path(output).resolve()
     bounds = build_bounds(bounds, margin=margin)
     datasource_root = seed(cache_dir=cache_dir, product=product, bounds=bounds)
-    do_clip(datasource_root, bounds, output, product=product, gdal_options=gdal_options)
+    left, bottom, right, top = bounds
+    options = f"-q {gdal_options} -projwin {left} {top} {right} {bottom}"
+    source = str(datasource_root / f"{product}.vrt")
+    with cache.lock_vrt(datasource_root, product):
+        spatial.call_gdal_translate(source, output, options=options)
 
 
 def dataset(dataset: str | None = None) -> str:
