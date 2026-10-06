@@ -105,3 +105,14 @@ def ensure_tiles(
 def lock_vrt(datasource_root: Path, product: str) -> Generator[None]:
     with fasteners.InterProcessLock(datasource_root / f"{product}.vrt.lock"):
         yield
+
+
+def build_vrt(root: Path, product: str) -> list[str]:
+    """Build the ``<product>.vrt`` mosaic over the non empty cache tiles."""
+    tiles = []
+    for tile in (root / "cache").rglob("*.tif"):
+        if tile.stat().st_size > 0:
+            tiles.append(str(tile))
+    options = "-q -overwrite"
+    cmd = spatial.call_gdalbuildvrt(sorted(tiles), root / f"{product}.vrt", options)
+    return cmd

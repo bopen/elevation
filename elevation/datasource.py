@@ -331,17 +331,6 @@ def fetch_tile(source: str, destination: Path, *, member: str | None = None) -> 
         temporary.unlink(missing_ok=True)
 
 
-def build_vrt(root: Path, product: str) -> list[str]:
-    """Build the ``<product>.vrt`` mosaic over the non empty cache tiles."""
-    tiles = []
-    for tile in (root / "cache").rglob("*.tif"):
-        if tile.stat().st_size > 0:
-            tiles.append(str(tile))
-    options = "-q -overwrite"
-    cmd = spatial.call_gdalbuildvrt(sorted(tiles), root / f"{product}.vrt", options)
-    return cmd
-
-
 def ensure_setup(
     cache_dir: str | Path | None, product: str
 ) -> tuple[Path, DatasourceSpec]:
@@ -394,7 +383,7 @@ def seed(
         )
 
     with cache.lock_vrt(datasource_root, product):
-        build_vrt(datasource_root, product)
+        cache.build_vrt(datasource_root, product)
 
     return datasource_root
 
