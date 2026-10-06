@@ -16,7 +16,7 @@
 import math
 import os
 import shutil
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterator
 from importlib import resources
 from pathlib import Path
 from typing import Any, NotRequired, TypedDict
@@ -354,7 +354,7 @@ def fetch_tile(source: str, destination: Path, *, member: str | None = None) -> 
 
 def ensure_tiles(
     root: Path,
-    tiles: Sequence[Tile],
+    tiles: list[Tile],
     prepare_tile: Callable[..., tuple[str, Path | None]],
     gdal_options: str = spatial.INT_TILE_GDAL_OPTIONS,
     **kwargs: Any,
