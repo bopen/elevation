@@ -14,19 +14,15 @@
 # limitations under the License.
 
 import math
-import os
 import shutil
 from collections.abc import Callable, Iterator
 from importlib import resources
 from pathlib import Path
 from typing import Any, NotRequired, TypedDict
 
-import appdirs
-
 from . import cache, spatial
 
 __all__ = [
-    "CACHE_DIR",
     "DEFAULT_GDAL_OPTIONS",
     "DEFAULT_OUTPUT",
     "DEFAULT_PRODUCT",
@@ -39,11 +35,9 @@ __all__ = [
     "dataset",
     "distclean",
     "info",
-    "resolve_cache_dir",
     "seed",
 ]
 
-CACHE_DIR: str = appdirs.user_cache_dir("elevation", "bopen")
 DEFAULT_OUTPUT = "out.tif"
 DEFAULT_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
 CACHE_EXT = ".tif"
@@ -56,17 +50,6 @@ EDH_L2_CHUNK_INDECES_TRANSFORM = (-180.0001388888889, 1.0, 90.00013888888888, -0
 EDH_L1_CHUNK_INDECES_TRANSFORM = (-180.00041666666667, 2.0, 90.00041666666667, -2.0)
 DTED_L2_TILE_INDECES_TRANSFORM = (-0.0001388888889, 1.0, -0.0001388888889, 1.0)
 CGIAR_L1_TILE_INDECES_TRANSFORM = (-185.0004166666667, 5.0, 65.0004166666667, -5.0)
-
-
-def resolve_cache_dir(cache_dir: str | Path | None) -> Path:
-    """Return the DEM cache folder to use, as an absolute path.
-
-    The ``cache_dir`` argument takes precedence over the ``EIO_CACHE_DIR`` environment
-    variable, that takes precedence over the ``CACHE_DIR`` default.
-    """
-    if cache_dir is None:
-        cache_dir = os.environ.get("EIO_CACHE_DIR") or CACHE_DIR
-    return Path(cache_dir).resolve()
 
 
 def latlon_to_indeces(
@@ -365,7 +348,7 @@ def ensure_setup(
 ) -> tuple[Path, DatasourceSpec]:
     if product in RETIRED_PRODUCTS:
         raise ProductRetiredError(RETIRED_PRODUCTS[product])
-    datasource_root = resolve_cache_dir(cache_dir) / product
+    datasource_root = cache.resolve_cache_dir(cache_dir) / product
     spec = PRODUCTS_SPECS[product]
     cache.ensure_setup(datasource_root)
     return datasource_root, spec

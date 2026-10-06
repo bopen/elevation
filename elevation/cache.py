@@ -13,18 +13,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import shutil
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
+import appdirs
 import fasteners
 
 from . import spatial
 
+CACHE_DIR: str = appdirs.user_cache_dir("elevation", "bopen")
 FOLDER_LOCKFILE_NAME = ".folder_lock"
 Tile = tuple[tuple[int, int], str]
+
+
+def resolve_cache_dir(cache_dir: str | Path | None) -> Path:
+    """Return the DEM cache folder to use, as an absolute path.
+
+    The ``cache_dir`` argument takes precedence over the ``EIO_CACHE_DIR`` environment
+    variable, that takes precedence over the ``CACHE_DIR`` default.
+    """
+    if cache_dir is None:
+        cache_dir = os.environ.get("EIO_CACHE_DIR") or CACHE_DIR
+    return Path(cache_dir).resolve()
+
+
+def ensure_setup(root: Path) -> None:
+    """Create the product folder and its ``cache`` subfolder.
+
+    The ``spool`` folder is created on demand by the tile download.
+    """
+    with fasteners.InterProcessLock(root / FOLDER_LOCKFILE_NAME):
+        for path in (root, root / "cache"):
+            path.mkdir(parents=True, exist_ok=True)
 
 
 @contextmanager
@@ -41,22 +65,6 @@ def lock_tiles(datasource_root: Path, tile_names: list[str]) -> Generator[None]:
 
     for lock in locks:
         lock.release()
-
-
-@contextmanager
-def lock_vrt(datasource_root: Path, product: str) -> Generator[None]:
-    with fasteners.InterProcessLock(datasource_root / f"{product}.vrt.lock"):
-        yield
-
-
-def ensure_setup(root: Path) -> None:
-    """Create the product folder and its ``cache`` subfolder.
-
-    The ``spool`` folder is created on demand by the tile download.
-    """
-    with fasteners.InterProcessLock(root / FOLDER_LOCKFILE_NAME):
-        for path in (root, root / "cache"):
-            path.mkdir(parents=True, exist_ok=True)
 
 
 def ensure_tiles(
@@ -91,3 +99,9 @@ def ensure_tiles(
         # finally move the data inside the cache. The move is atomic in most cases
         cached.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(ready, cached)
+
+
+@contextmanager
+def lock_vrt(datasource_root: Path, product: str) -> Generator[None]:
+    with fasteners.InterProcessLock(datasource_root / f"{product}.vrt.lock"):
+        yield

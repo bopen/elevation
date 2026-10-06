@@ -467,7 +467,7 @@ def test_cache_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     default = tmp_path / "default"
     override = tmp_path / "override"
     argument = tmp_path / "argument"
-    monkeypatch.setattr(datasource, "CACHE_DIR", default)
+    monkeypatch.setattr(cache, "CACHE_DIR", default)
 
     assert f"Product folder: {default.resolve() / 'MAPZEN'}" in datasource.info()
 
