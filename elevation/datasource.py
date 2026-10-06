@@ -23,7 +23,7 @@ from typing import Any, NotRequired, TypedDict
 
 import appdirs
 
-from . import spatial, util
+from . import cache, spatial
 
 __all__ = [
     "CACHE_DIR",
@@ -404,7 +404,7 @@ def ensure_setup(
         raise ProductRetiredError(RETIRED_PRODUCTS[product])
     datasource_root = resolve_cache_dir(cache_dir) / product
     spec = PRODUCTS_SPECS[product]
-    util.ensure_setup(datasource_root)
+    cache.ensure_setup(datasource_root)
     return datasource_root, spec
 
 
@@ -418,7 +418,7 @@ def do_clip(
     left, bottom, right, top = bounds
     options = f"-q {gdal_options} -projwin {left} {top} {right} {bottom}"
     source = str(path / f"{product}.vrt")
-    with util.lock_vrt(path, product):
+    with cache.lock_vrt(path, product):
         cmd = spatial.call_gdal_translate(source, output, options=options)
     return cmd
 
@@ -454,7 +454,7 @@ def seed(
 
     prepare_tile = spec["prepare_tile"]
     prepare_tile_kwargs = spec.get("prepare_tile_kwargs", {})
-    with util.lock_tiles(datasource_root, [name for _, name in tiles]):
+    with cache.lock_tiles(datasource_root, [name for _, name in tiles]):
         ensure_tiles(
             datasource_root,
             tiles,
@@ -463,7 +463,7 @@ def seed(
             **prepare_tile_kwargs,
         )
 
-    with util.lock_vrt(datasource_root, product):
+    with cache.lock_vrt(datasource_root, product):
         build_vrt(datasource_root, product)
 
     return datasource_root

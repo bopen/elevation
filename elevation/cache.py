@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Generator, Iterable
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -23,7 +23,7 @@ FOLDER_LOCKFILE_NAME = ".folder_lock"
 
 
 @contextmanager
-def lock_tiles(datasource_root: Path, tile_names: Iterable[str]) -> Generator[None]:
+def lock_tiles(datasource_root: Path, tile_names: list[str]) -> Generator[None]:
     locks = []
     for tile_name in tile_names:
         lockfile = datasource_root / "cache" / f"{tile_name}.lock"
