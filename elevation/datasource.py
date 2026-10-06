@@ -14,39 +14,16 @@
 # limitations under the License.
 
 import math
-import os
 import shutil
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterator
 from importlib import resources
 from pathlib import Path
 from typing import Any, NotRequired, TypedDict
 
-import appdirs
+from . import cache, spatial
 
-from . import spatial, util
-
-__all__ = [
-    "CACHE_DIR",
-    "DEFAULT_GDAL_OPTIONS",
-    "DEFAULT_OUTPUT",
-    "DEFAULT_PRODUCT",
-    "MARGIN",
-    "PRODUCTS",
-    "RETIRED_PRODUCTS",
-    "ProductRetiredError",
-    "clean",
-    "clip",
-    "dataset",
-    "distclean",
-    "info",
-    "resolve_cache_dir",
-    "seed",
-]
-
-CACHE_DIR: str = appdirs.user_cache_dir("elevation", "bopen")
 DEFAULT_OUTPUT = "out.tif"
 DEFAULT_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
-CACHE_EXT = ".tif"
 MARGIN = "0"
 
 # NOTE:
@@ -58,17 +35,6 @@ DTED_L2_TILE_INDECES_TRANSFORM = (-0.0001388888889, 1.0, -0.0001388888889, 1.0)
 CGIAR_L1_TILE_INDECES_TRANSFORM = (-185.0004166666667, 5.0, 65.0004166666667, -5.0)
 
 
-def resolve_cache_dir(cache_dir: str | Path | None) -> Path:
-    """Return the DEM cache folder to use, as an absolute path.
-
-    The ``cache_dir`` argument takes precedence over the ``EIO_CACHE_DIR`` environment
-    variable, that takes precedence over the ``CACHE_DIR`` default.
-    """
-    if cache_dir is None:
-        cache_dir = os.environ.get("EIO_CACHE_DIR") or CACHE_DIR
-    return Path(cache_dir).resolve()
-
-
 def latlon_to_indeces(
     transform: tuple[float, float, float, float], lon: float, lat: float
 ) -> tuple[int, int]:
@@ -78,16 +44,13 @@ def latlon_to_indeces(
     return ilon, ilat
 
 
-Tile = tuple[tuple[int, int], str]
-
-
 def dted_l2_tiles(
     left: float,
     bottom: float,
     right: float,
     top: float,
     tile_name_template: str = "{slat}{slon}.tif",
-) -> Iterator[Tile]:
+) -> Iterator[cache.Tile]:
     ileft, itop = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, left, top)
     iright, ibottom = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, right, bottom)
     # special case often used *integer* top and right to avoid downloading unneeded tiles
@@ -108,7 +71,7 @@ def cgiar_l1_tiles(
     right: float,
     top: float,
     tile_template: str = "srtm_{ilon:02d}_{ilat:02d}.tif",
-) -> Iterator[Tile]:
+) -> Iterator[cache.Tile]:
     ileft, itop = latlon_to_indeces(CGIAR_L1_TILE_INDECES_TRANSFORM, left, top)
     iright, ibottom = latlon_to_indeces(CGIAR_L1_TILE_INDECES_TRANSFORM, right, bottom)
     for ilon in range(ileft, iright + 1):
@@ -123,7 +86,7 @@ def srtm_ellip_tiles(
     right: float,
     top: float,
     tile_name_template: str = "{slat}{slon}_wgs84.tif",
-) -> Iterator[Tile]:
+) -> Iterator[cache.Tile]:
     ileft, itop = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, left, top)
     iright, ibottom = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, right, bottom)
     # special case often used *integer* top and right to avoid downloading unneeded tiles
@@ -167,7 +130,7 @@ def zarr_tiles(
     right: float,
     top: float,
     transform: tuple[float, float, float, float],
-) -> Iterator[Tile]:
+) -> Iterator[cache.Tile]:
     ileft, itop = latlon_to_indeces(transform, left, top)
     iright, ibottom = latlon_to_indeces(transform, right, bottom)
     for ilon in range(ileft, iright + 1):
@@ -193,18 +156,11 @@ def prepare_tile_zarr(
 
 
 class DatasourceSpec(TypedDict):
-    # a local product has one URL per tile (``tiles``), a remote one is a
-    # single chunked source (``grid``): the key tells the two apart
-    cached_tiles: Callable[..., Iterator[Tile]]
-    # keyword arguments for ``cached_tiles``, e.g. the tile name template
-    # of a product that keeps its tiles in subfolders
+    """How a DEM product lists, prepares and caches its tiles."""
+
+    cached_tiles: Callable[..., Iterator[cache.Tile]]
     cached_tiles_kwargs: NotRequired[dict[str, Any]]
-    # prepare the tile for GDAL, downloading it or reading the window of the
-    # chunked source, next to the spool file to remove once it is cached
     prepare_tile: Callable[..., tuple[str, Path | None]]
-    # keyword arguments for ``prepare_tile``: the datasource URL and the path
-    # of the variable in the store, the source extension, the archive the
-    # provider serves it in, the chunk size
     prepare_tile_kwargs: dict[str, Any]
     tile_gdal_options: NotRequired[str]
 
@@ -316,7 +272,7 @@ def tile_source(
     the ``compressed_ext`` when the source is compressed. The member is the file
     to read inside a ``.zip`` archive and ``None`` otherwise.
     """
-    stem = tile_name.removesuffix(CACHE_EXT)
+    stem = tile_name.removesuffix(".tif")
     spool_name = f"{stem}{tile_ext}"
     remote = spool_name if compressed_ext is None else f"{stem}{compressed_ext}"
     member = Path(spool_name).name if compressed_ext == ".zip" else None
@@ -352,83 +308,24 @@ def fetch_tile(source: str, destination: Path, *, member: str | None = None) -> 
         temporary.unlink(missing_ok=True)
 
 
-def ensure_tiles(
-    root: Path,
-    tiles: Sequence[Tile],
-    prepare_tile: Callable[..., tuple[str, Path | None]],
-    gdal_options: str = spatial.INT_TILE_GDAL_OPTIONS,
-    **kwargs: Any,
-) -> None:
-    """Fetch and cache *tiles*, skipping the tiles already in the cache.
-
-    A tile is a ``(name, window)`` pair: a tile with a window is read in place
-    from ``datasource_url``, a tile without one is downloaded whole from its own
-    URL and goes through the spool.
-    """
-    for (ilon, ilat), tile_name in tiles:
-        cached = root / "cache" / tile_name
-        if cached.exists() and cached.stat().st_size > 0:
-            continue
-
-        # prepare the data if GDAL cannot download it / read it as it is
-        source, spooled = prepare_tile(
-            tile_name=tile_name, spool=root / "spool", ilat=ilat, ilon=ilon, **kwargs
-        )
-
-        # convert the data to the internal cache format
-        ready = root / "spool/ready" / tile_name
-        spatial.call_gdal_translate(source, ready, options=gdal_options)
-        if spooled is not None:
-            spooled.unlink(missing_ok=True)
-
-        # finally move the data inside the cache. The move is atomic in most cases
-        cached.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(ready, cached)
-
-
-def build_vrt(root: Path, product: str) -> list[str]:
-    """Build the ``<product>.vrt`` mosaic over the non empty cache tiles."""
-    tiles = []
-    for tile in (root / "cache").rglob("*.tif"):
-        if tile.stat().st_size > 0:
-            tiles.append(str(tile))
-    options = "-q -overwrite"
-    cmd = spatial.call_gdalbuildvrt(sorted(tiles), root / f"{product}.vrt", options)
-    return cmd
-
-
 def ensure_setup(
     cache_dir: str | Path | None, product: str
 ) -> tuple[Path, DatasourceSpec]:
     if product in RETIRED_PRODUCTS:
         raise ProductRetiredError(RETIRED_PRODUCTS[product])
-    datasource_root = resolve_cache_dir(cache_dir) / product
+    datasource_root = cache.resolve_cache_dir(cache_dir) / product
     spec = PRODUCTS_SPECS[product]
-    util.ensure_setup(datasource_root)
+    cache.ensure_setup(datasource_root)
     return datasource_root, spec
-
-
-def do_clip(
-    path: Path,
-    bounds: tuple[float, float, float, float],
-    output: Path,
-    product: str,
-    gdal_options: str = DEFAULT_GDAL_OPTIONS,
-) -> list[str]:
-    left, bottom, right, top = bounds
-    options = f"-q {gdal_options} -projwin {left} {top} {right} {bottom}"
-    source = str(path / f"{product}.vrt")
-    with util.lock_vrt(path, product):
-        cmd = spatial.call_gdal_translate(source, output, options=options)
-    return cmd
 
 
 def seed(
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
     bounds: tuple[float, float, float, float] | None = None,
+    margin: str = MARGIN,
     max_download_tiles: int = 9,
-) -> Path:
+) -> tuple[Path, tuple[float, float, float, float]]:
     """Seed the DEM to given bounds.
 
     A remote product is not downloaded whole: only the chunks of the store that
@@ -437,10 +334,13 @@ def seed(
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
     :param bounds: Output bounds in 'left bottom right top' order.
+    :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
     :param max_download_tiles: Maximum number of tiles to process.
+    :return: The datasource root and the bounds with the margin applied.
     """
     if bounds is None:
         raise TypeError("bounds must be supplied")
+    bounds = build_bounds(bounds, margin=margin)
     datasource_root, spec = ensure_setup(cache_dir, product)
     cached_tiles = spec["cached_tiles"]
     cached_tiles_kwargs = spec.get("cached_tiles_kwargs", {})
@@ -454,8 +354,8 @@ def seed(
 
     prepare_tile = spec["prepare_tile"]
     prepare_tile_kwargs = spec.get("prepare_tile_kwargs", {})
-    with util.lock_tiles(datasource_root, [name for _, name in tiles]):
-        ensure_tiles(
+    with cache.lock_tiles(datasource_root, [name for _, name in tiles]):
+        cache.ensure_tiles(
             datasource_root,
             tiles,
             prepare_tile=prepare_tile,
@@ -463,10 +363,10 @@ def seed(
             **prepare_tile_kwargs,
         )
 
-    with util.lock_vrt(datasource_root, product):
-        build_vrt(datasource_root, product)
+    with cache.lock_vrt(datasource_root, product):
+        cache.build_vrt(datasource_root, product)
 
-    return datasource_root
+    return datasource_root, bounds
 
 
 def build_bounds(
@@ -506,9 +406,14 @@ def clip(
     :param gdal_options: GDAL creation options of the output file.
     """
     output = Path(output).resolve()
-    bounds = build_bounds(bounds, margin=margin)
-    datasource_root = seed(cache_dir=cache_dir, product=product, bounds=bounds)
-    do_clip(datasource_root, bounds, output, product=product, gdal_options=gdal_options)
+    datasource_root, bounds = seed(
+        cache_dir=cache_dir, product=product, bounds=bounds, margin=margin
+    )
+    left, bottom, right, top = bounds
+    options = f"-q {gdal_options} -projwin {left} {top} {right} {bottom}"
+    source = str(datasource_root / f"{product}.vrt")
+    with cache.lock_vrt(datasource_root, product):
+        spatial.call_gdal_translate(source, output, options=options)
 
 
 def dataset(dataset: str | None = None) -> str:

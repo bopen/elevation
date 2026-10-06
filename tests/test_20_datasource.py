@@ -9,7 +9,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 import elevation
-from elevation import datasource, spatial
+from elevation import cache, datasource, spatial
 
 DATA_DIR = Path(__file__).parent / "data"
 REFERENCE = DATA_DIR / "reference.tif"
@@ -178,7 +178,7 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
 
-    datasource.ensure_tiles(
+    cache.ensure_tiles(
         tmp_path,
         [((12, 41), "N41E012.tif")],
         prepare_tile=spec["prepare_tile"],
@@ -207,7 +207,7 @@ def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> Non
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch("elevation.spatial.call_gdal_translate")
 
-    datasource.ensure_tiles(
+    cache.ensure_tiles(
         tmp_path,
         [((12, 41), "N41E012.tif")],
         prepare_tile=spec["prepare_tile"],
@@ -231,7 +231,7 @@ def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     )
     assert tiles == [((96, 24), "24/96.tif")]
 
-    datasource.ensure_tiles(
+    cache.ensure_tiles(
         tmp_path,
         tiles,
         prepare_tile=spec["prepare_tile"],
@@ -278,58 +278,6 @@ def test_fetch_tile_zip(tmp_path: Path) -> None:
     assert destination.read_bytes() == REFERENCE.read_bytes()
 
 
-def test_do_clip(mocker: MockerFixture, tmp_path: Path) -> None:
-    bounds = (13.1, 43.1, 14.9, 44.9)
-    mock_check_call = mocker.patch("subprocess.check_call")
-
-    cmd = datasource.do_clip(
-        path=tmp_path, bounds=bounds, output=Path("/out.tif"), product="SRTM3"
-    )
-
-    expected_cmd = [
-        "gdal_translate",
-        "-q",
-        *datasource.DEFAULT_GDAL_OPTIONS.split(),
-        "-projwin",
-        "13.1",
-        "44.9",
-        "14.9",
-        "43.1",
-        str(tmp_path / "SRTM3.vrt"),
-        "/out.tif",
-    ]
-    assert cmd == expected_cmd
-    mock_check_call.assert_called_once_with(cmd)
-
-
-def test_do_clip_gdal_options(mocker: MockerFixture, tmp_path: Path) -> None:
-    mock_check_call = mocker.patch("subprocess.check_call")
-
-    cmd = datasource.do_clip(
-        path=tmp_path,
-        bounds=(1.0, 2.0, 3.0, 4.0),
-        output=Path("/out.tif"),
-        product="SRTM3",
-        gdal_options="-co COMPRESS=LZW",
-    )
-
-    expected_cmd = [
-        "gdal_translate",
-        "-q",
-        "-co",
-        "COMPRESS=LZW",
-        "-projwin",
-        "1.0",
-        "4.0",
-        "3.0",
-        "2.0",
-        str(tmp_path / "SRTM3.vrt"),
-        "/out.tif",
-    ]
-    assert cmd == expected_cmd
-    mock_check_call.assert_called_once_with(cmd)
-
-
 def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 13.9, 43.9)
@@ -340,11 +288,12 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
 
-    datasource_root = datasource.seed(
+    datasource_root, seeded_bounds = datasource.seed(
         cache_dir=root, product="SRTM1_GEOID", bounds=bounds
     )
 
     assert datasource_root == root / "SRTM1_GEOID"
+    assert seeded_bounds == bounds
     mock_fetch.assert_called_once_with(
         f"{spec['prepare_tile_kwargs']['datasource_url']}/N43E013.tif",
         datasource_root / "spool" / "N43E013.tif",
@@ -372,7 +321,7 @@ def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
 
-    datasource_root = datasource.seed(
+    datasource_root, _ = datasource.seed(
         cache_dir=root,
         product="GLO-30",
         bounds=(12.4, 41.8, 12.4 + 100 / 3600, 41.8 + 100 / 3600),
@@ -467,7 +416,7 @@ def test_cache_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     default = tmp_path / "default"
     override = tmp_path / "override"
     argument = tmp_path / "argument"
-    monkeypatch.setattr(datasource, "CACHE_DIR", default)
+    monkeypatch.setattr(cache, "CACHE_DIR", default)
 
     assert f"Product folder: {default.resolve() / 'MAPZEN'}" in datasource.info()
 

@@ -121,8 +121,14 @@ def seed(
         "--bounds",
         help="Output bounds: left bottom right top.",
     ),
+    margin: str = typer.Option(
+        elevation.MARGIN,
+        "-m",
+        "--margin",
+        help="Decimal degree margin added to the bounds. Use '%' for percent margin.",
+    ),
 ) -> None:
-    elevation.seed(**ctx.obj, bounds=bounds)
+    elevation.seed(**ctx.obj, bounds=bounds, margin=margin)
 
 
 @app.command(short_help="Clip the DEM to given bounds.")

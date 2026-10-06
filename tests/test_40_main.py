@@ -106,6 +106,18 @@ def test_eio_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
 
 
+def test_eio_seed_margin(mocker: MockerFixture, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    runner = typer.testing.CliRunner()
+    mock_seed = mocker.patch("elevation.seed")
+    result = runner.invoke(
+        __main__.app,
+        f"--cache_dir {root!s} seed --bounds 12.5 42 12.5 42 -m 1".split(),
+    )
+    assert not result.exception
+    assert mock_seed.call_args.kwargs["margin"] == "1"
+
+
 def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = typer.testing.CliRunner()

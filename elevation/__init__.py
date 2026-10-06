@@ -21,8 +21,8 @@ except ImportError:
     # Local copy or not installed with setuptools
     __version__ = "999"
 
+from .cache import CACHE_DIR, resolve_cache_dir
 from .datasource import (
-    CACHE_DIR,
     DEFAULT_GDAL_OPTIONS,
     DEFAULT_OUTPUT,
     DEFAULT_PRODUCT,
@@ -35,7 +35,6 @@ from .datasource import (
     dataset,
     distclean,
     info,
-    resolve_cache_dir,
     seed,
 )
 from .spatial import TOOLS, selfcheck
