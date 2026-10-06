@@ -422,10 +422,10 @@ def do_clip(
     gdal_options: str = DEFAULT_GDAL_OPTIONS,
 ) -> list[str]:
     left, bottom, right, top = bounds
-    options = f"gdal_translate -q {gdal_options} -projwin {left} {top} {right} {bottom}"
-    cmd = [*options.split(), str(path / f"{product}.vrt"), str(output)]
+    options = f"-q {gdal_options} -projwin {left} {top} {right} {bottom}"
+    source = str(path / f"{product}.vrt")
     with util.lock_vrt(path, product):
-        subprocess.check_call(cmd)
+        cmd = spatial.call_gdal_translate(source, output, options=options)
     return cmd
 
 

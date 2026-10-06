@@ -419,26 +419,23 @@ def test_build_bounds() -> None:
 def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 14.9, 44.9)
-    mock_check_call = mocker.patch("subprocess.check_call")
+    output = tmp_path / "out.tif"
+    mocker.patch("subprocess.check_call")
     mocker.patch("elevation.datasource.fetch_tile")
-    mocker.patch("elevation.spatial.call_gdal_translate", side_effect=write_ready_tile)
+    mock_translate = mocker.patch(
+        "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
+    )
 
-    datasource.clip(cache_dir=root, bounds=bounds, output="out.tif")
+    datasource.clip(cache_dir=root, bounds=bounds, output=output)
 
     datasource_root = root / "MAPZEN"
-    expected_cmd = [
-        "gdal_translate",
-        "-q",
-        *datasource.DEFAULT_GDAL_OPTIONS.split(),
-        "-projwin",
-        "13.1",
-        "44.9",
-        "14.9",
-        "43.1",
-        str(datasource_root / "MAPZEN.vrt"),
-        str(Path("out.tif").resolve()),
-    ]
-    assert mock_check_call.call_args[0][0] == expected_cmd
+    # the clip is the last call, after the one call per cached tile
+    source, destination = mock_translate.call_args.args
+    assert source == str(datasource_root / "MAPZEN.vrt")
+    assert destination == output
+    assert mock_translate.call_args.kwargs["options"] == (
+        f"-q {datasource.DEFAULT_GDAL_OPTIONS} -projwin 13.1 44.9 14.9 43.1"
+    )
 
 
 def test_clean(tmp_path: Path) -> None:

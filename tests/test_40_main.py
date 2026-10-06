@@ -112,10 +112,11 @@ def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     options = f"--cache_dir {root!s} clip --bounds 12.5 42 12.5 42"
     mock_check_call = mocker.patch("subprocess.check_call")
     mocker.patch("elevation.datasource.fetch_tile")
-    mocker.patch("elevation.spatial.call_gdal_translate")
+    mock_translate = mocker.patch("elevation.spatial.call_gdal_translate")
     result = runner.invoke(__main__.app, options.split())
     assert not result.exception
-    assert mock_check_call.call_count == 2
+    assert mock_check_call.call_count == 1
+    assert mock_translate.call_count == 1
 
     mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(__main__.app, ["clip"])
@@ -131,9 +132,9 @@ def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
 def test_eio_clip_gdal_options(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = typer.testing.CliRunner()
-    mock_check_call = mocker.patch("subprocess.check_call")
+    mocker.patch("subprocess.check_call")
     mocker.patch("elevation.datasource.fetch_tile")
-    mocker.patch("elevation.spatial.call_gdal_translate")
+    mock_translate = mocker.patch("elevation.spatial.call_gdal_translate")
 
     result = runner.invoke(
         __main__.app,
@@ -152,7 +153,7 @@ def test_eio_clip_gdal_options(mocker: MockerFixture, tmp_path: Path) -> None:
     )
 
     assert not result.exception
-    assert "COMPRESS=LZW" in mock_check_call.call_args[0][0]
+    assert "COMPRESS=LZW" in mock_translate.call_args.kwargs["options"]
 
 
 def test_eio_clean(tmp_path: Path) -> None:
