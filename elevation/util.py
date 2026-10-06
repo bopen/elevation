@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import subprocess
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from pathlib import Path
@@ -21,35 +20,6 @@ from pathlib import Path
 import fasteners
 
 FOLDER_LOCKFILE_NAME = ".folder_lock"
-TOOLS: list[tuple[str, str]] = [
-    ("gdal_translate", "gdal_translate --version"),
-    ("gdalbuildvrt", "gdalbuildvrt --version"),
-    ("gdalinfo", "gdalinfo --version"),
-    ("ogrinfo", "ogrinfo --version"),
-]
-
-
-def selfcheck(
-    tools: dict[str, str] | Iterable[tuple[str, str]] = TOOLS,
-    verbose: bool = False,
-) -> str:
-    """Audit the system for issues.
-
-    :param tools: Tools description, defaults to TOOLS.
-    :param verbose: Report each tool as it is tested.
-    """
-    report = []
-    issues = []
-    for tool_name, check_cli in dict(tools).items():
-        if verbose:
-            report.append(f"Checking {tool_name!r} ...")
-        try:
-            subprocess.check_output(check_cli, shell=True, stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError:
-            issues.append(f"{tool_name!r} not found or not usable.")
-    report.append("\n".join(issues) if issues else "Your system is ready.")
-    result = "\n".join(report)
-    return result
 
 
 @contextmanager

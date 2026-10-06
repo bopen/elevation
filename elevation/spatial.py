@@ -26,6 +26,35 @@ TILE_GDAL_OPTIONS = (
 INT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=2"
 FLOAT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=3"
 VRT_GDAL_OPTIONS = DEFAULT_GDAL_OPTIONS + " -overwrite"
+TOOLS: list[tuple[str, str]] = [
+    ("gdal_translate", "gdal_translate --version"),
+    ("gdalbuildvrt", "gdalbuildvrt --version"),
+    ("gdalinfo", "gdalinfo --version"),
+    ("ogrinfo", "ogrinfo --version"),
+]
+
+
+def selfcheck(
+    tools: dict[str, str] | list[tuple[str, str]] = TOOLS,
+    verbose: bool = False,
+) -> str:
+    """Audit the system for issues.
+
+    :param tools: Tools description, defaults to TOOLS.
+    :param verbose: Report each tool as it is tested.
+    """
+    report = []
+    issues = []
+    for tool_name, check_cli in dict(tools).items():
+        if verbose:
+            report.append(f"Checking {tool_name!r} ...")
+        try:
+            subprocess.check_output(check_cli, shell=True, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError:
+            issues.append(f"{tool_name!r} not found or not usable.")
+    report.append("\n".join(issues) if issues else "Your system is ready.")
+    result = "\n".join(report)
+    return result
 
 
 def gdal_report(cmd: list[str]) -> Any:

@@ -38,7 +38,7 @@ from .datasource import (
     resolve_cache_dir,
     seed,
 )
-from .util import TOOLS, selfcheck
+from .spatial import TOOLS, selfcheck
 
 __all__ = [
     "CACHE_DIR",

@@ -7,20 +7,6 @@ from pathlib import Path
 from elevation import util
 
 
-def test_selfcheck() -> None:
-    assert "NAME" not in util.selfcheck({"NAME": "true"})
-    assert "NAME" in util.selfcheck({"NAME": "false"})
-
-
-def test_selfcheck_verbose() -> None:
-    assert util.selfcheck({"NAME": "true"}, verbose=True) == (
-        "Checking 'NAME' ...\nYour system is ready."
-    )
-    assert util.selfcheck({"NAME": "false"}, verbose=True) == (
-        "Checking 'NAME' ...\n'NAME' not found or not usable."
-    )
-
-
 def test_lock_tiles(tmp_path: Path) -> None:
     root = tmp_path / "root"
     with util.lock_tiles(root, ["a.tiff"]):

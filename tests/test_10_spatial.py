@@ -34,6 +34,20 @@ def test_import_bounds_invalid() -> None:
         spatial.import_bounds(RASTER.with_suffix(".bad"))
 
 
+def test_selfcheck() -> None:
+    assert "NAME" not in spatial.selfcheck({"NAME": "true"})
+    assert "NAME" in spatial.selfcheck({"NAME": "false"})
+
+
+def test_selfcheck_verbose() -> None:
+    assert spatial.selfcheck({"NAME": "true"}, verbose=True) == (
+        "Checking 'NAME' ...\nYour system is ready."
+    )
+    assert spatial.selfcheck({"NAME": "false"}, verbose=True) == (
+        "Checking 'NAME' ...\n'NAME' not found or not usable."
+    )
+
+
 def test_call_gdal_translate_command(tmp_path: Path, mocker: MockerFixture) -> None:
     check_call = mocker.patch("subprocess.check_call")
     destination = tmp_path / "cache" / "destination.tif"
