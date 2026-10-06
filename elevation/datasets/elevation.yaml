@@ -1,6 +1,6 @@
 id: elevation
 title: elevation datasets
-description: 'Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, SRTM 30m and 90m DEMs, Copernicus DEM 30m and 90m DSMs.'
+description: 'Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, Copernicus DEM and SRTM 30m and 90m DEMs.'
 type: Catalog
 stac_version: 1.1.0
 links:
@@ -17,6 +17,14 @@ links:
   type: application/yaml
   title: Terrain Tiles global 30m v1
 - rel: child
+  href: ./GLO-30.yaml
+  type: application/yaml
+  title: Copernicus DEM global 30m (2021)
+- rel: child
+  href: ./GLO-90.yaml
+  type: application/yaml
+  title: Copernicus DEM global 90m (2021)
+- rel: child
   href: ./SRTM1_GEOID.yaml
   type: application/yaml
   title: SRTM global 30m v3
@@ -28,11 +36,3 @@ links:
   href: ./SRTM3.yaml
   type: application/yaml
   title: SRTM global 90m v4.1
-- rel: child
-  href: ./GLO-30.yaml
-  type: application/yaml
-  title: Copernicus DEM global 30m (2021)
-- rel: child
-  href: ./GLO-90.yaml
-  type: application/yaml
-  title: Copernicus DEM global 90m (2021)

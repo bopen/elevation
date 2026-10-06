@@ -4,21 +4,20 @@ Global geographic elevation data made easy.
 Elevation provides easy download, cache and access of the global datasets:
 
 - `MAPZEN`: [Terrain Tiles global 30m v1](https://registry.opendata.aws/terrain-tiles/)
-  hosted on [Amazon S3](https://aws.amazon.com/public-data-sets/terrain),
-  1 arc second (30m) DEMs in the SRTM HGT format
-  assembled by Mapzen from several open data providers,
-  including NASA/NGA SRTM, USGS 3DEP, EUDEM, ArcticDEM, GMTED2010 and ETOPO1.
+  assembled by Mapzen from several open data providers and hosted on [Amazon](https://aws.amazon.com/public-data-sets/terrain),
+  with 30m heights on the EGM96 geoid,
+  includes data from NASA/NGA SRTM, USGS 3DEP, EUDEM, ArcticDEM, GMTED2010 and ETOPO1.
+- `GLO-30`: [Copernicus DEM global 30m (2021)](https://doi.org/10.5270/ESA-c5d3d65)
+  produced by ESA and the European Union and hosted on [Earth Data Hub](https://earthdatahub.destine.eu/collections/copernicus-dem), with 30m heights on the EGM2008 geoid.
+- `GLO-90`: [Copernicus DEM global 90m (2021)](https://doi.org/10.5270/ESA-c5d3d65)
+  the 90m companion of `GLO-30`.
 - `SRTM1_GEOID`: [SRTM global 30m v3](https://lpdaac.usgs.gov/products/srtmgl1nv003/)
   produced by NASA and NGA hosted on [OpenTopography](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082015.4326.1),
   with 30m heights on the EGM96 geoid.
 - `SRTM1_ELLIP`: [SRTM global 30m v3 ellipsoidal](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1)
-  hosted on OpenTopography, 30m heights on the WGS84 ellipsoid.
+  the companion of `SRTM1_GEOID`, with 30m heights on the WGS84 ellipsoid.
 - `SRTM3`: [SRTM global 90m v4.1](https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/)
-  produced by CGIAR-CSI.
-- `GLO-30`: [Copernicus DEM global 30m (2021)](https://doi.org/10.5270/ESA-c5d3d65)
-  produced by ESA and the European Union, 30m heights on the EGM2008 geoid.
-- `GLO-90`: [Copernicus DEM global 90m (2021)](https://doi.org/10.5270/ESA-c5d3d65)
-  the 90m companion of `GLO-30`.
+  produced and hosted by CGIAR-CSI, with 90m heights on the EGM96 geoid.
 
 Note that any download policies and attribution requirements of the respective providers apply.
 
@@ -65,18 +64,6 @@ using the default `MAPZEN` product:
 $ eio clip -o Rome-MAPZEN-DEM.tif --bounds 12.35 41.8 12.65 42
 ```
 
-For the SRTM global 30m v3 DEM use:
-
-```console
-$ eio --product SRTM1_GEOID clip -o Rome-SRTM1_GEOID-DEM.tif --bounds 12.35 41.8 12.65 42
-```
-
-For the SRTM global 90m v4.1 DEM use:
-
-```console
-$ eio --product SRTM3 clip -o Rome-SRTM3-DEM.tif --bounds 12.35 41.8 12.65 42
-```
-
 For the Copernicus DEM global 30m or 90m DEMs use:
 
 ```console
@@ -91,11 +78,26 @@ stored in `~/.netrc` are used to access it:
 
 ```console
 machine data.earthdatahub.destine.eu
-    login <your-username>
-    password <your-password>
+    password <your EDH API key>
 ```
 
+See the Earth Data Hub [Getting started](https://earthdatahub.destine.eu/getting-started)
+page to create an account and set up the credentials.
+
 Reading the store needs GDAL 3.8 or later.
+
+For the SRTM global 30m v3 geoid or ellipsoidal DEMs use:
+
+```console
+$ eio --product SRTM1_GEOID clip -o Rome-SRTM1_GEOID-DEM.tif --bounds 12.35 41.8 12.65 42
+$ eio --product SRTM1_ELLIP clip -o Rome-SRTM1_ELLIP-DEM.tif --bounds 12.35 41.8 12.65 42
+```
+
+For the SRTM global 90m v4.1 DEM use:
+
+```console
+$ eio --product SRTM3 clip -o Rome-SRTM3-DEM.tif --bounds 12.35 41.8 12.65 42
+```
 
 The `--bounds` option accepts latitude and longitude coordinates
 (more precisely in geodetic coordinates in the WGS84 reference system EPSG:4326 for those who care)
@@ -134,10 +136,22 @@ $ eio dataset
 
 The optional argument selects a single dataset by id, e.g. `eio dataset SRTM3`.
 
-To clean up stale temporary files and fix the cache in the event of a server error use:
+To show info about the product cache use:
+
+```console
+$ eio info
+```
+
+To clean up the product cache from temporary files use:
 
 ```console
 $ eio clean
+```
+
+To remove the product cache entirely use:
+
+```console
+$ eio distclean
 ```
 
 ## Command line reference
@@ -157,8 +171,7 @@ $ eio --help
 │                                                           [default: MAPZEN]                      │
 │ --cache_dir        <directory>                            Root of the DEM cache folder.          │
 │                                                           [env var: EIO_CACHE_DIR]               │
-│                                                           [default:                              │
-│                                                           /Users/amici/Library/Caches/elevation]  │
+│                                                           [default: <user cache folder>]         │
 │ --help                                                    Show this message and exit.            │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
@@ -236,6 +249,7 @@ $ eio seed --help
 Defaults can be defined by setting environment variables prefixed with `EIO`,
 e.g. `EIO_PRODUCT=SRTM3`, `EIO_CLIP_MARGIN=10%` and `EIO_CACHE_DIR=/tmp/elevation`.
 `EIO_CACHE_DIR` selects the DEM cache folder and is honoured by the Python API as well.
+The default is the `elevation` folder of the operating system user cache directory.
 
 ## Python API
 
@@ -245,7 +259,7 @@ Every command has a corresponding API function in the `elevation` module:
 >>> import elevation
 >>> # clip the 30m DEM of Rome and save it to Rome-DEM.tif
 >>> elevation.clip(bounds=(12.35, 41.8, 12.65, 42), output="Rome-DEM.tif")
->>> # clean up stale temporary files and fix the cache in the event of a server error
+>>> # clean up the product cache from temporary files
 >>> elevation.clean()
 
 ```
@@ -255,10 +269,8 @@ Every command has a corresponding API function in the `elevation` module:
 | Resource | Link |
 | --- | --- |
 | Documentation | <https://elevation.bopen.eu> |
-| Support | <https://stackoverflow.com/search?q=python+elevation> |
 | Development | <https://github.com/bopen/elevation> |
 | Download | <https://pypi.org/project/elevation> |
-| Code quality | [![Coverage status on Codecov](https://codecov.io/gh/bopen/elevation/branch/main/graph/badge.svg)](https://codecov.io/gh/bopen/elevation) |
 
 ## Contributing
 
