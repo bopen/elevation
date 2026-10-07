@@ -2,7 +2,6 @@
 # Copyright (c) 2016-2026 B-Open Solutions srl - https://bopen.eu
 #
 
-import shutil
 from pathlib import Path
 
 import pytest
@@ -14,11 +13,6 @@ DATA_DIR = Path(__file__).parent / "data"
 RASTER = DATA_DIR / "reference.tif"
 VECTOR = DATA_DIR / "reference.geojson"
 BOUNDS = (10.0, 40.0, 11.0, 41.0)
-
-requires_gdal = pytest.mark.skipif(
-    shutil.which("gdal_translate") is None,
-    reason="the GDAL command line tools are not installed",
-)
 
 
 def test_import_bounds_raster() -> None:
@@ -85,7 +79,6 @@ def test_call_gdalbuildvrt_command(tmp_path: Path, mocker: MockerFixture) -> Non
     assert destination.parent.is_dir()
 
 
-@requires_gdal
 def test_call_gdal_translate(tmp_path: Path) -> None:
     destination = tmp_path / "cache" / "destination.tif"
 

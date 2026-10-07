@@ -54,6 +54,8 @@ and distributions, please refer to the
 
 Note that *elevation* v2.0 requires Python 3.11 or later.
 
+Our target platforms are Linux and MacOS. Windows is only lightly tested.
+
 ## Command line usage
 
 Identify the geographic bounds of the area of interest and fetch the DEM with the `eio` command.
