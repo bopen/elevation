@@ -23,7 +23,9 @@ from typing import Any, NotRequired, TypedDict
 from . import cache, spatial
 
 DEFAULT_OUTPUT = "out.tif"
-DEFAULT_GDAL_OPTIONS = "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co PREDICTOR=2"
+DEFAULT_GDAL_OPTIONS = (
+    "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co NUM_THREADS=ALL_CPUS"
+)
 MARGIN = "0"
 MAX_DOWNLOAD_TILES = 25
 
@@ -109,6 +111,14 @@ def srtm_ellip_tiles(
                 yield (ilon, ilat), f"{subdir}/{fname}"
 
 
+def prepare_tile(
+    gdal_source: str,
+    tile_name: str,
+    **kwargs: Any,
+) -> str:
+    return f"{gdal_source}/{tile_name}"
+
+
 def prepare_tile_vsi(
     tile_name: str,
     datasource_url: str,
@@ -146,20 +156,15 @@ def zarr_tiles(
                 yield (ilon, ilat), f"{ilat}/{ilon}.tif"
 
 
-def prepare_tile_zarr_vsi(
-    datasource_url: str,
-    variable_path: str,
+def prepare_tile_zarr(
+    gdal_source: str,
     ilat: int,
     ilon: int,
     chunks: tuple[int, int],
-    vsi_prefix: str = "curl",
     **kwargs: Any,
 ) -> str:
     srcwin = [ilon * chunks[0], ilat * chunks[1], chunks[0], chunks[1]]
-    gdal_source = (
-        f"-srcwin {' '.join(map(str, srcwin))} "
-        + f'ZARR:"/vsi{vsi_prefix}/{datasource_url}":{variable_path}'
-    )
+    gdal_source = f"-srcwin {' '.join(map(str, srcwin))} {gdal_source}"
     return gdal_source
 
 
@@ -185,17 +190,17 @@ MAPZEN_SPEC: DatasourceSpec = {
 }
 
 SRTM1_GEOID_SPEC: DatasourceSpec = {
-    "prepare_tile": prepare_tile_vsi,
+    "prepare_tile": prepare_tile,
     "prepare_tile_kwargs": {
-        "datasource_url": "/vsicurl/https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
+        "gdal_source": "/vsicurl/https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
     },
     "cached_tiles": dted_l2_tiles,
 }
 
 SRTM1_ELLIP_SPEC: DatasourceSpec = {
-    "prepare_tile": prepare_tile_vsi,
+    "prepare_tile": prepare_tile,
     "prepare_tile_kwargs": {
-        "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
+        "gdal_source": "/vsicurl/https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
     },
     "cached_tiles": srtm_ellip_tiles,
 }
@@ -210,10 +215,9 @@ SRTM3_SPEC: DatasourceSpec = {
 }
 
 GLO_30_SPEC: DatasourceSpec = {
-    "prepare_tile": prepare_tile_zarr_vsi,
+    "prepare_tile": prepare_tile_zarr,
     "prepare_tile_kwargs": {
-        "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-30-v1.zarr",
-        "variable_path": "/dsm",
+        "gdal_source": 'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu/copernicus-dem/GLO-30-v1.zarr":/dsm',
         "chunks": (3600, 1800),
     },
     "tile_gdal_options": spatial.FLOAT_TILE_GDAL_OPTIONS,
@@ -222,10 +226,9 @@ GLO_30_SPEC: DatasourceSpec = {
 }
 
 GLO_90_SPEC: DatasourceSpec = {
-    "prepare_tile": prepare_tile_zarr_vsi,
+    "prepare_tile": prepare_tile_zarr,
     "prepare_tile_kwargs": {
-        "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-90-v1.zarr",
-        "variable_path": "/dsm",
+        "gdal_source": 'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu/copernicus-dem/GLO-90-v1.zarr":/dsm',
         "chunks": (2400, 2400),
     },
     "tile_gdal_options": spatial.FLOAT_TILE_GDAL_OPTIONS,
