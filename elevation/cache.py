@@ -69,7 +69,7 @@ def lock_tiles(datasource_root: Path, tile_names: list[str]) -> Generator[None]:
 
 def is_cached(root: Path, tile_name: str) -> bool:
     """Return whether *tile_name* is cached, i.e. present and not empty."""
-    cached = root / "cache" / tile_name
+    cached = root / "cache" / (tile_name + ".tif")
     return cached.exists() and cached.stat().st_size > 0
 
 
@@ -89,14 +89,14 @@ def ensure_tiles(
         if is_cached(root, tile_name):
             continue
 
-        cached = root / "cache" / tile_name
         source = prepare_tile(tile_name=tile_name, ilat=ilat, ilon=ilon, **kwargs)
 
         # convert the data to the internal cache format
-        spool = root / "spool" / tile_name
+        spool = root / "spool" / (tile_name + ".tif")
         spatial.call_gdal_translate(source, spool, options=gdal_options)
 
         # finally move the data inside the cache. The move is atomic in most cases
+        cached = root / "cache" / (tile_name + ".tif")
         cached.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(spool, cached)
 

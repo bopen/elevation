@@ -52,7 +52,7 @@ def dted_l2_tiles(
     bottom: float,
     right: float,
     top: float,
-    tile_name_template: str = "{slat}{slon}.tif",
+    tile_name_template: str = "{slat}{slon}",
 ) -> Iterator[cache.Tile]:
     ileft, itop = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, left, top)
     iright, ibottom = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, right, bottom)
@@ -73,7 +73,7 @@ def cgiar_l1_tiles(
     bottom: float,
     right: float,
     top: float,
-    tile_template: str = "srtm_{ilon:02d}_{ilat:02d}.tif",
+    tile_template: str = "srtm_{ilon:02d}_{ilat:02d}",
 ) -> Iterator[cache.Tile]:
     ileft, itop = latlon_to_indeces(CGIAR_L1_TILE_INDECES_TRANSFORM, left, top)
     iright, ibottom = latlon_to_indeces(CGIAR_L1_TILE_INDECES_TRANSFORM, right, bottom)
@@ -88,7 +88,7 @@ def srtm_ellip_tiles(
     bottom: float,
     right: float,
     top: float,
-    tile_name_template: str = "{slat}{slon}_wgs84.tif",
+    tile_name_template: str = "{slat}{slon}_wgs84",
 ) -> Iterator[cache.Tile]:
     ileft, itop = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, left, top)
     iright, ibottom = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, right, bottom)
@@ -114,9 +114,10 @@ def srtm_ellip_tiles(
 def prepare_tile(
     gdal_source: str,
     tile_name: str,
+    remote_ext: str = ".tif",
     **kwargs: Any,
 ) -> str:
-    return f"{gdal_source}/{tile_name}"
+    return f"{gdal_source}/{tile_name}{remote_ext}"
 
 
 def prepare_tile_vsi(
@@ -153,7 +154,7 @@ def zarr_tiles(
     for ilon in range(ileft, iright + 1):
         for ilat in range(itop, ibottom + 1):
             if ilon >= 0 and ilat >= 0:
-                yield (ilon, ilat), f"{ilat}/{ilon}.tif"
+                yield (ilon, ilat), f"{ilat}/{ilon}"
 
 
 def prepare_tile_zarr(
@@ -179,14 +180,13 @@ class DatasourceSpec(TypedDict):
 
 
 MAPZEN_SPEC: DatasourceSpec = {
-    "prepare_tile": prepare_tile_vsi,
+    "prepare_tile": prepare_tile,
     "prepare_tile_kwargs": {
-        "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
-        "tile_ext": ".hgt",
-        "compressed_ext": ".hgt.gz",
+        "remote_ext": ".hgt.gz",
+        "gdal_source": "/vsigzip//vsicurl/https://s3.amazonaws.com/elevation-tiles-prod/skadi",
     },
     "cached_tiles": dted_l2_tiles,
-    "cached_tiles_kwargs": {"tile_name_template": "{slat}/{slat}{slon}.tif"},
+    "cached_tiles_kwargs": {"tile_name_template": "{slat}/{slat}{slon}"},
 }
 
 SRTM1_GEOID_SPEC: DatasourceSpec = {

@@ -70,10 +70,10 @@ def test_latlon_to_indeces_EDH_L1_CHUNK_INDECES_TRANSFORM() -> None:
 
 def test_dted_l2_tiles() -> None:
     assert list(datasource.dted_l2_tiles(10.1, 44.9, 10.1, 44.9)) == [
-        ((10, 44), "N44E010.tif")
+        ((10, 44), "N44E010")
     ]
     # NOTE this also tests int (not float) input
-    assert list(datasource.dted_l2_tiles(10, 44, 11, 45)) == [((10, 44), "N44E010.tif")]
+    assert list(datasource.dted_l2_tiles(10, 44, 11, 45)) == [((10, 44), "N44E010")]
 
 
 def test_mapzen_tiles() -> None:
@@ -82,55 +82,41 @@ def test_mapzen_tiles() -> None:
     tiles = spec["cached_tiles"]
     kwargs = spec["cached_tiles_kwargs"]
 
-    assert list(tiles(10.1, 44.9, 10.1, 44.9, **kwargs)) == [
-        ((10, 44), "N44/N44E010.tif")
-    ]
+    assert list(tiles(10.1, 44.9, 10.1, 44.9, **kwargs)) == [((10, 44), "N44/N44E010")]
     # NOTE this also tests int (not float) input
-    assert list(tiles(10, 44, 11, 45, **kwargs)) == [((10, 44), "N44/N44E010.tif")]
+    assert list(tiles(10, 44, 11, 45, **kwargs)) == [((10, 44), "N44/N44E010")]
 
 
 def test_cgiar_l1_tiles() -> None:
     assert next(datasource.cgiar_l1_tiles(10.1, 44.9, 10.1, 44.9)) == (
         (39, 4),
-        "srtm_39_04.tif",
+        "srtm_39_04",
     )
     assert next(datasource.cgiar_l1_tiles(25.50, 58.40, 27.67, 60.06)) == (
         (42, 1),
-        "srtm_42_01.tif",
+        "srtm_42_01",
     )
     assert len(list(datasource.cgiar_l1_tiles(9.9, 39.1, 15.1, 45.1))) == 9
 
 
 def test_srtm_ellip_tiles() -> None:
-    ds1 = [((10, 44), "North/North_30_60/N44E010_wgs84.tif")]
-    ds2 = [((-74, 7), "North/North_0_29/N07W074_wgs84.tif")]
-    ds3 = [((15, -20), "South/S20E015_wgs84.tif")]
+    ds1 = [((10, 44), "North/North_30_60/N44E010_wgs84")]
+    ds2 = [((-74, 7), "North/North_0_29/N07W074_wgs84")]
+    ds3 = [((15, -20), "South/S20E015_wgs84")]
     assert list(datasource.srtm_ellip_tiles(10.1, 44.9, 10.1, 44.9)) == ds1
     assert list(datasource.srtm_ellip_tiles(-73.99, 7.056, -73.90, 7.660)) == ds2
     assert list(datasource.srtm_ellip_tiles(15.931, -19.194, 15.329, -19.961)) == ds3
     # the tiles share their edge row and column, so a bound on a whole degree
     # does not reach the tiles that start there
     assert list(datasource.srtm_ellip_tiles(10.1, 44.1, 12.0, 46.0)) == [
-        ((10, 44), "North/North_30_60/N44E010_wgs84.tif"),
-        ((10, 45), "North/North_30_60/N45E010_wgs84.tif"),
-        ((11, 44), "North/North_30_60/N44E011_wgs84.tif"),
-        ((11, 45), "North/North_30_60/N45E011_wgs84.tif"),
+        ((10, 44), "North/North_30_60/N44E010_wgs84"),
+        ((10, 45), "North/North_30_60/N45E010_wgs84"),
+        ((11, 44), "North/North_30_60/N44E011_wgs84"),
+        ((11, 45), "North/North_30_60/N45E011_wgs84"),
     ]
 
 
 def test_tile_source() -> None:
-    # MAPZEN serves the DTED tiles gunzipped, so the spool name drops the .gz
-    spec = datasource.MAPZEN_SPEC
-    kwargs = dict(spec["prepare_tile_kwargs"])
-    datasource_url = kwargs.pop("datasource_url")
-    assert kwargs == {"tile_ext": ".hgt", "compressed_ext": ".hgt.gz"}
-    url, spooled, member = datasource.tile_source(
-        datasource_url, "N41/N41E012.tif", **kwargs
-    )
-    assert url == f"{datasource_url}/N41/N41E012.hgt.gz"
-    assert spooled == "N41/N41E012.hgt"
-    assert member is None
-
     # the SRTM3 tiles are served inside a .zip, that the spec has to declare or
     # seed asks for a plain .tif that the provider does not have
     spec = datasource.SRTM3_SPEC
@@ -138,7 +124,7 @@ def test_tile_source() -> None:
     datasource_url = kwargs.pop("datasource_url")
     assert kwargs == {"compressed_ext": ".zip"}
     url, spooled, member = datasource.tile_source(
-        datasource_url, "srtm_39_04.tif", **kwargs
+        datasource_url, "srtm_39_04", **kwargs
     )
     assert url == f"{datasource_url}/srtm_39_04.zip"
     assert spooled == "srtm_39_04.tif"
@@ -148,15 +134,13 @@ def test_tile_source() -> None:
 def test_prepare_tile() -> None:
     # the SRTM1 products serve plain GeoTIFF tiles that are read with /vsicurl
     spec = datasource.SRTM1_GEOID_SPEC
-    source = spec["prepare_tile"](
-        tile_name="N41E012.tif", **spec["prepare_tile_kwargs"]
-    )
+    source = spec["prepare_tile"](tile_name="N41E012", **spec["prepare_tile_kwargs"])
     assert source == f"{spec['prepare_tile_kwargs']['gdal_source']}/N41E012.tif"
 
     # the subfolder of the ellipsoidal product is kept in the connection string
     spec = datasource.SRTM1_ELLIP_SPEC
     source = spec["prepare_tile"](
-        tile_name="North/North_30_60/N44E010_wgs84.tif",
+        tile_name="North/North_30_60/N44E010_wgs84",
         **spec["prepare_tile_kwargs"],
     )
     assert source == (
@@ -164,23 +148,20 @@ def test_prepare_tile() -> None:
         "/North/North_30_60/N44E010_wgs84.tif"
     )
 
-
-def test_prepare_tile_vsi() -> None:
-    # the gunzipped MAPZEN tiles are read in place through /vsigzip
+    # MAPZEN overrides the remote extension for the gunzipped tiles
     spec = datasource.MAPZEN_SPEC
     source = spec["prepare_tile"](
-        tile_name="N43/N43E013.tif", **spec["prepare_tile_kwargs"]
+        tile_name="N43/N43E013", **spec["prepare_tile_kwargs"]
     )
     assert source == (
-        f"/vsigzip//vsicurl/{spec['prepare_tile_kwargs']['datasource_url']}"
-        "/N43/N43E013.hgt.gz"
+        f"{spec['prepare_tile_kwargs']['gdal_source']}/N43/N43E013.hgt.gz"
     )
 
+
+def test_prepare_tile_vsi() -> None:
     # the zipped SRTM3 tiles are read in place through /vsizip, member included
     spec = datasource.SRTM3_SPEC
-    source = spec["prepare_tile"](
-        tile_name="srtm_39_04.tif", **spec["prepare_tile_kwargs"]
-    )
+    source = spec["prepare_tile"](tile_name="srtm_39_04", **spec["prepare_tile_kwargs"])
     assert source == (
         f"/vsizip//vsicurl/{spec['prepare_tile_kwargs']['datasource_url']}"
         "/srtm_39_04.zip/srtm_39_04.tif"
@@ -195,15 +176,14 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
 
     cache.ensure_tiles(
         tmp_path,
-        [((12, 41), "N41/N41E012.tif")],
+        [((12, 41), "N41/N41E012")],
         prepare_tile=spec["prepare_tile"],
         **spec["prepare_tile_kwargs"],
     )
 
     # the gunzipped tile is read in place through the VSI chain: no download
     mock_write.assert_called_once_with(
-        f"/vsigzip//vsicurl/{spec['prepare_tile_kwargs']['datasource_url']}"
-        "/N41/N41E012.hgt.gz",
+        f"{spec['prepare_tile_kwargs']['gdal_source']}/N41/N41E012.hgt.gz",
         tmp_path / "spool" / "N41" / "N41E012.tif",
         options=spatial.INT_TILE_GDAL_OPTIONS,
     )
@@ -218,7 +198,7 @@ def test_ensure_tiles_vsi(mocker: MockerFixture, tmp_path: Path) -> None:
 
     cache.ensure_tiles(
         tmp_path,
-        [((12, 41), "N41E012.tif")],
+        [((12, 41), "N41E012")],
         prepare_tile=spec["prepare_tile"],
         **spec["prepare_tile_kwargs"],
     )
@@ -242,7 +222,7 @@ def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> Non
 
     cache.ensure_tiles(
         tmp_path,
-        [((12, 41), "N41E012.tif")],
+        [((12, 41), "N41E012")],
         prepare_tile=spec["prepare_tile"],
         **spec["prepare_tile_kwargs"],
     )
@@ -260,7 +240,7 @@ def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     tiles = list(
         spec["cached_tiles"](12.4, 41.8, 12.4, 41.8, **spec["cached_tiles_kwargs"])
     )
-    assert tiles == [((96, 24), "24/96.tif")]
+    assert tiles == [((96, 24), "24/96")]
 
     cache.ensure_tiles(
         tmp_path,
@@ -298,8 +278,7 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     assert datasource_root == root / "MAPZEN"
     assert seeded_bounds == bounds
     mock_write.assert_called_once_with(
-        f"/vsigzip//vsicurl/{spec['prepare_tile_kwargs']['datasource_url']}"
-        "/N43/N43E013.hgt.gz",
+        f"{spec['prepare_tile_kwargs']['gdal_source']}/N43/N43E013.hgt.gz",
         datasource_root / "spool" / "N43" / "N43E013.tif",
         options=spatial.INT_TILE_GDAL_OPTIONS,
     )
