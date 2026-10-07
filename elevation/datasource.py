@@ -109,29 +109,26 @@ def srtm_ellip_tiles(
                 yield (ilon, ilat), f"{subdir}/{fname}"
 
 
-def prepare_tile_download_uncompress(
-    tile_name: str,
-    spool: Path,
-    datasource_url: str,
-    tile_ext: str = ".tif",
-    compressed_ext: str | None = None,
-    **kwargs: Any,
-) -> tuple[str, Path | None]:
-    source, spool_name, member = tile_source(
-        datasource_url, tile_name, tile_ext, compressed_ext
-    )
-    spooled = spool / spool_name
-    fetch_tile(source, spooled, member=member)
-    return str(spooled), spooled
-
-
 def prepare_tile_vsi(
     tile_name: str,
     datasource_url: str,
     vsi_prefix: str = "curl",
+    tile_ext: str = ".tif",
+    compressed_ext: str | None = None,
     **kwargs: Any,
 ) -> tuple[str, Path | None]:
-    return f"/vsi{vsi_prefix}/{datasource_url}/{tile_name}", None
+    """Return the ``/vsi`` GDAL source of *tile_name*, read in place.
+
+    A plain remote raster is read with ``/vsicurl`` alone, a gzipped one is
+    wrapped in ``/vsigzip`` and a zipped one in ``/vsizip`` with its member.
+    """
+    source, _, member = tile_source(datasource_url, tile_name, tile_ext, compressed_ext)
+    gdal_source = f"/vsi{vsi_prefix}/{source}"
+    if member is not None:
+        gdal_source = f"/vsizip/{gdal_source}/{member}"
+    elif compressed_ext is not None:
+        gdal_source = f"/vsigzip/{gdal_source}"
+    return gdal_source, None
 
 
 def zarr_tiles(
@@ -177,7 +174,7 @@ class DatasourceSpec(TypedDict):
 
 
 MAPZEN_SPEC: DatasourceSpec = {
-    "prepare_tile": prepare_tile_download_uncompress,
+    "prepare_tile": prepare_tile_vsi,
     "prepare_tile_kwargs": {
         "datasource_url": "https://s3.amazonaws.com/elevation-tiles-prod/skadi",
         "tile_ext": ".hgt",
@@ -190,7 +187,7 @@ MAPZEN_SPEC: DatasourceSpec = {
 SRTM1_GEOID_SPEC: DatasourceSpec = {
     "prepare_tile": prepare_tile_vsi,
     "prepare_tile_kwargs": {
-        "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
+        "datasource_url": "/vsicurl/https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
     },
     "cached_tiles": dted_l2_tiles,
 }
@@ -209,7 +206,7 @@ SRTM3_SPEC: DatasourceSpec = {
         "compressed_ext": ".zip",
     },
     "cached_tiles": cgiar_l1_tiles,
-    "prepare_tile": prepare_tile_download_uncompress,
+    "prepare_tile": prepare_tile_vsi,
 }
 
 GLO_30_SPEC: DatasourceSpec = {
@@ -288,35 +285,6 @@ def tile_source(
     remote = spool_name if compressed_ext is None else f"{stem}{compressed_ext}"
     member = Path(spool_name).name if compressed_ext == ".zip" else None
     return f"{datasource_url}/{remote}", spool_name, member
-
-
-def fetch_tile(source: str, destination: Path, *, member: str | None = None) -> None:
-    """Fetch *source* and write it uncompressed to *destination*.
-
-    A ``.gz`` source is gunzipped, a ``.zip`` source is read at *member*, any
-    other source is copied as it is. The tile is written through a ``.temp``
-    sibling and moved in place, so a failed download never leaves a half written
-    tile behind.
-
-    :param source: Any fsspec URL, e.g. ``https://...`` or ``s3://...``.
-    :param destination: Path of the uncompressed tile, parent folders are created.
-    :param member: Name of the file to extract from a ``.zip`` source.
-    """
-    # imported here to keep ``import elevation`` and ``eio`` free of the fsspec cost
-    import fsspec
-
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    if member is None:
-        stream = fsspec.open(source, "rb", compression="infer")
-    else:
-        stream = fsspec.open(f"zip://{member}::{source}", "rb")
-    temporary = destination.with_name(f"{destination.name}.temp")
-    try:
-        with stream as remote, temporary.open("wb") as local:
-            shutil.copyfileobj(remote, local)
-        temporary.replace(destination)
-    finally:
-        temporary.unlink(missing_ok=True)
 
 
 def ensure_setup(

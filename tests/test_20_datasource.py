@@ -11,9 +11,6 @@ from pytest_mock import MockerFixture
 import elevation
 from elevation import cache, datasource, spatial
 
-DATA_DIR = Path(__file__).parent / "data"
-REFERENCE = DATA_DIR / "reference.tif"
-
 
 def write_ready_tile(source: str | Path, ready: Path, **kwargs: Any) -> None:
     """Stand in for the mocked cache write: leave a tile for the cache move."""
@@ -160,10 +157,19 @@ def test_tile_source() -> None:
 
 
 def test_prepare_tile_vsi() -> None:
-    # the SRTM1 tiles are plain GeoTIFFs that GDAL reads in place, keeping the
-    # subfolder of the ellipsoidal product in the connection string
-    spec = datasource.SRTM1_ELLIP_SPEC
+    # a plain GeoTIFF tile is read with /vsicurl alone
+    spec = datasource.SRTM1_GEOID_SPEC
     source, spooled = spec["prepare_tile"](
+        tile_name="N41E012.tif", **spec["prepare_tile_kwargs"]
+    )
+    assert source == (
+        f"/vsicurl/{spec['prepare_tile_kwargs']['datasource_url']}/N41E012.tif"
+    )
+    assert spooled is None
+
+    # the subfolder of the ellipsoidal product is kept in the connection string
+    spec = datasource.SRTM1_ELLIP_SPEC
+    source, _ = spec["prepare_tile"](
         tile_name="North/North_30_60/N44E010_wgs84.tif",
         **spec["prepare_tile_kwargs"],
     )
@@ -171,12 +177,32 @@ def test_prepare_tile_vsi() -> None:
         f"/vsicurl/{spec['prepare_tile_kwargs']['datasource_url']}"
         "/North/North_30_60/N44E010_wgs84.tif"
     )
+
+    # the gunzipped MAPZEN tiles are read in place through /vsigzip
+    spec = datasource.MAPZEN_SPEC
+    source, spooled = spec["prepare_tile"](
+        tile_name="N43/N43E013.tif", **spec["prepare_tile_kwargs"]
+    )
+    assert source == (
+        f"/vsigzip//vsicurl/{spec['prepare_tile_kwargs']['datasource_url']}"
+        "/N43/N43E013.hgt.gz"
+    )
+    assert spooled is None
+
+    # the zipped SRTM3 tiles are read in place through /vsizip, member included
+    spec = datasource.SRTM3_SPEC
+    source, spooled = spec["prepare_tile"](
+        tile_name="srtm_39_04.tif", **spec["prepare_tile_kwargs"]
+    )
+    assert source == (
+        f"/vsizip//vsicurl/{spec['prepare_tile_kwargs']['datasource_url']}"
+        "/srtm_39_04.zip/srtm_39_04.tif"
+    )
     assert spooled is None
 
 
 def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
     spec = datasource.MAPZEN_SPEC
-    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch(
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
@@ -188,23 +214,18 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
         **spec["prepare_tile_kwargs"],
     )
 
-    mock_fetch.assert_called_once_with(
-        f"{spec['prepare_tile_kwargs']['datasource_url']}/N41/N41E012.hgt.gz",
-        tmp_path / "spool" / "N41" / "N41E012.hgt",
-        member=None,
-    )
+    # the gunzipped tile is read in place through the VSI chain: no download
     mock_write.assert_called_once_with(
-        str(tmp_path / "spool" / "N41" / "N41E012.hgt"),
+        f"/vsigzip//vsicurl/{spec['prepare_tile_kwargs']['datasource_url']}"
+        "/N41/N41E012.hgt.gz",
         tmp_path / "spool" / "ready" / "N41" / "N41E012.tif",
         options=spatial.INT_TILE_GDAL_OPTIONS,
     )
-    # the tile reaches the cache only once it has been written in the spool
     assert (tmp_path / "cache" / "N41" / "N41E012.tif").read_bytes() == b"tile"
 
 
 def test_ensure_tiles_vsi(mocker: MockerFixture, tmp_path: Path) -> None:
     spec = datasource.SRTM1_GEOID_SPEC
-    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch(
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
@@ -216,8 +237,7 @@ def test_ensure_tiles_vsi(mocker: MockerFixture, tmp_path: Path) -> None:
         **spec["prepare_tile_kwargs"],
     )
 
-    # the GeoTIFF tile is read in place through /vsicurl: no download, no spool
-    mock_fetch.assert_not_called()
+    # the GeoTIFF tile is read in place through /vsicurl, with no spool file
     mock_write.assert_called_once_with(
         f"/vsicurl/{spec['prepare_tile_kwargs']['datasource_url']}/N41E012.tif",
         tmp_path / "spool" / "ready" / "N41E012.tif",
@@ -232,7 +252,6 @@ def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> Non
     cached = tmp_path / "cache" / "N41E012.tif"
     cached.parent.mkdir(parents=True)
     cached.write_bytes(b"cached")
-    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch("elevation.spatial.call_gdal_translate")
 
     cache.ensure_tiles(
@@ -242,14 +261,12 @@ def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> Non
         **spec["prepare_tile_kwargs"],
     )
 
-    mock_fetch.assert_not_called()
     mock_write.assert_not_called()
     assert cached.read_bytes() == b"cached"
 
 
 def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     spec = datasource.GLO_90_SPEC
-    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch(
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
@@ -267,9 +284,8 @@ def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
         **spec["prepare_tile_kwargs"],
     )
 
-    # a store is read in place: no download, one window per chunk, and the
-    # connection string keeps the CRS in the store, so no ``:/dsm`` suffix
-    mock_fetch.assert_not_called()
+    # a store is read in place: one window per chunk, and the connection
+    # string keeps the CRS in the store, so no ``:/dsm`` suffix
     mock_write.assert_called_once_with(
         "-srcwin 230400 57600 2400 2400 "
         'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu'
@@ -280,38 +296,11 @@ def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     assert (tmp_path / "cache" / "24/96.tif").read_bytes() == b"tile"
 
 
-def test_fetch_tile(tmp_path: Path) -> None:
-    destination = tmp_path / "spool" / "tile.tif"
-
-    datasource.fetch_tile(REFERENCE.as_uri(), destination)
-
-    assert destination.read_bytes() == REFERENCE.read_bytes()
-
-
-def test_fetch_tile_gzip(tmp_path: Path) -> None:
-    destination = tmp_path / "spool" / "tile.tif"
-
-    datasource.fetch_tile((DATA_DIR / "reference.tif.gz").as_uri(), destination)
-
-    assert destination.read_bytes() == REFERENCE.read_bytes()
-
-
-def test_fetch_tile_zip(tmp_path: Path) -> None:
-    destination = tmp_path / "spool" / "tile.tif"
-
-    datasource.fetch_tile(
-        (DATA_DIR / "reference.zip").as_uri(), destination, member="reference.tif"
-    )
-
-    assert destination.read_bytes() == REFERENCE.read_bytes()
-
-
 def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 13.9, 43.9)
     spec = datasource.MAPZEN_SPEC
     mock_check_call = mocker.patch("subprocess.check_call")
-    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch(
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
@@ -322,13 +311,9 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
 
     assert datasource_root == root / "MAPZEN"
     assert seeded_bounds == bounds
-    mock_fetch.assert_called_once_with(
-        f"{spec['prepare_tile_kwargs']['datasource_url']}/N43/N43E013.hgt.gz",
-        datasource_root / "spool" / "N43" / "N43E013.hgt",
-        member=None,
-    )
     mock_write.assert_called_once_with(
-        str(datasource_root / "spool" / "N43" / "N43E013.hgt"),
+        f"/vsigzip//vsicurl/{spec['prepare_tile_kwargs']['datasource_url']}"
+        "/N43/N43E013.hgt.gz",
         datasource_root / "spool" / "ready" / "N43" / "N43E013.tif",
         options=spatial.INT_TILE_GDAL_OPTIONS,
     )
@@ -349,7 +334,6 @@ def test_seed_max_download_tiles_counts_only_downloads(
     cached.mkdir(parents=True)
     (cached / "N43E013.tif").write_bytes(b"cached")
     (cached / "N43E014.tif").write_bytes(b"cached")
-    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mocker.patch("elevation.spatial.call_gdal_translate")
     mocker.patch("subprocess.check_call")
 
@@ -361,13 +345,11 @@ def test_seed_max_download_tiles_counts_only_downloads(
     )
 
     assert datasource_root == root / "SRTM1_GEOID"
-    mock_fetch.assert_not_called()
 
 
 def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     mock_check_call = mocker.patch("subprocess.check_call")
-    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch(
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
@@ -381,7 +363,6 @@ def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     assert datasource_root == root / "GLO-30"
     # the store is read in place, one window per chunk of the 1 by 0.5 degrees
     # grid, and the tile name mirrors the chunk layout
-    mock_fetch.assert_not_called()
     mock_write.assert_called_once_with(
         "-srcwin 691200 172800 3600 1800 "
         'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu'
@@ -421,7 +402,6 @@ def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     bounds = (13.1, 43.1, 14.9, 44.9)
     output = tmp_path / "out.tif"
     mocker.patch("subprocess.check_call")
-    mocker.patch("elevation.datasource.fetch_tile")
     mock_translate = mocker.patch(
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )

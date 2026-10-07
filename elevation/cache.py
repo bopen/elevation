@@ -44,7 +44,7 @@ def resolve_cache_dir(cache_dir: str | Path | None) -> Path:
 def ensure_setup(root: Path) -> None:
     """Create the product folder and its ``cache`` subfolder.
 
-    The ``spool`` folder is created on demand by the tile download.
+    The ``spool`` folder is created on demand by the cache write.
     """
     with fasteners.InterProcessLock(root / FOLDER_LOCKFILE_NAME):
         for path in (root, root / "cache"):

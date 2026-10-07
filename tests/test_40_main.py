@@ -98,7 +98,6 @@ def test_eio_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     runner = typer.testing.CliRunner()
     options = f"--cache_dir {root!s} seed --bounds 12.5 42 12.5 42"
     mock_check_call = mocker.patch("subprocess.check_call")
-    mocker.patch("elevation.datasource.fetch_tile")
     mocker.patch("elevation.spatial.call_gdal_translate")
     result = runner.invoke(__main__.app, options.split())
     assert not result.exception
@@ -135,7 +134,6 @@ def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     runner = typer.testing.CliRunner()
     options = f"--cache_dir {root!s} clip --bounds 12.5 42 12.5 42"
     mock_check_call = mocker.patch("subprocess.check_call")
-    mocker.patch("elevation.datasource.fetch_tile")
     mock_translate = mocker.patch("elevation.spatial.call_gdal_translate")
     result = runner.invoke(__main__.app, options.split())
     assert not result.exception
@@ -157,7 +155,6 @@ def test_eio_clip_gdal_options(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     runner = typer.testing.CliRunner()
     mocker.patch("subprocess.check_call")
-    mocker.patch("elevation.datasource.fetch_tile")
     mock_translate = mocker.patch("elevation.spatial.call_gdal_translate")
 
     result = runner.invoke(
@@ -221,7 +218,6 @@ def test_eio(mocker: MockerFixture, tmp_path: Path) -> None:
     runner = typer.testing.CliRunner()
     options = f"--cache_dir {root!s} seed --bounds 12.5 42 12.5 42"
     mock_check_call = mocker.patch("subprocess.check_call")
-    mocker.patch("elevation.datasource.fetch_tile")
     mocker.patch("elevation.spatial.call_gdal_translate")
     result = runner.invoke(__main__.app, options.split())
     assert not result.exception
