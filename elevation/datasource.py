@@ -116,7 +116,7 @@ def prepare_tile_vsi(
     tile_ext: str = ".tif",
     compressed_ext: str | None = None,
     **kwargs: Any,
-) -> tuple[str, Path | None]:
+) -> str:
     """Return the ``/vsi`` GDAL source of *tile_name*, read in place.
 
     A plain remote raster is read with ``/vsicurl`` alone, a gzipped one is
@@ -128,7 +128,7 @@ def prepare_tile_vsi(
         gdal_source = f"/vsizip/{gdal_source}/{member}"
     elif compressed_ext is not None:
         gdal_source = f"/vsigzip/{gdal_source}"
-    return gdal_source, None
+    return gdal_source
 
 
 def zarr_tiles(
@@ -154,13 +154,13 @@ def prepare_tile_zarr_vsi(
     chunks: tuple[int, int],
     vsi_prefix: str = "curl",
     **kwargs: Any,
-) -> tuple[str, Path | None]:
+) -> str:
     srcwin = [ilon * chunks[0], ilat * chunks[1], chunks[0], chunks[1]]
     gdal_source = (
         f"-srcwin {' '.join(map(str, srcwin))} "
         + f'ZARR:"/vsi{vsi_prefix}/{datasource_url}":{variable_path}'
     )
-    return gdal_source, None
+    return gdal_source
 
 
 class DatasourceSpec(TypedDict):
@@ -168,7 +168,7 @@ class DatasourceSpec(TypedDict):
 
     cached_tiles: Callable[..., Iterator[cache.Tile]]
     cached_tiles_kwargs: NotRequired[dict[str, Any]]
-    prepare_tile: Callable[..., tuple[str, Path | None]]
+    prepare_tile: Callable[..., str]
     prepare_tile_kwargs: dict[str, Any]
     tile_gdal_options: NotRequired[str]
 

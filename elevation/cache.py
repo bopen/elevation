@@ -76,36 +76,29 @@ def is_cached(root: Path, tile_name: str) -> bool:
 def ensure_tiles(
     root: Path,
     tiles: list[Tile],
-    prepare_tile: Callable[..., tuple[str, Path | None]],
+    prepare_tile: Callable[..., str],
     gdal_options: str = spatial.INT_TILE_GDAL_OPTIONS,
     **kwargs: Any,
 ) -> None:
     """Fetch and cache *tiles*, skipping the tiles already in the cache.
 
-    ``prepare_tile`` returns the GDAL source of the tile and, when the tile is
-    staged in a spool file, that spool path to clean up: a source read in place
-    returns ``None`` for it and is not removed.
+    ``prepare_tile`` returns the GDAL source of the tile, that is read in place
+    and written to the cache as a GeoTIFF.
     """
     for (ilon, ilat), tile_name in tiles:
         if is_cached(root, tile_name):
             continue
 
         cached = root / "cache" / tile_name
-
-        # prepare the data if GDAL cannot download it / read it as it is
-        source, spooled = prepare_tile(
-            tile_name=tile_name, spool=root / "spool", ilat=ilat, ilon=ilon, **kwargs
-        )
+        source = prepare_tile(tile_name=tile_name, ilat=ilat, ilon=ilon, **kwargs)
 
         # convert the data to the internal cache format
-        ready = root / "spool/ready" / tile_name
-        spatial.call_gdal_translate(source, ready, options=gdal_options)
-        if spooled is not None:
-            spooled.unlink(missing_ok=True)
+        spool = root / "spool" / tile_name
+        spatial.call_gdal_translate(source, spool, options=gdal_options)
 
         # finally move the data inside the cache. The move is atomic in most cases
         cached.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(ready, cached)
+        shutil.move(spool, cached)
 
 
 @contextmanager
