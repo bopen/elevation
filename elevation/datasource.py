@@ -125,12 +125,13 @@ def prepare_tile_download_uncompress(
     return str(spooled), spooled
 
 
-def prepare_tile_vsicurl(
+def prepare_tile_vsi(
     tile_name: str,
     datasource_url: str,
+    vsi_prefix: str = "curl",
     **kwargs: Any,
 ) -> tuple[str, Path | None]:
-    return f"/vsicurl/{datasource_url}/{tile_name}", None
+    return f"/vsi{vsi_prefix}/{datasource_url}/{tile_name}", None
 
 
 def zarr_tiles(
@@ -148,18 +149,19 @@ def zarr_tiles(
                 yield (ilon, ilat), f"{ilat}/{ilon}.tif"
 
 
-def prepare_tile_zarr(
+def prepare_tile_zarr_vsi(
     datasource_url: str,
     variable_path: str,
     ilat: int,
     ilon: int,
     chunks: tuple[int, int],
+    vsi_prefix: str = "curl",
     **kwargs: Any,
 ) -> tuple[str, Path | None]:
     srcwin = [ilon * chunks[0], ilat * chunks[1], chunks[0], chunks[1]]
     gdal_source = (
         f"-srcwin {' '.join(map(str, srcwin))} "
-        + f'ZARR:"/vsicurl/{datasource_url}":{variable_path}'
+        + f'ZARR:"/vsi{vsi_prefix}/{datasource_url}":{variable_path}'
     )
     return gdal_source, None
 
@@ -186,7 +188,7 @@ MAPZEN_SPEC: DatasourceSpec = {
 }
 
 SRTM1_GEOID_SPEC: DatasourceSpec = {
-    "prepare_tile": prepare_tile_vsicurl,
+    "prepare_tile": prepare_tile_vsi,
     "prepare_tile_kwargs": {
         "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
     },
@@ -194,7 +196,7 @@ SRTM1_GEOID_SPEC: DatasourceSpec = {
 }
 
 SRTM1_ELLIP_SPEC: DatasourceSpec = {
-    "prepare_tile": prepare_tile_vsicurl,
+    "prepare_tile": prepare_tile_vsi,
     "prepare_tile_kwargs": {
         "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
     },
@@ -211,7 +213,7 @@ SRTM3_SPEC: DatasourceSpec = {
 }
 
 GLO_30_SPEC: DatasourceSpec = {
-    "prepare_tile": prepare_tile_zarr,
+    "prepare_tile": prepare_tile_zarr_vsi,
     "prepare_tile_kwargs": {
         "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-30-v1.zarr",
         "variable_path": "/dsm",
@@ -223,7 +225,7 @@ GLO_30_SPEC: DatasourceSpec = {
 }
 
 GLO_90_SPEC: DatasourceSpec = {
-    "prepare_tile": prepare_tile_zarr,
+    "prepare_tile": prepare_tile_zarr_vsi,
     "prepare_tile_kwargs": {
         "datasource_url": "https://data.earthdatahub.destine.eu/copernicus-dem/GLO-90-v1.zarr",
         "variable_path": "/dsm",

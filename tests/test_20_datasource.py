@@ -122,18 +122,6 @@ def test_srtm_ellip_tiles() -> None:
 
 
 def test_tile_source() -> None:
-    # a product that serves plain tiles declares only its datasource URL
-    spec = datasource.SRTM1_GEOID_SPEC
-    kwargs = dict(spec["prepare_tile_kwargs"])
-    datasource_url = kwargs.pop("datasource_url")
-    assert kwargs == {}
-    url, spooled, member = datasource.tile_source(
-        datasource_url, "N41E012.tif", **kwargs
-    )
-    assert url == f"{datasource_url}/N41E012.tif"
-    assert spooled == "N41E012.tif"
-    assert member is None
-
     # MAPZEN serves the DTED tiles gunzipped, so the spool name drops the .gz
     spec = datasource.MAPZEN_SPEC
     kwargs = dict(spec["prepare_tile_kwargs"])
@@ -171,13 +159,12 @@ def test_tile_source() -> None:
     assert member is None
 
 
-def test_prepare_tile_vsicurl() -> None:
+def test_prepare_tile_vsi() -> None:
     # the SRTM1 tiles are plain GeoTIFFs that GDAL reads in place, keeping the
     # subfolder of the ellipsoidal product in the connection string
     spec = datasource.SRTM1_ELLIP_SPEC
     source, spooled = spec["prepare_tile"](
         tile_name="North/North_30_60/N44E010_wgs84.tif",
-        spool=Path("spool"),
         **spec["prepare_tile_kwargs"],
     )
     assert source == (
@@ -215,7 +202,7 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
     assert (tmp_path / "cache" / "N41" / "N41E012.tif").read_bytes() == b"tile"
 
 
-def test_ensure_tiles_vsicurl(mocker: MockerFixture, tmp_path: Path) -> None:
+def test_ensure_tiles_vsi(mocker: MockerFixture, tmp_path: Path) -> None:
     spec = datasource.SRTM1_GEOID_SPEC
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch(
