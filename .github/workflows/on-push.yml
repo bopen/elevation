@@ -49,6 +49,33 @@ jobs:
     - name: Run unit tests
       run: make unit-tests COV_REPORT=xml
 
+  unit-tests-windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Install the GDAL command line tools and make
+      uses: mamba-org/setup-micromamba@v3
+      with:
+        environment-name: gdal
+        create-args: >-
+          gdal
+          make
+        init-shell: bash
+        cache-environment: true
+
+    - name: Install uv and set the python version
+      uses: astral-sh/setup-uv@v7
+      with:
+        version: '0.11.17'
+        enable-cache: true
+        python-version: '3.14'
+
+    - name: Run unit tests
+      shell: bash -el {0}
+      run: make unit-tests COV_REPORT=xml
+
   check-typing:
     needs: [unit-tests]
     runs-on: ubuntu-latest
@@ -101,7 +128,7 @@ jobs:
 
   distribution:
     runs-on: ubuntu-latest
-    needs: [unit-tests, check-typing, docs-build]
+    needs: [unit-tests, unit-tests-windows, check-typing, docs-build, minver-tests]
 
     steps:
     - uses: actions/checkout@v7
