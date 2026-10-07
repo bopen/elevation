@@ -171,7 +171,51 @@ def test_tile_source() -> None:
     assert member is None
 
 
+def test_prepare_tile_vsicurl() -> None:
+    # the SRTM1 tiles are plain GeoTIFFs that GDAL reads in place, keeping the
+    # subfolder of the ellipsoidal product in the connection string
+    spec = datasource.SRTM1_ELLIP_SPEC
+    source, spooled = spec["prepare_tile"](
+        tile_name="North/North_30_60/N44E010_wgs84.tif",
+        spool=Path("spool"),
+        **spec["prepare_tile_kwargs"],
+    )
+    assert source == (
+        f"/vsicurl/{spec['prepare_tile_kwargs']['datasource_url']}"
+        "/North/North_30_60/N44E010_wgs84.tif"
+    )
+    assert spooled is None
+
+
 def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
+    spec = datasource.MAPZEN_SPEC
+    mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
+    mock_write = mocker.patch(
+        "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
+    )
+
+    cache.ensure_tiles(
+        tmp_path,
+        [((12, 41), "N41/N41E012.tif")],
+        prepare_tile=spec["prepare_tile"],
+        **spec["prepare_tile_kwargs"],
+    )
+
+    mock_fetch.assert_called_once_with(
+        f"{spec['prepare_tile_kwargs']['datasource_url']}/N41/N41E012.hgt.gz",
+        tmp_path / "spool" / "N41" / "N41E012.hgt",
+        member=None,
+    )
+    mock_write.assert_called_once_with(
+        str(tmp_path / "spool" / "N41" / "N41E012.hgt"),
+        tmp_path / "spool" / "ready" / "N41" / "N41E012.tif",
+        options=spatial.INT_TILE_GDAL_OPTIONS,
+    )
+    # the tile reaches the cache only once it has been written in the spool
+    assert (tmp_path / "cache" / "N41" / "N41E012.tif").read_bytes() == b"tile"
+
+
+def test_ensure_tiles_vsicurl(mocker: MockerFixture, tmp_path: Path) -> None:
     spec = datasource.SRTM1_GEOID_SPEC
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch(
@@ -185,18 +229,15 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
         **spec["prepare_tile_kwargs"],
     )
 
-    mock_fetch.assert_called_once_with(
-        f"{spec['prepare_tile_kwargs']['datasource_url']}/N41E012.tif",
-        tmp_path / "spool" / "N41E012.tif",
-        member=None,
-    )
+    # the GeoTIFF tile is read in place through /vsicurl: no download, no spool
+    mock_fetch.assert_not_called()
     mock_write.assert_called_once_with(
-        str(tmp_path / "spool" / "N41E012.tif"),
+        f"/vsicurl/{spec['prepare_tile_kwargs']['datasource_url']}/N41E012.tif",
         tmp_path / "spool" / "ready" / "N41E012.tif",
         options=spatial.INT_TILE_GDAL_OPTIONS,
     )
-    # the tile reaches the cache only once it has been written in the spool
     assert (tmp_path / "cache" / "N41E012.tif").read_bytes() == b"tile"
+    assert not (tmp_path / "spool" / "N41E012.tif").exists()
 
 
 def test_ensure_tiles_skips_cached(mocker: MockerFixture, tmp_path: Path) -> None:
@@ -281,7 +322,7 @@ def test_fetch_tile_zip(tmp_path: Path) -> None:
 def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     root = tmp_path / "root"
     bounds = (13.1, 43.1, 13.9, 43.9)
-    spec = datasource.SRTM1_GEOID_SPEC
+    spec = datasource.MAPZEN_SPEC
     mock_check_call = mocker.patch("subprocess.check_call")
     mock_fetch = mocker.patch("elevation.datasource.fetch_tile")
     mock_write = mocker.patch(
@@ -289,19 +330,19 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     )
 
     datasource_root, seeded_bounds = datasource.seed(
-        cache_dir=root, product="SRTM1_GEOID", bounds=bounds
+        cache_dir=root, product="MAPZEN", bounds=bounds
     )
 
-    assert datasource_root == root / "SRTM1_GEOID"
+    assert datasource_root == root / "MAPZEN"
     assert seeded_bounds == bounds
     mock_fetch.assert_called_once_with(
-        f"{spec['prepare_tile_kwargs']['datasource_url']}/N43E013.tif",
-        datasource_root / "spool" / "N43E013.tif",
+        f"{spec['prepare_tile_kwargs']['datasource_url']}/N43/N43E013.hgt.gz",
+        datasource_root / "spool" / "N43" / "N43E013.hgt",
         member=None,
     )
     mock_write.assert_called_once_with(
-        str(datasource_root / "spool" / "N43E013.tif"),
-        datasource_root / "spool" / "ready" / "N43E013.tif",
+        str(datasource_root / "spool" / "N43" / "N43E013.hgt"),
+        datasource_root / "spool" / "ready" / "N43" / "N43E013.tif",
         options=spatial.INT_TILE_GDAL_OPTIONS,
     )
     assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"

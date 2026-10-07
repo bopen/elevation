@@ -125,6 +125,14 @@ def prepare_tile_download_uncompress(
     return str(spooled), spooled
 
 
+def prepare_tile_vsicurl(
+    tile_name: str,
+    datasource_url: str,
+    **kwargs: Any,
+) -> tuple[str, Path | None]:
+    return f"/vsicurl/{datasource_url}/{tile_name}", None
+
+
 def zarr_tiles(
     left: float,
     bottom: float,
@@ -178,7 +186,7 @@ MAPZEN_SPEC: DatasourceSpec = {
 }
 
 SRTM1_GEOID_SPEC: DatasourceSpec = {
-    "prepare_tile": prepare_tile_download_uncompress,
+    "prepare_tile": prepare_tile_vsicurl,
     "prepare_tile_kwargs": {
         "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1/SRTM_GL1_srtm",
     },
@@ -186,7 +194,7 @@ SRTM1_GEOID_SPEC: DatasourceSpec = {
 }
 
 SRTM1_ELLIP_SPEC: DatasourceSpec = {
-    "prepare_tile": prepare_tile_download_uncompress,
+    "prepare_tile": prepare_tile_vsicurl,
     "prepare_tile_kwargs": {
         "datasource_url": "https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
     },

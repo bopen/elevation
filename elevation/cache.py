@@ -82,9 +82,9 @@ def ensure_tiles(
 ) -> None:
     """Fetch and cache *tiles*, skipping the tiles already in the cache.
 
-    A tile is a ``(name, window)`` pair: a tile with a window is read in place
-    from ``datasource_url``, a tile without one is downloaded whole from its own
-    URL and goes through the spool.
+    ``prepare_tile`` returns the GDAL source of the tile and, when the tile is
+    staged in a spool file, that spool path to clean up: a source read in place
+    returns ``None`` for it and is not removed.
     """
     for (ilon, ilat), tile_name in tiles:
         if is_cached(root, tile_name):

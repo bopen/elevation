@@ -118,11 +118,9 @@ $ eio clip -o MyShapefile-DEM.tif --reference MyShapefile.shp
 ```
 
 The first time an area is accessed Elevation downloads the data tiles from
-the AWS S3, CGIAR-CSI or OpenTopography servers and
+the AWS S3, CGIAR-CSI, OpenTopography or Earth Data Hub servers and
 caches them in GeoTIFF compressed formats,
 subsequent accesses to the same and nearby areas are much faster.
-The `GLO-30` and `GLO-90` products are the exception: they are read in place
-from the Earth Data Hub and cached one Zarr chunk at a time.
 
 The `seed` and `clip` sub-commands refuse to download more than `--max_download_tiles`
 (`25` by default) tiles at a time to prevent bulk downloads,
