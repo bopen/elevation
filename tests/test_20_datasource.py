@@ -116,21 +116,6 @@ def test_srtm_ellip_tiles() -> None:
     ]
 
 
-def test_tile_source() -> None:
-    # the SRTM3 tiles are served inside a .zip, that the spec has to declare or
-    # seed asks for a plain .tif that the provider does not have
-    spec = datasource.SRTM3_SPEC
-    kwargs = dict(spec["prepare_tile_kwargs"])
-    datasource_url = kwargs.pop("datasource_url")
-    assert kwargs == {"compressed_ext": ".zip"}
-    url, spooled, member = datasource.tile_source(
-        datasource_url, "srtm_39_04", **kwargs
-    )
-    assert url == f"{datasource_url}/srtm_39_04.zip"
-    assert spooled == "srtm_39_04.tif"
-    assert member == "srtm_39_04.tif"
-
-
 def test_prepare_tile() -> None:
     # the SRTM1 products serve plain GeoTIFF tiles that are read with /vsicurl
     spec = datasource.SRTM1_GEOID_SPEC
@@ -158,13 +143,12 @@ def test_prepare_tile() -> None:
     )
 
 
-def test_prepare_tile_vsi() -> None:
+def test_prepare_tile_member() -> None:
     # the zipped SRTM3 tiles are read in place through /vsizip, member included
     spec = datasource.SRTM3_SPEC
     source = spec["prepare_tile"](tile_name="srtm_39_04", **spec["prepare_tile_kwargs"])
     assert source == (
-        f"/vsizip//vsicurl/{spec['prepare_tile_kwargs']['datasource_url']}"
-        "/srtm_39_04.zip/srtm_39_04.tif"
+        f"{spec['prepare_tile_kwargs']['gdal_source']}/srtm_39_04.zip/srtm_39_04.tif"
     )
 
 

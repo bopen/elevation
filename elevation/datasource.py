@@ -111,37 +111,6 @@ def srtm_ellip_tiles(
                 yield (ilon, ilat), f"{subdir}/{fname}"
 
 
-def prepare_tile(
-    gdal_source: str,
-    tile_name: str,
-    remote_ext: str = ".tif",
-    **kwargs: Any,
-) -> str:
-    return f"{gdal_source}/{tile_name}{remote_ext}"
-
-
-def prepare_tile_vsi(
-    tile_name: str,
-    datasource_url: str,
-    vsi_prefix: str = "curl",
-    tile_ext: str = ".tif",
-    compressed_ext: str | None = None,
-    **kwargs: Any,
-) -> str:
-    """Return the ``/vsi`` GDAL source of *tile_name*, read in place.
-
-    A plain remote raster is read with ``/vsicurl`` alone, a gzipped one is
-    wrapped in ``/vsigzip`` and a zipped one in ``/vsizip`` with its member.
-    """
-    source, _, member = tile_source(datasource_url, tile_name, tile_ext, compressed_ext)
-    gdal_source = f"/vsi{vsi_prefix}/{source}"
-    if member is not None:
-        gdal_source = f"/vsizip/{gdal_source}/{member}"
-    elif compressed_ext is not None:
-        gdal_source = f"/vsigzip/{gdal_source}"
-    return gdal_source
-
-
 def zarr_tiles(
     left: float,
     bottom: float,
@@ -157,6 +126,15 @@ def zarr_tiles(
                 yield (ilon, ilat), f"{ilat}/{ilon}"
 
 
+def prepare_tile(
+    gdal_source: str,
+    tile_name: str,
+    remote_ext: str = ".tif",
+    **kwargs: Any,
+) -> str:
+    return f"{gdal_source}/{tile_name}{remote_ext}"
+
+
 def prepare_tile_zarr(
     gdal_source: str,
     ilat: int,
@@ -167,6 +145,18 @@ def prepare_tile_zarr(
     srcwin = [ilon * chunks[0], ilat * chunks[1], chunks[0], chunks[1]]
     gdal_source = f"-srcwin {' '.join(map(str, srcwin))} {gdal_source}"
     return gdal_source
+
+
+def prepare_tile_member(
+    gdal_source: str,
+    tile_name: str,
+    remote_ext: str = ".zip",
+    member_template: str = "{tile_name}.tif",
+    **kwargs: Any,
+) -> str:
+    member = member_template.format(tile_name=tile_name)
+    member = Path(member).name
+    return f"{gdal_source}/{tile_name}{remote_ext}/{member}"
 
 
 class DatasourceSpec(TypedDict):
@@ -207,11 +197,10 @@ SRTM1_ELLIP_SPEC: DatasourceSpec = {
 
 SRTM3_SPEC: DatasourceSpec = {
     "prepare_tile_kwargs": {
-        "datasource_url": "https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
-        "compressed_ext": ".zip",
+        "gdal_source": "/vsizip//vsicurl/https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
     },
     "cached_tiles": cgiar_l1_tiles,
-    "prepare_tile": prepare_tile_vsi,
+    "prepare_tile": prepare_tile_member,
 }
 
 GLO_30_SPEC: DatasourceSpec = {
@@ -268,26 +257,6 @@ RETIRED_PRODUCTS: dict[str, str] = {
         "https://elevation.bopen.eu/migration.html"
     ),
 }
-
-
-def tile_source(
-    datasource_url: str,
-    tile_name: str,
-    tile_ext: str = ".tif",
-    compressed_ext: str | None = None,
-) -> tuple[str, str, str | None]:
-    """Return the ``(url, spool_name, member)`` of the tile for *tile_name*.
-
-    *tile_name* is the cache tile name, always a ``.tif``; the spool name is the
-    same tile with the source extension (``tile_ext``) and the remote name adds
-    the ``compressed_ext`` when the source is compressed. The member is the file
-    to read inside a ``.zip`` archive and ``None`` otherwise.
-    """
-    stem = tile_name.removesuffix(".tif")
-    spool_name = f"{stem}{tile_ext}"
-    remote = spool_name if compressed_ext is None else f"{stem}{compressed_ext}"
-    member = Path(spool_name).name if compressed_ext == ".zip" else None
-    return f"{datasource_url}/{remote}", spool_name, member
 
 
 def ensure_setup(

@@ -13,7 +13,7 @@ integration-tests:
 	$(PYTHON) -m pytest -vv --cov=. --cov-report=$(COV_REPORT) tests/integration*.py
 
 all-tests:
-	$(PYTHON) -m pytest -vv --cov=. --cov-report=$(COV_REPORT) tests/test*.py tests/integration*.py
+	$(PYTHON) -m pytest -vv -n auto --cov=. --cov-report=$(COV_REPORT) tests/test*.py tests/integration*.py
 
 check-typing:
 	$(PYTHON) -m mypy .
