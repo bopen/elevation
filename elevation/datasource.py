@@ -276,8 +276,9 @@ def seed(
     cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
     bounds: tuple[float, float, float, float] | None = None,
-    margin: str = MARGIN,
     max_download_tiles: int = MAX_DOWNLOAD_TILES,
+    *,
+    margin: str = MARGIN,
 ) -> tuple[Path, tuple[float, float, float, float]]:
     """Seed the DEM to given bounds.
 
@@ -287,8 +288,8 @@ def seed(
     :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
     :param bounds: Output bounds in 'left bottom right top' order.
-    :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
     :param max_download_tiles: Maximum number of tiles to download.
+    :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
     :return: The datasource root and the bounds with the margin applied.
     """
     if bounds is None:
@@ -349,8 +350,9 @@ def clip(
     bounds: tuple[float, float, float, float],
     output: str | Path = DEFAULT_OUTPUT,
     margin: str = MARGIN,
-    cache_dir: str | Path | None = None,
     product: str = DEFAULT_PRODUCT,
+    *,
+    cache_dir: str | Path | None = None,
     gdal_options: str = DEFAULT_GDAL_OPTIONS,
     max_download_tiles: int = MAX_DOWNLOAD_TILES,
 ) -> None:
@@ -359,8 +361,8 @@ def clip(
     :param bounds: Output bounds in 'left bottom right top' order.
     :param output: Path to output file. Existing files will be overwritten.
     :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
-    :param cache_dir: Root of the DEM cache folder.
     :param product: DEM product choice.
+    :param cache_dir: Root of the DEM cache folder.
     :param gdal_options: GDAL creation options of the output file, e.g. '-co COMPRESS=LZW'.
     :param max_download_tiles: Maximum number of tiles to download.
     """
