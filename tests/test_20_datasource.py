@@ -240,9 +240,8 @@ def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     # a store is read in place: one window per chunk, and the connection
     # string keeps the CRS in the store, so no ``:/dsm`` suffix
     mock_write.assert_called_once_with(
-        "-srcwin 230400 57600 2400 2400 "
-        'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu'
-        '/copernicus-dem/GLO-90-v1.zarr":/dsm',
+        'vrt://ZARR:"/vsicurl/https://data.earthdatahub.destine.eu'
+        '/copernicus-dem/GLO-90-v1.zarr":/dsm?srcwin=230400,57600,2400,2400',
         tmp_path / "spool" / "24/96.tif",
         options=spatial.FLOAT_TILE_GDAL_OPTIONS,
         empty_on_notfound=False,
@@ -318,9 +317,8 @@ def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
     # the store is read in place, one window per chunk of the 1 by 0.5 degrees
     # grid, and the tile name mirrors the chunk layout
     mock_write.assert_called_once_with(
-        "-srcwin 691200 172800 3600 1800 "
-        'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu'
-        '/copernicus-dem/GLO-30-v1.zarr":/dsm',
+        'vrt://ZARR:"/vsicurl/https://data.earthdatahub.destine.eu'
+        '/copernicus-dem/GLO-30-v1.zarr":/dsm?srcwin=691200,172800,3600,1800',
         datasource_root / "spool" / "96/192.tif",
         options=spatial.FLOAT_TILE_GDAL_OPTIONS,
         empty_on_notfound=False,
