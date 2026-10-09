@@ -9,6 +9,7 @@
   built with ``gdalbuildvrt``.
 - Drop the ``make``, ``curl``, ``unzip`` and ``gunzip`` dependencies: tile downloads are
   now sequential.
+- Make caching the tiles missing upstream, e.g. ocean tiles, more robust
 - Drop the ``reference`` optional dependencies: the bounds of a reference data source
   are read with the ``gdalinfo`` and ``ogrinfo`` command line tools.
 - Add the ``--gdal-options`` option and the ``EIO_CLIP_GDAL_OPTIONS`` variable to pass

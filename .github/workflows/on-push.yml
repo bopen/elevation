@@ -44,7 +44,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install the GDAL command line tools
-      run: sudo apt-get install -y gdal-bin
+      run: sudo apt-get update && sudo apt-get install -y gdal-bin
 
     - name: Run unit tests
       run: make unit-tests COV_REPORT=xml
@@ -121,7 +121,7 @@ jobs:
         python-version: '3.14'
 
     - name: Install the GDAL command line tools
-      run: sudo apt-get install -y gdal-bin
+      run: sudo apt-get update && sudo apt-get install -y gdal-bin
 
     - name: Run tests
       run: make minver-tests

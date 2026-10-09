@@ -2,6 +2,9 @@
 # Copyright (c) 2016-2026 B-Open Solutions srl - https://bopen.eu
 #
 
+import subprocess
+import urllib.error
+from email.message import Message
 from pathlib import Path
 
 import pytest
@@ -57,6 +60,66 @@ def test_call_gdal_translate_command(tmp_path: Path, mocker: MockerFixture) -> N
     ]
     check_call.assert_called_once_with(cmd)
     assert destination.parent.is_dir()
+
+
+def test_is_not_found(mocker: MockerFixture) -> None:
+    url = "https://example.com/N41E012.tif"
+    urlopen = mocker.patch("urllib.request.urlopen")
+    assert not spatial.is_not_found(url)
+    assert urlopen.call_args.args[0].full_url == url
+    assert urlopen.call_args.args[0].get_method() == "HEAD"
+
+    urlopen.side_effect = urllib.error.HTTPError(url, 404, "Not Found", Message(), None)
+    assert spatial.is_not_found(url)
+
+    urlopen.side_effect = urllib.error.HTTPError(
+        url, 401, "Unauthorized", Message(), None
+    )
+    assert not spatial.is_not_found(url)
+
+
+@pytest.mark.parametrize(
+    "source,url",
+    [
+        ("/vsicurl/https://h/N41E012.tif", "https://h/N41E012.tif"),
+        ("/vsigzip//vsicurl/https://h/N41E012.hgt.gz", "https://h/N41E012.hgt.gz"),
+        (
+            "/vsizip//vsicurl/https://h/srtm_39_04.zip/srtm_39_04.tif",
+            "https://h/srtm_39_04.zip",
+        ),
+    ],
+)
+def test_call_gdal_translate_empty_on_notfound(
+    tmp_path: Path, mocker: MockerFixture, source: str, url: str
+) -> None:
+    destination = tmp_path / "destination.tif"
+    error = subprocess.CalledProcessError(1, "gdal_translate")
+    mocker.patch("subprocess.check_call", side_effect=error)
+    is_not_found = mocker.patch("elevation.spatial.is_not_found", return_value=False)
+
+    with pytest.raises(subprocess.CalledProcessError):
+        spatial.call_gdal_translate(source, destination, empty_on_notfound=True)
+    is_not_found.assert_called_once_with(url)
+    assert not destination.exists()
+
+    is_not_found.return_value = True
+    with pytest.raises(subprocess.CalledProcessError):
+        spatial.call_gdal_translate(source, destination)
+
+    spatial.call_gdal_translate(source, destination, empty_on_notfound=True)
+    assert destination.read_bytes() == b""
+
+
+def test_call_gdal_translate_empty_on_notfound_local(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
+    is_not_found = mocker.patch("elevation.spatial.is_not_found")
+
+    with pytest.raises(subprocess.CalledProcessError):
+        spatial.call_gdal_translate(
+            str(RASTER.with_suffix(".bad")), tmp_path / "x.tif", empty_on_notfound=True
+        )
+    is_not_found.assert_not_called()
 
 
 def test_call_gdalbuildvrt_command(tmp_path: Path, mocker: MockerFixture) -> None:
