@@ -14,7 +14,10 @@
 # limitations under the License.
 
 import json
+import re
 import subprocess
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +28,8 @@ TILE_GDAL_OPTIONS = (
 )
 INT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=2"
 FLOAT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=3"
+# the remote file of a /vsizip chain is the archive, not the member
+VSICURL_PATTERN = re.compile(r"/vsicurl/([^\s\"]+?\.zip(?=/)|[^\s\"]+)")
 TOOLS: list[tuple[str, str]] = [
     ("gdal_translate", "gdal_translate --version"),
     ("gdalbuildvrt", "gdalbuildvrt --version"),
@@ -62,16 +67,28 @@ def gdal_json(cmd: str, destination: str) -> Any:
     return json.loads(output)
 
 
+def is_not_found(url: str) -> bool:
+    """Return whether the HTTP server answers 404 for *url*."""
+    request = urllib.request.Request(url, method="HEAD")
+    try:
+        with urllib.request.urlopen(request, timeout=60):
+            return False
+    except urllib.error.HTTPError as error:
+        return error.code == 404
+
+
 def call_gdal_translate(
     source: str,
     destination: Path,
     options: str = DEFAULT_GDAL_OPTIONS,
+    empty_on_notfound: bool = False,
 ) -> list[str]:
     """Write *source* to *destination* calling the gdal_translate binary.
 
     :param source: Any GDAL readable raster, local or remote, may include selection options.
     :param destination: Path of the destination, parent folders are created.
     :param options: GDAL creation options, the default is good for caching tiles.
+    :param empty_on_notfound: Write an empty *destination* if the remote *source* is a 404.
     """
     destination.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
@@ -80,7 +97,13 @@ def call_gdal_translate(
         *source.split(),
         str(destination),
     ]
-    subprocess.check_call(cmd)
+    try:
+        subprocess.check_call(cmd)
+    except subprocess.CalledProcessError:
+        url = VSICURL_PATTERN.search(source)
+        if not (empty_on_notfound and url and is_not_found(url[1])):
+            raise
+        destination.write_bytes(b"")
     return cmd
 
 

@@ -68,9 +68,8 @@ def lock_tiles(datasource_root: Path, tile_names: list[str]) -> Generator[None]:
 
 
 def is_cached(root: Path, tile_name: str) -> bool:
-    """Return whether *tile_name* is cached, i.e. present and not empty."""
-    cached = root / "cache" / (tile_name + ".tif")
-    return cached.exists() and cached.stat().st_size > 0
+    """Return whether *tile_name* is cached, empty tiles included."""
+    return (root / "cache" / (tile_name + ".tif")).exists()
 
 
 def ensure_tiles(
@@ -78,6 +77,7 @@ def ensure_tiles(
     tiles: list[Tile],
     prepare_tile: Callable[..., str],
     gdal_options: str = spatial.INT_TILE_GDAL_OPTIONS,
+    empty_on_notfound: bool = True,
     **kwargs: Any,
 ) -> None:
     """Fetch and cache *tiles*, skipping the tiles already in the cache.
@@ -93,7 +93,9 @@ def ensure_tiles(
 
         # convert the data to the internal cache format
         spool = root / "spool" / (tile_name + ".tif")
-        spatial.call_gdal_translate(source, spool, options=gdal_options)
+        spatial.call_gdal_translate(
+            source, spool, options=gdal_options, empty_on_notfound=empty_on_notfound
+        )
 
         # finally move the data inside the cache. The move is atomic in most cases
         cached = root / "cache" / (tile_name + ".tif")

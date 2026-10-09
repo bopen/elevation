@@ -167,6 +167,7 @@ class DatasourceSpec(TypedDict):
     prepare_tile: Callable[..., str]
     prepare_tile_kwargs: dict[str, Any]
     tile_gdal_options: NotRequired[str]
+    empty_on_notfound: NotRequired[bool]
 
 
 MAPZEN_SPEC: DatasourceSpec = {
@@ -210,6 +211,7 @@ GLO_30_SPEC: DatasourceSpec = {
         "chunks": (3600, 1800),
     },
     "tile_gdal_options": spatial.FLOAT_TILE_GDAL_OPTIONS,
+    "empty_on_notfound": False,
     "cached_tiles": zarr_tiles,
     "cached_tiles_kwargs": {"transform": EDH_L2_CHUNK_INDECES_TRANSFORM},
 }
@@ -221,6 +223,7 @@ GLO_90_SPEC: DatasourceSpec = {
         "chunks": (2400, 2400),
     },
     "tile_gdal_options": spatial.FLOAT_TILE_GDAL_OPTIONS,
+    "empty_on_notfound": False,
     "cached_tiles": zarr_tiles,
     "cached_tiles_kwargs": {"transform": EDH_L1_CHUNK_INDECES_TRANSFORM},
 }
@@ -314,6 +317,7 @@ def seed(
             downloads,
             prepare_tile=prepare_tile,
             gdal_options=spec.get("tile_gdal_options", spatial.INT_TILE_GDAL_OPTIONS),
+            empty_on_notfound=spec.get("empty_on_notfound", True),
             **prepare_tile_kwargs,
         )
 

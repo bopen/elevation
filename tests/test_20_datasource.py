@@ -170,6 +170,7 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
         f"{spec['prepare_tile_kwargs']['gdal_source']}/N41/N41E012.hgt.gz",
         tmp_path / "spool" / "N41" / "N41E012.tif",
         options=spatial.INT_TILE_GDAL_OPTIONS,
+        empty_on_notfound=True,
     )
     assert (tmp_path / "cache" / "N41" / "N41E012.tif").read_bytes() == b"tile"
 
@@ -192,6 +193,7 @@ def test_ensure_tiles_vsi(mocker: MockerFixture, tmp_path: Path) -> None:
         f"{spec['prepare_tile_kwargs']['gdal_source']}/N41E012.tif",
         tmp_path / "spool" / "N41E012.tif",
         options=spatial.INT_TILE_GDAL_OPTIONS,
+        empty_on_notfound=True,
     )
     assert (tmp_path / "cache" / "N41E012.tif").read_bytes() == b"tile"
     assert not (tmp_path / "spool" / "N41E012.tif").exists()
@@ -231,6 +233,7 @@ def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
         tiles,
         prepare_tile=spec["prepare_tile"],
         gdal_options=spec["tile_gdal_options"],
+        empty_on_notfound=spec["empty_on_notfound"],
         **spec["prepare_tile_kwargs"],
     )
 
@@ -242,6 +245,7 @@ def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
         '/copernicus-dem/GLO-90-v1.zarr":/dsm',
         tmp_path / "spool" / "24/96.tif",
         options=spatial.FLOAT_TILE_GDAL_OPTIONS,
+        empty_on_notfound=False,
     )
     assert (tmp_path / "cache" / "24/96.tif").read_bytes() == b"tile"
 
@@ -265,6 +269,7 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
         f"{spec['prepare_tile_kwargs']['gdal_source']}/N43/N43E013.hgt.gz",
         datasource_root / "spool" / "N43" / "N43E013.tif",
         options=spatial.INT_TILE_GDAL_OPTIONS,
+        empty_on_notfound=True,
     )
     assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
 
@@ -318,6 +323,7 @@ def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
         '/copernicus-dem/GLO-30-v1.zarr":/dsm',
         datasource_root / "spool" / "96/192.tif",
         options=spatial.FLOAT_TILE_GDAL_OPTIONS,
+        empty_on_notfound=False,
     )
     assert (datasource_root / "cache" / "96/192.tif").read_bytes() == b"tile"
     assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
