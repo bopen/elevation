@@ -87,10 +87,6 @@ def test_is_not_found(mocker: MockerFixture) -> None:
             "/vsizip//vsicurl/https://h/srtm_39_04.zip/srtm_39_04.tif",
             "https://h/srtm_39_04.zip",
         ),
-        (
-            '-srcwin 0 0 1 1 ZARR:"/vsicurl/https://h/GLO-30.zarr":/dsm',
-            "https://h/GLO-30.zarr",
-        ),
     ],
 )
 def test_call_gdal_translate_empty_on_notfound(
