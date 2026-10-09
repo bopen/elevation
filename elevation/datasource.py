@@ -143,8 +143,7 @@ def prepare_tile_zarr(
     **kwargs: Any,
 ) -> str:
     srcwin = [ilon * chunks[0], ilat * chunks[1], chunks[0], chunks[1]]
-    gdal_source = f"-srcwin {' '.join(map(str, srcwin))} {gdal_source}"
-    return gdal_source
+    return f"vrt://{gdal_source}?srcwin={','.join(map(str, srcwin))}"
 
 
 def prepare_tile_member(

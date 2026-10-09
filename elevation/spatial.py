@@ -85,7 +85,7 @@ def call_gdal_translate(
 ) -> list[str]:
     """Write *source* to *destination* calling the gdal_translate binary.
 
-    :param source: Any GDAL readable raster, local or remote, may include selection options.
+    :param source: Any GDAL readable raster, local or remote.
     :param destination: Path of the destination, parent folders are created.
     :param options: GDAL creation options, the default is good for caching tiles.
     :param empty_on_notfound: Write an empty *destination* if the remote *source* is a 404.
@@ -94,7 +94,7 @@ def call_gdal_translate(
     cmd = [
         "gdal_translate",
         *options.split(),
-        *source.split(),
+        source,
         str(destination),
     ]
     try:

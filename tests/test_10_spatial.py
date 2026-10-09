@@ -2,6 +2,7 @@
 # Copyright (c) 2016-2026 B-Open Solutions srl - https://bopen.eu
 #
 
+import shutil
 import subprocess
 import urllib.error
 from email.message import Message
@@ -48,14 +49,14 @@ def test_selfcheck_verbose() -> None:
 def test_call_gdal_translate_command(tmp_path: Path, mocker: MockerFixture) -> None:
     check_call = mocker.patch("subprocess.check_call")
     destination = tmp_path / "cache" / "destination.tif"
-    source = f"-srcwin 0 0 1 1 {RASTER}"
+    source = f"vrt://{RASTER}?srcwin=0,0,1,1"
 
     cmd = spatial.call_gdal_translate(source, destination)
 
     assert cmd == [
         "gdal_translate",
         *spatial.DEFAULT_GDAL_OPTIONS.split(),
-        *source.split(),
+        source,
         str(destination),
     ]
     check_call.assert_called_once_with(cmd)
@@ -143,9 +144,12 @@ def test_call_gdalbuildvrt_command(tmp_path: Path, mocker: MockerFixture) -> Non
 
 
 def test_call_gdal_translate(tmp_path: Path) -> None:
-    destination = tmp_path / "cache" / "destination.tif"
+    raster = tmp_path / "with space" / RASTER.name
+    raster.parent.mkdir()
+    shutil.copyfile(RASTER, raster)
+    destination = tmp_path / "with space" / "destination.tif"
 
-    spatial.call_gdal_translate(str(RASTER), destination)
+    spatial.call_gdal_translate(str(raster), destination)
 
     source = spatial.gdal_json("gdalinfo -json -checksum", str(RASTER))
     tile = spatial.gdal_json("gdalinfo -json -checksum", str(destination))

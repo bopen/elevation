@@ -25,6 +25,7 @@
 - Retire the ``SRTM1`` product name: requesting it raises an error pointing to the
   migration notes.
 - Accept ``str`` or ``Path`` for all path-valued arguments.
+- Support cache and output paths with spaces.
 - Resolve relative ``output`` and cache folder paths against the current working
   directory.
 - Add the ``eio dataset`` command and the ``elevation.dataset`` function to show the
