@@ -33,3 +33,9 @@ def test_se_sydney(integration_data: IntegrationData) -> None:
 def test_sw_santiago(integration_data: IntegrationData) -> None:
     bounds = (-70.6, -33.42, -70.6 + SIZE, -33.42 + SIZE)
     integration_data("SRTM1_GEOID", "sw_santiago", bounds)
+
+
+def test_se_tasman_sea(integration_data: IntegrationData) -> None:
+    # the S34E152 ocean tile is missing upstream
+    bounds = (152 - SIZE / 2, -33.9, 152 + SIZE / 2, -33.9 + SIZE)
+    integration_data("SRTM1_GEOID", "se_tasman_sea", bounds)
