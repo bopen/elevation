@@ -7,6 +7,7 @@
 # -- Import and path setup ---------------------------------------------------
 
 import importlib.metadata
+import os
 
 # -- Project information -----------------------------------------------------
 
@@ -66,8 +67,10 @@ source_suffix = {".md": "markdown", ".rst": "restructuredtext"}
 # The theme to use for HTML and HTML Help pages.
 html_theme = "pydata_sphinx_theme"
 
-# The base URL of the published documentation, used in the canonical URLs.
-html_baseurl = "https://elevation.bopen.eu/"
+# The base URL of the canonical URLs, set by Read the Docs to its default version.
+html_baseurl = os.environ.get(
+    "READTHEDOCS_CANONICAL_URL", "https://elevation.bopen.eu/en/stable/"
+)
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

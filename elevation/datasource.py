@@ -274,7 +274,7 @@ RETIRED_PRODUCTS: dict[str, str] = {
         "The 'SRTM1' product was renamed in elevation 2.0: the global terrain tiles "
         "mosaic it used to download is now the 'MAPZEN' product (the default) and "
         "the OpenTopography SRTM GL1 product is now 'SRTM1_GEOID'. See "
-        "https://elevation.bopen.eu/migration.html"
+        "https://elevation.bopen.eu/en/stable/migration.html"
     ),
 }
 
