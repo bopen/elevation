@@ -39,7 +39,7 @@ jobs:
     - name: Install uv and set the python version
       uses: astral-sh/setup-uv@v7
       with:
-        version: '0.11.17'
+        version: '0.13.4'
         enable-cache: true
         python-version: ${{ matrix.python-version }}
 
@@ -68,7 +68,7 @@ jobs:
     - name: Install uv and set the python version
       uses: astral-sh/setup-uv@v7
       with:
-        version: '0.11.17'
+        version: '0.13.4'
         enable-cache: true
         python-version: '3.14'
 
@@ -85,7 +85,7 @@ jobs:
     - name: Install uv and set the python version
       uses: astral-sh/setup-uv@v7
       with:
-        version: '0.11.17'
+        version: '0.13.4'
         enable-cache: true
         python-version: '3.14'
     - name: Run type checks
@@ -100,7 +100,7 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v7
       with:
-        version: '0.11.17'
+        version: '0.13.4'
         enable-cache: true
         python-version: '3.14'
     - name: Build documentation
@@ -116,7 +116,7 @@ jobs:
     - name: Install uv and set the python version
       uses: astral-sh/setup-uv@v7
       with:
-        version: '0.11.17'
+        version: '0.13.4'
         enable-cache: true
         python-version: '3.14'
 
