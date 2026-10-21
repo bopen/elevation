@@ -1,0 +1,65 @@
+id: AW3D30
+title: ALOS World 3D global 30m v3.2
+version: '3.2'
+summaries:
+  gsd:
+  - 30
+  proj:code:
+  - EPSG:9707
+extent:
+  spatial:
+    bbox:
+    - - -180
+      - -84
+      - 180
+      - 84
+  temporal:
+    interval:
+    - - '2006-01-24T00:00:00Z'
+      - '2011-05-12T00:00:00Z'
+license: other
+sci:doi: 10.5069/G94M92HB
+sci:citation: Japan Aerospace Exploration Agency (2021). ALOS World 3D 30 meter DEM. V3.2, Jan 2021. Distributed by OpenTopography. https://doi.org/10.5069/G94M92HB
+description: 'ALOS World 3D (AW3D30) 1 arc second (30 m) surface heights on the EGM96 geoid, averaged by JAXA from the 5 m AW3D DSM produced with the stereo images of the PRISM optical sensor of the Advanced Land Observing Satellite (ALOS, 2006-2011). Version 3.2, distributed as 1° x 1° GeoTIFF tiles by OpenTopography. The heights are a surface model: vegetation and buildings contribute to them. Ocean areas have no tiles.'
+providers:
+- name: OpenTopography
+  roles:
+  - host
+  url: https://portal.opentopography.org/raster?opentopoID=OTALOS.112016.4326.2
+- name: Japan Aerospace Exploration Agency (JAXA)
+  roles:
+  - producer
+  - processor
+  - licensor
+  url: https://www.eorc.jaxa.jp/ALOS/en/dataset/aw3d30/aw3d30_e.htm
+type: Collection
+stac_version: 1.1.0
+stac_extensions:
+- https://stac-extensions.github.io/projection/v2.1.0/schema.json
+- https://stac-extensions.github.io/scientific/v1.0.0/schema.json
+- https://stac-extensions.github.io/version/v1.2.0/schema.json
+links:
+- rel: self
+  href: ./AW3D30.yaml
+  type: application/yaml
+  title: ALOS World 3D global 30m v3.2 STAC Collection
+- rel: root
+  href: ./elevation.yaml
+  type: application/yaml
+  title: elevation datasets STAC Catalog
+- rel: parent
+  href: ./elevation.yaml
+  type: application/yaml
+  title: elevation datasets STAC Catalog
+- rel: license
+  href: https://earth.jaxa.jp/policy/en.html
+  type: text/html
+  title: JAXA terms of use of the AW3D30 data
+- rel: describedby
+  href: https://portal.opentopography.org/raster?opentopoID=OTALOS.112016.4326.2
+  type: text/html
+  title: OpenTopography dataset page
+- rel: cite-as
+  href: https://doi.org/10.5069/G94M92HB
+  type: text/html
+  title: ALOS World 3D 30 meter DEM, OpenTopography

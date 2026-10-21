@@ -87,6 +87,28 @@ def test_mapzen_tiles() -> None:
     assert list(tiles(10, 44, 11, 45, **kwargs)) == [((10, 44), "N44/N44E010")]
 
 
+def test_aw3d30_tiles() -> None:
+    # AW3D30 is a 1 degree lattice with a 3 digit latitude in the tile name
+    spec = datasource.AW3D30_SPEC
+    tiles = spec["cached_tiles"]
+    kwargs = spec["cached_tiles_kwargs"]
+
+    rome = [((12, 41), "ALPSMLC30_N041E012_DSM")]
+    santiago = [((-71, -34), "ALPSMLC30_S034W071_DSM")]
+    assert list(tiles(12.4, 41.8, 12.4, 41.8, **kwargs)) == rome
+    assert list(tiles(-70.6, -33.42, -70.6, -33.42, **kwargs)) == santiago
+    # NOTE this also tests int (not float) input
+    assert list(tiles(12, 41, 13, 42, **kwargs)) == rome
+    # unlike DTED L2 the tile edges are on the whole degrees, so a bound in the
+    # half pixel before one reaches the tile that ends there
+    assert list(tiles(11.9999, 40.9999, 12.1, 41.1, **kwargs)) == [
+        ((11, 40), "ALPSMLC30_N040E011_DSM"),
+        ((11, 41), "ALPSMLC30_N041E011_DSM"),
+        ((12, 40), "ALPSMLC30_N040E012_DSM"),
+        ((12, 41), "ALPSMLC30_N041E012_DSM"),
+    ]
+
+
 def test_cgiar_l1_tiles() -> None:
     assert next(datasource.cgiar_l1_tiles(10.1, 44.9, 10.1, 44.9)) == (
         (39, 4),

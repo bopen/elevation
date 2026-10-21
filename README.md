@@ -9,13 +9,16 @@ Elevation provides easy download, cache and access of the global datasets:
   includes data from NASA/NGA SRTM, USGS 3DEP, EUDEM, ArcticDEM, GMTED2010 and ETOPO1.
 - `GLO-30`: [Copernicus DEM global 30m (2021)](https://doi.org/10.5270/ESA-c5d3d65)
   produced by ESA and the European Union and hosted on [Earth Data Hub](https://earthdatahub.destine.eu/collections/copernicus-dem), with 30m heights on the EGM2008 geoid.
-- `GLO-90`: [Copernicus DEM global 90m (2021)](https://doi.org/10.5270/ESA-c5d3d65)
-  the 90m companion of `GLO-30`.
+- `AW3D30`: [ALOS World 3D global 30m v3.2](https://doi.org/10.5069/G94M92HB)
+  produced by JAXA and hosted on [OpenTopography](https://portal.opentopography.org/raster?opentopoID=OTALOS.112016.4326.2),
+  with 30m heights on the EGM96 geoid.
 - `SRTM1_GEOID`: [SRTM global 30m v3](https://lpdaac.usgs.gov/products/srtmgl1nv003/)
   produced by NASA and NGA hosted on [OpenTopography](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082015.4326.1),
   with 30m heights on the EGM96 geoid.
 - `SRTM1_ELLIP`: [SRTM global 30m v3 ellipsoidal](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1)
   the companion of `SRTM1_GEOID`, with 30m heights on the WGS84 ellipsoid.
+- `GLO-90`: [Copernicus DEM global 90m (2021)](https://doi.org/10.5270/ESA-c5d3d65)
+  the 90m companion of `GLO-30`.
 - `SRTM3`: [SRTM global 90m v4.1](https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/)
   produced and hosted by CGIAR-CSI, with 90m heights on the EGM96 geoid.
 
@@ -87,6 +90,12 @@ See the Earth Data Hub [Getting started](https://earthdatahub.destine.eu/getting
 page to create an account and set up the credentials.
 
 Reading the store needs GDAL 3.8 or later.
+
+For the ALOS World 3D global 30m v3.2 DEM use:
+
+```console
+$ eio --product AW3D30 clip -o Rome-AW3D30-DEM.tif --bounds 12.35 41.8 12.65 42
+```
 
 For the SRTM global 30m v3 geoid or ellipsoidal DEMs use:
 
@@ -166,8 +175,8 @@ $ eio --help
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --version                                                 Show the version and exit.             │
 │                                                           [env var: EIO_VERSION]                 │
-│ --product          [MAPZEN|GLO-30|GLO-90|SRTM1_GEOID|SRT  DEM product choice.                    │
-│                    M1_ELLIP|SRTM3]                        [env var: EIO_PRODUCT]                 │
+│ --product          [MAPZEN|GLO-30|AW3D30|SRTM1_GEOID|SRT  DEM product choice.                    │
+│                    M1_ELLIP|GLO-90|SRTM3]                 [env var: EIO_PRODUCT]                 │
 │                                                           [default: MAPZEN]                      │
 │ --cache_dir        <directory>                            Root of the DEM cache folder.          │
 │                                                           [env var: EIO_CACHE_DIR]               │

@@ -22,6 +22,8 @@
   Zarr store that is read in place, one chunk at a time, and cached as GeoTIFF tiles
   like the other products, so the credentials in ``~/.netrc`` are used and GDAL 3.8 or
   later is required.
+- Add the ``AW3D30`` product for the ALOS World 3D global 30m v3.2 DSM on the EGM96
+  geoid, distributed by OpenTopography.
 - Retire the ``SRTM1`` product name: requesting it raises an error pointing to the
   migration notes.
 - Accept ``str`` or ``Path`` for all path-valued arguments.
