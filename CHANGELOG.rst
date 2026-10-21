@@ -1,6 +1,11 @@
 
-2.0.0 (unreleased)
----------------------
+2.0.1 (2026-10-21)
+------------------
+
+- Point upgrading users to the migration guide from the README.
+
+2.0.0 (2026-10-21)
+------------------
 
 - Honour the ``EIO_CACHE_DIR`` environment variable in the Python API, not only in the
   ``eio`` command line.
