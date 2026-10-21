@@ -32,9 +32,11 @@ MAX_DOWNLOAD_TILES = 25
 # NOTE:
 #   0.0001388888889 == 0.5" is half pixel for DEMs with 1" spacing (DTED L2)
 #   0.0004166666667 == 1.5" is half pixel for DEMs with 3" spacing (DTED L1)
+#   AW3D30 tiles have no half pixel, their edges are on the whole degrees
 EDH_L2_CHUNK_INDECES_TRANSFORM = (-180.0001388888889, 1.0, 90.00013888888888, -0.5)
 EDH_L1_CHUNK_INDECES_TRANSFORM = (-180.00041666666667, 2.0, 90.00041666666667, -2.0)
 DTED_L2_TILE_INDECES_TRANSFORM = (-0.0001388888889, 1.0, -0.0001388888889, 1.0)
+AW3D30_TILE_INDECES_TRANSFORM = (0.0, 1.0, 0.0, 1.0)
 CGIAR_L1_TILE_INDECES_TRANSFORM = (-185.0004166666667, 5.0, 65.0004166666667, -5.0)
 
 
@@ -53,9 +55,11 @@ def dted_l2_tiles(
     right: float,
     top: float,
     tile_name_template: str = "{slat}{slon}",
+    transform: tuple[float, float, float, float] = DTED_L2_TILE_INDECES_TRANSFORM,
+    lat_digits: int = 2,
 ) -> Iterator[cache.Tile]:
-    ileft, itop = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, left, top)
-    iright, ibottom = latlon_to_indeces(DTED_L2_TILE_INDECES_TRANSFORM, right, bottom)
+    ileft, itop = latlon_to_indeces(transform, left, top)
+    iright, ibottom = latlon_to_indeces(transform, right, bottom)
     # special case often used *integer* top and right to avoid downloading unneeded tiles
     if isinstance(top, int) or top.is_integer():
         itop -= 1
@@ -64,7 +68,7 @@ def dted_l2_tiles(
     for ilon in range(ileft, iright + 1):
         slon = f"{'E' if ilon >= 0 else 'W'}{abs(ilon):03d}"
         for ilat in range(ibottom, itop + 1):
-            slat = f"{'N' if ilat >= 0 else 'S'}{abs(ilat):02d}"
+            slat = f"{'N' if ilat >= 0 else 'S'}{abs(ilat):0{lat_digits}d}"
             yield (ilon, ilat), tile_name_template.format(**locals())
 
 
@@ -195,6 +199,19 @@ SRTM1_ELLIP_SPEC: DatasourceSpec = {
     "cached_tiles": srtm_ellip_tiles,
 }
 
+AW3D30_SPEC: DatasourceSpec = {
+    "prepare_tile": prepare_tile,
+    "prepare_tile_kwargs": {
+        "gdal_source": "/vsicurl/https://opentopography.s3.sdsc.edu/raster/AW3D30/AW3D30_global",
+    },
+    "cached_tiles": dted_l2_tiles,
+    "cached_tiles_kwargs": {
+        "tile_name_template": "ALPSMLC30_{slat}{slon}_DSM",
+        "transform": AW3D30_TILE_INDECES_TRANSFORM,
+        "lat_digits": 3,
+    },
+}
+
 SRTM3_SPEC: DatasourceSpec = {
     "prepare_tile_kwargs": {
         "gdal_source": "/vsizip//vsicurl/https://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF",
@@ -230,9 +247,10 @@ GLO_90_SPEC: DatasourceSpec = {
 PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
     "MAPZEN": MAPZEN_SPEC,
     "GLO-30": GLO_30_SPEC,
-    "GLO-90": GLO_90_SPEC,
+    "AW3D30": AW3D30_SPEC,
     "SRTM1_GEOID": SRTM1_GEOID_SPEC,
     "SRTM1_ELLIP": SRTM1_ELLIP_SPEC,
+    "GLO-90": GLO_90_SPEC,
     "SRTM3": SRTM3_SPEC,
 }
 
