@@ -4,9 +4,9 @@
 
 - Honour the ``EIO_CACHE_DIR`` environment variable in the Python API, not only in the
   ``eio`` command line.
-- Replace the datasource ``Makefile`` with Python: tiles are downloaded with ``fsspec``
-  and written to the cache and clipped with ``gdal_translate``, the mosaic is still
-  built with ``gdalbuildvrt``.
+- Replace the datasource ``Makefile`` with Python: tiles are read remotely through
+  GDAL ``/vsicurl/`` and written to the cache and clipped with ``gdal_translate``,
+  the mosaic is still built with ``gdalbuildvrt``.
 - Drop the ``make``, ``curl``, ``unzip`` and ``gunzip`` dependencies: tile downloads are
   now sequential.
 - Make caching the tiles missing upstream, e.g. ocean tiles, more robust
@@ -47,6 +47,18 @@
 - Build the documentation with Sphinx through ``make docs-build``.
 - Modernise the CI with uv-based jobs, pre-commit checks and a PyPI
   trusted-publishing release job.
+
+
+1.1.4 (2026-09-30)
+------------------
+
+- Document that the ``SRTM1`` product name is a misnomer and that it downloads
+  the Terrain Tiles dataset, not the official SRTM GL1 one.
+- Fix the ``eio distclean`` crash when the cache holds sub-folders.
+- Fix the ``eio clip`` crash when neither ``--bounds`` nor ``--reference`` is given.
+- Resolve a relative ``output`` against the current working directory.
+- Fix the VRT mutex in ``clip``: ``do_clip`` locked the wrong file unless ``product``
+  was passed explicitly.
 
 
 1.1.3 (2021-04-08)

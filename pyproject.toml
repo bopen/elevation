@@ -78,7 +78,7 @@ strict = true
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
-module = ["appdirs", "fasteners", "fsspec"]
+module = ["appdirs", "fasteners"]
 
 [tool.ruff]
 # Same as Black.
@@ -130,7 +130,7 @@ max-line-length = 110
 convention = "numpy"
 
 [tool.setuptools]
-packages = ["elevation"]
+packages = ["elevation", "elevation.datasets"]
 
 [tool.setuptools.package-data]
 elevation = ["datasets/*.yaml", "py.typed"]

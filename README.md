@@ -222,7 +222,7 @@ $ eio clip --help
 │                                                             [env var: EIO_CLIP_GDAL_OPTIONS]     │
 │                                                             [default: -co TILED=YES -co          │
 │                                                             COMPRESS=DEFLATE -co ZLEVEL=9 -co    │
-│                                                             PREDICTOR=2]                         │
+│                                                             NUM_THREADS=ALL_CPUS]                │
 │ --max_download_tiles          <int>                         Maximum number of tiles to download. │
 │                                                             [env var:                            │
 │                                                             EIO_CLIP_MAX_DOWNLOAD_TILES]         │
