@@ -68,7 +68,7 @@ source_suffix = {".md": "markdown", ".rst": "restructuredtext"}
 html_theme = "pydata_sphinx_theme"
 
 # Hide the primary sidebar on the pages without sub-pages, where it would be empty.
-html_sidebars = {"index": [], "quickstart": [], "migration": []}
+html_sidebars = {"index": [], "quickstart": [], "migration": []}  # type: ignore
 
 # The base URL of the canonical URLs, set by Read the Docs to its default version.
 html_baseurl = os.environ.get(
