@@ -38,7 +38,7 @@ def resolve_cache_dir(cache_dir: str | Path | None) -> Path:
     """
     if cache_dir is None:
         cache_dir = os.environ.get("EIO_CACHE_DIR") or CACHE_DIR
-    return Path(cache_dir).resolve()
+    return Path(cache_dir).expanduser().resolve()
 
 
 def ensure_setup(root: Path) -> None:

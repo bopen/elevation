@@ -4,7 +4,16 @@
 
 from pathlib import Path
 
+import pytest
+
 from elevation import cache
+
+
+def test_resolve_cache_dir_expands_user(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("EIO_CACHE_DIR", "~/elevation")
+    assert cache.resolve_cache_dir(None) == (Path.home() / "elevation").resolve()
 
 
 def test_lock_tiles(tmp_path: Path) -> None:
