@@ -12,7 +12,6 @@ https://github.com/bopen/elevation
 
 quickstart
 migration
-design
 API Reference <_api/elevation/index>
 ```
 
