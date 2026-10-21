@@ -133,6 +133,11 @@ def seed(
         help="Maximum number of tiles to download.",
     ),
 ) -> None:
+    if bounds is None:
+        raise typer.BadParameter(
+            message="--bounds must be supplied.",
+            param_hint="--bounds",
+        )
     elevation.seed(
         **ctx.obj,
         bounds=bounds,
