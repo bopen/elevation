@@ -1,6 +1,10 @@
 # elevation
 
 Global geographic elevation data made easy.
+
+> **Upgrading from 1.x?** *elevation* 2.0 is not fully backward compatible,
+> read the [migration guide](https://elevation.bopen.eu/en/stable/migration.html).
+
 Elevation provides easy download, cache and access of the global datasets:
 
 - `MAPZEN`: [Terrain Tiles global 30m v1](https://registry.opendata.aws/terrain-tiles/)
