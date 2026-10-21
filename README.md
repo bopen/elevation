@@ -112,7 +112,7 @@ $ eio --product SRTM3 clip -o Rome-SRTM3-DEM.tif --bounds 12.35 41.8 12.65 42
 
 The `--bounds` option accepts latitude and longitude coordinates
 (more precisely in geodetic coordinates in the WGS84 reference system EPSG:4326 for those who care)
-given as `left bottom right top` similarly to the `rio` command form `rasterio`.
+given as `left bottom right top`.
 
 The `--reference` option clips a DEM on the same extent of any other geospatial data source
 supported by GDAL and OGR, for example if you have a georeferenced image `MyImage.tif`
