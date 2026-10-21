@@ -38,8 +38,8 @@ classifiers = [
   "Topic :: Scientific/Engineering :: GIS"
 ]
 dependencies = [
-  "appdirs>=1.4.4",
   "fasteners>=0.18",
+  "platformdirs>=2.6.0",
   "typer>=0.26.7"
 ]
 description = "Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, Copernicus DEM, ALOS World 3D and SRTM 30m and 90m DEMs."
@@ -78,7 +78,7 @@ strict = true
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
-module = ["appdirs", "fasteners"]
+module = ["fasteners"]
 
 [tool.ruff]
 # Same as Black.

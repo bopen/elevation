@@ -20,12 +20,12 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-import appdirs
 import fasteners
+import platformdirs
 
 from . import spatial
 
-CACHE_DIR: str = appdirs.user_cache_dir("elevation", "bopen")
+CACHE_DIR: str = platformdirs.user_cache_dir("elevation", "bopen")
 FOLDER_LOCKFILE_NAME = ".folder_lock"
 Tile = tuple[tuple[int, int], str]
 

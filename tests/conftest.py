@@ -16,14 +16,14 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
-import appdirs
+import platformdirs
 import pytest
 
 import elevation
 from elevation import spatial
 
 REFERENCE_DATA_DIR = Path(__file__).parent / "data"
-INTEGRATION_CACHE_DIR = Path(appdirs.user_cache_dir("elevation-integration", "bopen"))
+INTEGRATION_CACHE_DIR = platformdirs.user_cache_path("elevation-integration", "bopen")
 EPSG_PATTERN = re.compile(r'ID\["EPSG",(\d+)\]')
 
 
