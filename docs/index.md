@@ -10,7 +10,7 @@ https://github.com/bopen/elevation
 :maxdepth: 2
 :caption: Table of Contents
 
-quickstart
+Quickstart <quickstart>
 migration
 API Reference <_api/elevation/index>
 ```

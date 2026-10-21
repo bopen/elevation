@@ -67,6 +67,9 @@ source_suffix = {".md": "markdown", ".rst": "restructuredtext"}
 # The theme to use for HTML and HTML Help pages.
 html_theme = "pydata_sphinx_theme"
 
+# Hide the primary sidebar on the pages without sub-pages, where it would be empty.
+html_sidebars = {"index": [], "quickstart": [], "migration": []}
+
 # The base URL of the canonical URLs, set by Read the Docs to its default version.
 html_baseurl = os.environ.get(
     "READTHEDOCS_CANONICAL_URL", "https://elevation.bopen.eu/en/stable/"
