@@ -9,9 +9,12 @@
   the mosaic is still built with ``gdalbuildvrt``.
 - Drop the ``make``, ``curl``, ``unzip`` and ``gunzip`` dependencies: tile downloads are
   now sequential.
-- Make caching the tiles missing upstream, e.g. ocean tiles, more robust
+- Make caching the tiles missing upstream, e.g. ocean tiles, more robust.
 - Drop the ``reference`` optional dependencies: the bounds of a reference data source
   are read with the ``gdalinfo`` and ``ogrinfo`` command line tools.
+- Replace the unmaintained ``appdirs`` dependency with ``platformdirs``: the default
+  cache folder is unchanged, except that recent ``platformdirs`` versions honour
+  ``XDG_CACHE_HOME`` on macOS.
 - Add the ``--gdal-options`` option and the ``EIO_CLIP_GDAL_OPTIONS`` variable to pass
   GDAL creation options, e.g. ``-co COMPRESS=LZW``, to the clip.
 - Download the original SRTM GL1 data from OpenTopography for the ``SRTM1_GEOID`` product.
@@ -30,9 +33,12 @@
 - Support cache and output paths with spaces.
 - Resolve relative ``output`` and cache folder paths against the current working
   directory.
+- Expand ``~`` to the user home in the cache folder path, e.g. in ``EIO_CACHE_DIR``.
 - Add the ``eio dataset`` command and the ``elevation.dataset`` function to show the
   STAC metadata of the datasets.
 - Add the ``--verbose`` option to ``eio selfcheck`` to show the tools as they are tested.
+- Add the ``--margin`` option to ``eio seed`` and the ``margin`` argument to
+  ``elevation.seed``.
 - Add the ``--max_download_tiles`` option and the ``EIO_SEED_MAX_DOWNLOAD_TILES``
   and ``EIO_CLIP_MAX_DOWNLOAD_TILES`` variables to the ``seed`` and ``clip``
   commands to limit the number of tiles to download, counting only the tiles that
@@ -45,8 +51,8 @@
   strict type checking.
 - Add lower bounds to the dependencies, checked by the ``minver-tests`` job.
 - Build the documentation with Sphinx through ``make docs-build``.
-- Modernise the CI with uv-based jobs, pre-commit checks and a PyPI
-  trusted-publishing release job.
+- Modernise the CI with uv-based jobs, pre-commit checks, a Windows unit-tests job
+  and a PyPI trusted-publishing release job.
 
 
 1.1.4 (2026-09-30)
@@ -133,7 +139,7 @@
 -------------------
 
 - Revert the default product back to ``SRTM1`` by downloading from the
- `Amazon Terrain Tiles on AWS service <https://aws.amazon.com/public-data-sets/terrain>`_.
+  `Amazon Terrain Tiles on AWS service <https://aws.amazon.com/public-data-sets/terrain>`_.
   Closes issue `#18 <https://github.com/bopen/elevation/issues/18>`_.
 
 
