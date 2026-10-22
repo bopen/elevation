@@ -3,11 +3,13 @@
 The ``GLO-30`` product needs the Earth Data Hub credentials in ``~/.netrc``. Run from
 the repository root::
 
-    uv run --frozen python scripts/rome_compare_dems.py [OUTPUT_FOLDER]
+    uv run --frozen python scripts/rome_compare_dems.py [--full-size] [OUTPUT_FOLDER]
+
+``--full-size`` keeps the 10 m pixels of the render, for social media.
 """
 
+import argparse
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
@@ -80,7 +82,7 @@ def panel(hillshade: Path, relief: Path, label: str, width: int) -> Image.Image:
     return tile
 
 
-def main(output_folder: Path) -> None:
+def main(output_folder: Path, full_size: bool = False) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         shades = [shade(product, Path(tmp)) for product, _ in PRODUCTS]
         height = Image.open(shades[0][0]).height
@@ -91,15 +93,19 @@ def main(output_folder: Path) -> None:
             hillshade, relief = shades[index]
             tile = panel(hillshade, relief, f"{name}\n{product}", width)
             canvas.paste(tile, (index * (width + GAP), 0))
-    # 20 m pixels fit the README column and are still finer than the 30 m DEMs
-    size = (canvas.width // 2, canvas.height // 2)
-    canvas = canvas.resize(size, Image.Resampling.LANCZOS)
     path = output_folder / "rome-compare-dems.jpg"
-    canvas.save(path, quality=80, optimize=True, progressive=True)
+    if full_size:
+        canvas.save(path, quality=90, optimize=True, progressive=True)
+    else:
+        # 20 m pixels fit the README column and are still finer than the 30 m DEMs
+        size = (canvas.width // 2, canvas.height // 2)
+        canvas = canvas.resize(size, Image.Resampling.LANCZOS)
+        canvas.save(path, quality=80, optimize=True, progressive=True)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        main(Path(sys.argv[1]))
-    else:
-        main(Path())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("output_folder", nargs="?", type=Path, default=Path())
+    parser.add_argument("--full-size", action="store_true")
+    args = parser.parse_args()
+    main(args.output_folder, args.full_size)
