@@ -91,9 +91,11 @@ def main(output_folder: Path) -> None:
             hillshade, relief = shades[index]
             tile = panel(hillshade, relief, f"{name}\n{product}", width)
             canvas.paste(tile, (index * (width + GAP), 0))
-    # 10 m pixels, about twice the README column width, and below 500 KB
+    # 20 m pixels fit the README column and are still finer than the 30 m DEMs
+    size = (canvas.width // 2, canvas.height // 2)
+    canvas = canvas.resize(size, Image.Resampling.LANCZOS)
     path = output_folder / "rome-compare-dems.jpg"
-    canvas.save(path, quality=85, optimize=True, progressive=True)
+    canvas.save(path, quality=80, optimize=True, progressive=True)
 
 
 if __name__ == "__main__":
