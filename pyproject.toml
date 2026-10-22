@@ -6,6 +6,8 @@ requires = ["setuptools>=77", "setuptools_scm>=8"]
 dev = [
   "mypy>=1.15.0",
   "myst-parser>=4.0.1",
+  "numpy>=2.0",
+  "pillow>=10.1",
   "pre-commit>=4.3.0",
   "pydata-sphinx-theme>=0.16.1",
   "pytest>=9.1.1",

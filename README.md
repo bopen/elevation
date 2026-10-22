@@ -26,6 +26,11 @@ Elevation provides easy download, cache and access of the global datasets:
 - `SRTM3`: [SRTM global 90m v4.1](https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/)
   produced and hosted by CGIAR-CSI, with 90m heights on the EGM96 geoid.
 
+![Hillshades of the Tiber valley in Rome from the GLO-30, AW3D30 and SRTM1_GEOID products](https://raw.githubusercontent.com/bopen/elevation/main/rome-compare-dems.jpg)
+
+The Tiber in Rome: Copernicus DEM draws the river, ALOS World 3D picks out the buildings
+of EUR, SRTM sets the baseline.
+
 Note that any download policies and attribution requirements of the respective providers apply.
 
 This Open Source project is sponsored by B-Open - <https://bopen.eu>.
