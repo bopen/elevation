@@ -19,9 +19,9 @@ from PIL import Image, ImageDraw, ImageFont
 import elevation
 
 PRODUCTS = [
-    ("GLO-30", "Copernicus DEM"),
-    ("AW3D30", "ALOS World 3D"),
     ("SRTM1_GEOID", "SRTM GL1"),
+    ("AW3D30", "ALOS World 3D"),
+    ("GLO-30", "Copernicus DEM"),
 ]
 # the README example
 CLIP_BOUNDS = (12.35, 41.8, 12.65, 42.0)
