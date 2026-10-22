@@ -70,7 +70,7 @@ def panel(hillshade: Path, relief: Path, label: str, width: int) -> Image.Image:
     blend = np.clip(color * (0.25 + 0.85 * light)[..., None], 0, 255).astype("uint8")
     tile = Image.fromarray(blend[:, :width])
     draw = ImageDraw.Draw(tile, "RGBA")
-    font = ImageFont.load_default(size=50)
+    font = ImageFont.load_default(size=40)
     anchor = (tile.width // 2, 30)
     box = draw.multiline_textbbox(anchor, label, font=font, anchor="ma", align="center")
     frame = (box[0] - 24, box[1] - 16, box[2] + 24, box[3] + 16)
