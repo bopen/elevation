@@ -20,10 +20,7 @@ dev = [
 ]
 
 [project]
-authors = [
-  {name = "Alessandro Amici"},
-  {name = "B-Open"}
-]
+authors = [{name = "Alessandro Amici"}, {name = "B-Open"}]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
@@ -39,11 +36,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Topic :: Scientific/Engineering :: GIS"
 ]
-dependencies = [
-  "fasteners>=0.18",
-  "platformdirs>=2.6.0",
-  "typer>=0.26.7"
-]
+dependencies = ["fasteners>=0.18", "platformdirs>=2.6.0", "typer>=0.26.7"]
 description = "Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, Copernicus DEM, ALOS World 3D and SRTM 30m and 90m DEMs."
 dynamic = ["version"]
 keywords = [
