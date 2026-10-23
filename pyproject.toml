@@ -142,4 +142,4 @@ __version__ = "{version}"
 # Wait before upgrading to the newest versions to avoid
 # regressions and supply-chain attacks
 exclude-newer = "1 week"
-exclude-newer-package = {certifi = false}
+exclude-newer-package = {certifi = false, virtualenv = false}
