@@ -4,6 +4,7 @@ requires = ["setuptools>=77", "setuptools_scm>=8"]
 
 [dependency-groups]
 dev = [
+  "deptry>=0.25.1",
   "mypy>=1.15.0",
   "myst-parser>=4.0.1",
   "numpy>=2.0",
@@ -33,7 +34,6 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
-  "Programming Language :: Python :: Implementation :: CPython",
   "Topic :: Scientific/Engineering :: GIS"
 ]
 dependencies = ["fasteners>=0.18", "platformdirs>=2.6.0", "typer>=0.26.7"]
@@ -67,6 +67,9 @@ Sponsor = "https://bopen.eu"
 
 [tool.coverage.run]
 branch = true
+
+[tool.deptry]
+extend_exclude = ["scripts"]
 
 [tool.mypy]
 strict = true

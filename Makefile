@@ -5,6 +5,7 @@ default: qa unit-tests check-typing
 
 qa:
 	$(PYTHON) -m pre_commit run --all-files
+	$(PYTHON) -m deptry .
 
 unit-tests:
 	$(PYTHON) -m pytest -vv --cov=. --cov-report=$(COV_REPORT)
