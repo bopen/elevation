@@ -253,9 +253,7 @@ GEDTM30_SPEC: DatasourceSpec = {
         "gdal_source": "/vsicurl/https://opentopography.s3.sdsc.edu/raster/GEDTM30/GEDTM30_be/gedtm_rf_m_30m_s_20060101_20151231_go_epsg.4326.3855_v1.2.tif",
         "chunks": (4096, 4096),
     },
-    # the host does not list folders, so GDAL would probe ~50 sidecar files per chunk
-    "tile_gdal_options": spatial.FLOAT_TILE_GDAL_OPTIONS
-    + " --config GDAL_DISABLE_READDIR_ON_OPEN EMPTY_DIR",
+    "tile_gdal_options": spatial.FLOAT_TILE_GDAL_OPTIONS,
     "empty_on_notfound": False,
     "cached_tiles": zarr_tiles,
     "cached_tiles_kwargs": {"transform": GEDTM30_CHUNK_INDECES_TRANSFORM},
