@@ -33,8 +33,10 @@ MAX_DOWNLOAD_TILES = 25
 #   0.0001388888889 == 0.5" is half pixel for DEMs with 1" spacing (DTED L2)
 #   0.0004166666667 == 1.5" is half pixel for DEMs with 3" spacing (DTED L1)
 #   AW3D30 tiles have no half pixel, their edges are on the whole degrees
+#   0.00125 == 4.5" is the margin of the GEDTM30 raster, the chunks start at its corner
 EDH_L2_CHUNK_INDECES_TRANSFORM = (-180.0001388888889, 1.0, 90.00013888888888, -0.5)
 EDH_L1_CHUNK_INDECES_TRANSFORM = (-180.00041666666667, 2.0, 90.00041666666667, -2.0)
+GEDTM30_CHUNK_INDECES_TRANSFORM = (-180.00125, 1.0, 85.00125, -1.0)
 DTED_L2_TILE_INDECES_TRANSFORM = (-0.0001388888889, 1.0, -0.0001388888889, 1.0)
 AW3D30_TILE_INDECES_TRANSFORM = (0.0, 1.0, 0.0, 1.0)
 CGIAR_L1_TILE_INDECES_TRANSFORM = (-185.0004166666667, 5.0, 65.0004166666667, -5.0)
@@ -244,12 +246,25 @@ GLO_90_SPEC: DatasourceSpec = {
     "cached_tiles_kwargs": {"transform": EDH_L1_CHUNK_INDECES_TRANSFORM},
 }
 
+GEDTM30_SPEC: DatasourceSpec = {
+    "prepare_tile": prepare_tile_zarr,
+    "prepare_tile_kwargs": {
+        "gdal_source": "/vsicurl/https://opentopography.s3.sdsc.edu/raster/GEDTM30/GEDTM30_be/gedtm_rf_m_30m_s_20060101_20151231_go_epsg.4326.3855_v1.2.tif",
+        "chunks": (3600, 3600),
+    },
+    "tile_gdal_options": spatial.FLOAT_TILE_GDAL_OPTIONS,
+    "empty_on_notfound": False,
+    "cached_tiles": zarr_tiles,
+    "cached_tiles_kwargs": {"transform": GEDTM30_CHUNK_INDECES_TRANSFORM},
+}
+
 PRODUCTS_SPECS: dict[str, DatasourceSpec] = {
     "MAPZEN": MAPZEN_SPEC,
     "GLO-30": GLO_30_SPEC,
     "AW3D30": AW3D30_SPEC,
     "SRTM1_GEOID": SRTM1_GEOID_SPEC,
     "SRTM1_ELLIP": SRTM1_ELLIP_SPEC,
+    "GEDTM30": GEDTM30_SPEC,
     "GLO-90": GLO_90_SPEC,
     "SRTM3": SRTM3_SPEC,
 }

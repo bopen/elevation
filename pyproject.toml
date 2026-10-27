@@ -37,7 +37,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: GIS"
 ]
 dependencies = ["fasteners>=0.18", "platformdirs>=2.6.0", "typer>=0.26.7"]
-description = "Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, Copernicus DEM, ALOS World 3D and SRTM 30m and 90m DEMs."
+description = "Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, Copernicus DEM, ALOS World 3D, GEDTM30 and SRTM 30m and 90m DEMs."
 dynamic = ["version"]
 keywords = [
   "Copernicus DEM",
