@@ -1,7 +1,7 @@
 # elevation
 
 Download, cache and clip global terrain digital elevation models: Mapzen terrain
-tiles, Copernicus DEM, ALOS World 3D and SRTM 30m and 90m DEMs.
+tiles, Copernicus DEM, ALOS World 3D, GEDTM30 and SRTM 30m and 90m DEMs.
 
 If you have any feedback or you want to help out head over to our main repository:
 https://github.com/bopen/elevation

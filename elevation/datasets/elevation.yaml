@@ -1,6 +1,6 @@
 id: elevation
 title: elevation datasets
-description: 'Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, Copernicus DEM, ALOS World 3D and SRTM 30m and 90m DEMs.'
+description: 'Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, Copernicus DEM, ALOS World 3D, GEDTM30 and SRTM 30m and 90m DEMs.'
 type: Catalog
 stac_version: 1.1.0
 links:
@@ -32,6 +32,10 @@ links:
   href: ./SRTM1_ELLIP.yaml
   type: application/yaml
   title: SRTM global 30m v3 ellipsoidal
+- rel: child
+  href: ./GEDTM30.yaml
+  type: application/yaml
+  title: Global Ensemble Digital Terrain Model 30m v1.2
 - rel: child
   href: ./GLO-90.yaml
   type: application/yaml

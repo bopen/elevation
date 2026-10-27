@@ -1,0 +1,65 @@
+id: GEDTM30
+title: Global Ensemble Digital Terrain Model 30m v1.2
+version: '1.2'
+summaries:
+  gsd:
+  - 30
+  proj:code:
+  - EPSG:9518
+extent:
+  spatial:
+    bbox:
+    - - -180
+      - -63
+      - 180
+      - 84
+  temporal:
+    interval:
+    - - '2006-01-01T00:00:00Z'
+      - '2015-12-31T00:00:00Z'
+license: CC-BY-4.0
+sci:doi: 10.5069/G9BV7DT1
+sci:citation: Ho, Y.-F., & Hengl, T. (2025). Global ensemble digital terrain model 30m (GEDTM30) [Data set]. Distributed by OpenTopography. https://doi.org/10.5069/G9BV7DT1
+description: 'Global Ensemble Digital Terrain Model (GEDTM30) 1 arc second (30 m) bare-earth heights on the EGM2008 geoid, produced by OpenGeoHub fusing Copernicus DEM, ALOS World 3D and other global DEMs with a random forest model trained on ICESat-2 and GEDI ground elevations. Unlike a surface model, vegetation and buildings are removed. It is a machine learning product: the producers advise to verify it before critical use. Version 1.2, distributed by OpenTopography as a single cloud-optimized GeoTIFF that is read in place, one 1° x 1° window at a time. Antarctica is not covered.'
+providers:
+- name: OpenTopography
+  roles:
+  - host
+  url: https://portal.opentopography.org/raster?opentopoID=OTSDEM.082025.4326.1
+- name: OpenGeoHub
+  roles:
+  - producer
+  - processor
+  - licensor
+  url: https://opengeohub.org
+type: Collection
+stac_version: 1.1.0
+stac_extensions:
+- https://stac-extensions.github.io/projection/v2.1.0/schema.json
+- https://stac-extensions.github.io/scientific/v1.0.0/schema.json
+- https://stac-extensions.github.io/version/v1.2.0/schema.json
+links:
+- rel: self
+  href: ./GEDTM30.yaml
+  type: application/yaml
+  title: Global Ensemble Digital Terrain Model 30m v1.2 STAC Collection
+- rel: root
+  href: ./elevation.yaml
+  type: application/yaml
+  title: elevation datasets STAC Catalog
+- rel: parent
+  href: ./elevation.yaml
+  type: application/yaml
+  title: elevation datasets STAC Catalog
+- rel: license
+  href: https://creativecommons.org/licenses/by/4.0/
+  type: text/html
+  title: Creative Commons Attribution 4.0 International
+- rel: describedby
+  href: https://portal.opentopography.org/raster?opentopoID=OTSDEM.082025.4326.1
+  type: text/html
+  title: OpenTopography dataset page
+- rel: cite-as
+  href: https://doi.org/10.5069/G9BV7DT1
+  type: text/html
+  title: Global ensemble digital terrain model 30m (GEDTM30), OpenTopography

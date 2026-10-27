@@ -21,6 +21,9 @@ Elevation provides easy download, cache and access of the global datasets:
   with 30m heights on the EGM96 geoid.
 - `SRTM1_ELLIP`: [SRTM global 30m v3 ellipsoidal](https://portal.opentopography.org/raster?opentopoID=OTSRTM.082016.4326.1)
   the companion of `SRTM1_GEOID`, with 30m heights on the WGS84 ellipsoid.
+- `GEDTM30`: [Global Ensemble Digital Terrain Model 30m v1.2](https://doi.org/10.5069/G9BV7DT1)
+  produced by OpenGeoHub and hosted on [OpenTopography](https://portal.opentopography.org/raster?opentopoID=OTSDEM.082025.4326.1),
+  with 30m bare-earth heights on the EGM2008 geoid.
 - `GLO-90`: [Copernicus DEM global 90m (2021)](https://doi.org/10.5270/ESA-c5d3d65)
   the 90m companion of `GLO-30`.
 - `SRTM3`: [SRTM global 90m v4.1](https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/)
@@ -113,6 +116,12 @@ $ eio --product SRTM1_GEOID clip -o Rome-SRTM1_GEOID-DEM.tif --bounds 12.35 41.8
 $ eio --product SRTM1_ELLIP clip -o Rome-SRTM1_ELLIP-DEM.tif --bounds 12.35 41.8 12.65 42
 ```
 
+For the Global Ensemble Digital Terrain Model 30m v1.2 use:
+
+```console
+$ eio --product GEDTM30 clip -o Rome-GEDTM30-DEM.tif --bounds 12.35 41.8 12.65 42
+```
+
 For the SRTM global 90m v4.1 DEM use:
 
 ```console
@@ -185,7 +194,7 @@ $ eio --help
 │ --version                                                 Show the version and exit.             │
 │                                                           [env var: EIO_VERSION]                 │
 │ --product          [MAPZEN|GLO-30|AW3D30|SRTM1_GEOID|SRT  DEM product choice.                    │
-│                    M1_ELLIP|GLO-90|SRTM3]                 [env var: EIO_PRODUCT]                 │
+│                    M1_ELLIP|GEDTM30|GLO-90|SRTM3]         [env var: EIO_PRODUCT]                 │
 │                                                           [default: MAPZEN]                      │
 │ --cache_dir        <directory>                            Root of the DEM cache folder.          │
 │                                                           [env var: EIO_CACHE_DIR]               │

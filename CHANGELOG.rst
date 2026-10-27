@@ -1,4 +1,11 @@
 
+2.1.0 (unreleased)
+------------------
+
+- Add the ``GEDTM30`` product for the Global Ensemble Digital Terrain Model 30m v1.2
+  on the EGM2008 geoid, distributed by OpenTopography as a single cloud-optimized
+  GeoTIFF that is read in place.
+
 2.0.1 (2026-10-21)
 ------------------
 
