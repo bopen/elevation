@@ -110,14 +110,14 @@ def test_aw3d30_tiles() -> None:
 
 
 def test_gedtm30_tiles() -> None:
-    # GEDTM30 is a single raster read in 1 degree windows from its top left corner
+    # GEDTM30 is a single raster read in windows of 2 x 2 of its 2048 pixels blocks
     spec = datasource.GEDTM30_SPEC
     tiles = spec["cached_tiles"]
     kwargs = spec["cached_tiles_kwargs"]
 
-    assert list(tiles(12.4, 41.8, 12.4, 41.8, **kwargs)) == [((192, 43), "43/192")]
-    source = spec["prepare_tile"](ilat=43, ilon=192, **spec["prepare_tile_kwargs"])
-    assert source.endswith("_v1.2.tif?srcwin=691200,154800,3600,3600")
+    assert list(tiles(12.4, 41.8, 12.4, 41.8, **kwargs)) == [((169, 37), "37/169")]
+    source = spec["prepare_tile"](ilat=37, ilon=169, **spec["prepare_tile_kwargs"])
+    assert source.endswith("_v1.2.tif?srcwin=692224,151552,4096,4096")
     # the windows north of the raster are skipped
     assert list(tiles(12.4, 85.01, 12.4, 85.01, **kwargs)) == []
 
