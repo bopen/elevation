@@ -43,8 +43,21 @@ jobs:
     - name: Run unit tests
       run: make unit-tests COV_REPORT=xml
 
+  check-typing:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        version: 0.13.4
+        enable-cache: true
+    - name: Run type checks
+      run: make check-typing
+
   test-on-windows:
-    needs: [run-unit-tests]
+    needs: [check-code, run-unit-tests, check-typing]
     runs-on: windows-latest
 
     steps:
@@ -68,35 +81,8 @@ jobs:
       shell: bash -el {0}
       run: make unit-tests COV_REPORT=xml
 
-  check-typing:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v7
-    - name: Install uv
-      uses: astral-sh/setup-uv@v7
-      with:
-        version: 0.13.4
-        enable-cache: true
-    - name: Run type checks
-      run: make check-typing
-
-  build-docs:
-    needs: [run-unit-tests]
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v7
-    - name: Install uv
-      uses: astral-sh/setup-uv@v7
-      with:
-        version: 0.13.4
-        enable-cache: true
-    - name: Build documentation
-      run: make build-docs
-
   test-minimum-python:
-    needs: [run-unit-tests]
+    needs: [check-code, run-unit-tests, check-typing]
     runs-on: ubuntu-latest
 
     steps:
@@ -113,7 +99,7 @@ jobs:
       run: make unit-tests COV_REPORT=xml
 
   test-minimum-versions:
-    needs: [run-unit-tests]
+    needs: [check-code, run-unit-tests, check-typing]
     runs-on: ubuntu-latest
 
     steps:
@@ -129,8 +115,22 @@ jobs:
     - name: Run tests with the minimum supported versions
       run: make test-minimum-versions
 
+  build-docs:
+    needs: [test-on-windows, test-minimum-python, test-minimum-versions]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        version: 0.13.4
+        enable-cache: true
+    - name: Build documentation
+      run: make build-docs
+
   build-distribution:
-    needs: [check-code, check-typing, test-on-windows, test-minimum-python, test-minimum-versions]
+    needs: [test-on-windows, test-minimum-python, test-minimum-versions]
     runs-on: ubuntu-latest
 
     steps:
@@ -152,7 +152,7 @@ jobs:
         path: dist
 
   upload-to-pypi:
-    needs: [build-distribution, build-docs]
+    needs: [build-docs, build-distribution]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     runs-on: ubuntu-latest
     environment:
