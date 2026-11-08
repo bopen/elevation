@@ -29,10 +29,7 @@ repos:
   rev: v2.16.0
   hooks:
   - id: pretty-format-yaml
-    args: [--autofix, --preserve-quotes]
+    args: [--autofix]
   - id: pretty-format-toml
     args: [--autofix]
-    # toml-sort 0.25 rewrites inline tables as `{ key = value }`, which fights
-    # uv's `{key = value}` style in uv.lock; pin it and the tomlkit parser that
-    # 0.24 uses until that is reconciled upstream.
-    additional_dependencies: [toml-sort==0.24.2, tomlkit==0.15.1]
+    exclude: (^|/)uv\.lock$

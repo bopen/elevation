@@ -21,7 +21,7 @@ dev = [
 ]
 
 [project]
-authors = [{name = "Alessandro Amici"}, {name = "B-Open"}]
+authors = [{ name = "Alessandro Amici" }, { name = "B-Open" }]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
@@ -145,4 +145,4 @@ __version__ = "{version}"
 # Wait before upgrading to the newest versions to avoid
 # regressions and supply-chain attacks
 exclude-newer = "1 week"
-exclude-newer-package = {certifi = false, pillow = false, virtualenv = false}
+exclude-newer-package = { certifi = false, pillow = false, virtualenv = false }
