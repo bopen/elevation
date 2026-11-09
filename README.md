@@ -69,7 +69,7 @@ and distributions, please refer to the
 
 Note that *elevation* v2.0 requires Python 3.11 or later.
 
-Our target platforms are Linux and MacOS. Windows is only lightly tested.
+Supported platforms are Linux, macOS and Windows, all three tested in the CI.
 
 ## Command line usage
 
