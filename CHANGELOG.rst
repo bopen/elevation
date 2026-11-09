@@ -4,7 +4,7 @@
 
 - Add the ``GEDTM30`` product for the Global Ensemble Digital Terrain Model 30m v1.2
   on the EGM2008 geoid, distributed by OpenTopography as a single cloud-optimized
-  GeoTIFF that is read in place.
+  GeoTIFF that is read in place, so GDAL 3.8 or later is required.
 - Improve GDAL performance by skipping testing sidecar files.
 - Restore the predictor in the default GDAL creation options of ``clip``, lost in
   2.0.0, so the clipped files are smaller again: the default is now the options of

@@ -49,7 +49,7 @@ $ pip install elevation
 
 The following dependencies need to be installed and working:
 
-- [GDAL](https://www.gdal.org/) command line tools, i.e. `gdal_translate`, `gdalbuildvrt`,
+- [GDAL](https://gdal.org/) command line tools, i.e. `gdal_translate`, `gdalbuildvrt`,
   `gdalinfo` and `ogrinfo`
 
 The following command runs some basic checks and reports common issues:
@@ -65,7 +65,7 @@ Your system is ready.
 
 The best way to install GDAL command line tools varies across operating systems
 and distributions, please refer to the
-[GDAL install documentation](https://trac.osgeo.org/gdal/wiki/DownloadingGdalBinaries).
+[GDAL download page](https://gdal.org/en/stable/download.html).
 
 Note that *elevation* v2.0 requires Python 3.11 or later.
 
@@ -121,6 +121,9 @@ For the Global Ensemble Digital Terrain Model 30m v1.2 use:
 ```console
 $ eio --product GEDTM30 clip -o Rome-GEDTM30-DEM.tif --bounds 12.35 41.8 12.65 42
 ```
+
+The `GEDTM30` product is a single cloud-optimized GeoTIFF that is read in place
+one window at a time, like the Earth Data Hub store, so it needs GDAL 3.8 or later too.
 
 For the SRTM global 90m v4.1 DEM use:
 
