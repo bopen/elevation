@@ -76,7 +76,7 @@ def ensure_tiles(
     root: Path,
     tiles: list[Tile],
     prepare_tile: Callable[..., str],
-    gdal_options: str = spatial.INT_TILE_GDAL_OPTIONS,
+    gdal_options: str = spatial.PREDICTOR2_TILE_GDAL_OPTIONS,
     empty_on_notfound: bool = True,
     **kwargs: Any,
 ) -> None:

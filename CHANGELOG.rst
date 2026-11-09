@@ -7,9 +7,11 @@
   GeoTIFF that is read in place.
 - Improve GDAL performance by skipping testing sidecar files.
 - Restore the predictor in the default GDAL creation options of ``clip``, lost in
-  2.0.0: ``PREDICTOR=2`` for the integer DEMs and ``PREDICTOR=3`` for the floating
-  point ones, so the clipped files are smaller again. The ``gdal_options`` argument
-  of ``elevation.clip`` now defaults to ``None`` for these options.
+  2.0.0, so the clipped files are smaller again: the default is now the options of
+  the product cached tiles, and the ``gdal_options`` argument of ``elevation.clip``
+  defaults to ``None`` for them.
+- Cache the ``SRTM1_ELLIP`` tiles with ``PREDICTOR=3``, the floating point predictor,
+  that compresses its heights better than ``PREDICTOR=2``.
 - Replace ``typer`` with ``click`` for the ``eio`` command, dropping ``rich``,
   ``pygments`` and four more dependencies: the commands, options and ``EIO_*``
   environment variables are the same, the help and the errors are plain text.

@@ -204,7 +204,7 @@ def test_ensure_tiles(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_write.assert_called_once_with(
         f"{spec['prepare_tile_kwargs']['gdal_source']}/N41/N41E012.hgt.gz",
         tmp_path / "spool" / "N41" / "N41E012.tif",
-        options=spatial.INT_TILE_GDAL_OPTIONS,
+        options=spatial.PREDICTOR2_TILE_GDAL_OPTIONS,
         empty_on_notfound=True,
     )
     assert (tmp_path / "cache" / "N41" / "N41E012.tif").read_bytes() == b"tile"
@@ -227,7 +227,7 @@ def test_ensure_tiles_vsi(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_write.assert_called_once_with(
         f"{spec['prepare_tile_kwargs']['gdal_source']}/N41E012.tif",
         tmp_path / "spool" / "N41E012.tif",
-        options=spatial.INT_TILE_GDAL_OPTIONS,
+        options=spatial.PREDICTOR2_TILE_GDAL_OPTIONS,
         empty_on_notfound=True,
     )
     assert (tmp_path / "cache" / "N41E012.tif").read_bytes() == b"tile"
@@ -278,7 +278,7 @@ def test_ensure_tiles_remote(mocker: MockerFixture, tmp_path: Path) -> None:
         'vrt://ZARR:"/vsicurl/https://data.earthdatahub.destine.eu'
         '/copernicus-dem/GLO-90-v1.zarr":/dsm?srcwin=230400,57600,2400,2400',
         tmp_path / "spool" / "24/96.tif",
-        options=spatial.FLOAT_TILE_GDAL_OPTIONS,
+        options=spatial.PREDICTOR3_TILE_GDAL_OPTIONS,
         empty_on_notfound=False,
     )
     assert (tmp_path / "cache" / "24/96.tif").read_bytes() == b"tile"
@@ -302,7 +302,7 @@ def test_seed(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_write.assert_called_once_with(
         f"{spec['prepare_tile_kwargs']['gdal_source']}/N43/N43E013.hgt.gz",
         datasource_root / "spool" / "N43" / "N43E013.tif",
-        options=spatial.INT_TILE_GDAL_OPTIONS,
+        options=f"{spatial.PREDICTOR2_TILE_GDAL_OPTIONS} --config GDAL_DISABLE_READDIR_ON_OPEN EMPTY_DIR",
         empty_on_notfound=True,
     )
     assert mock_check_call.call_args[0][0][0] == "gdalbuildvrt"
@@ -355,7 +355,7 @@ def test_seed_remote(mocker: MockerFixture, tmp_path: Path) -> None:
         'vrt://ZARR:"/vsicurl/https://data.earthdatahub.destine.eu'
         '/copernicus-dem/GLO-30-v1.zarr":/dsm?srcwin=691200,172800,3600,1800',
         datasource_root / "spool" / "96/192.tif",
-        options=spatial.FLOAT_TILE_GDAL_OPTIONS,
+        options=f"{spatial.PREDICTOR3_TILE_GDAL_OPTIONS} --config GDAL_DISABLE_READDIR_ON_OPEN EMPTY_DIR",
         empty_on_notfound=False,
     )
     assert (datasource_root / "cache" / "96/192.tif").read_bytes() == b"tile"
@@ -393,23 +393,33 @@ def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_translate = mocker.patch(
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
-    mock_gdal_json = mocker.patch(
-        "elevation.spatial.gdal_json", return_value={"bands": [{"type": "Int16"}]}
-    )
 
     datasource.clip(cache_dir=root, bounds=bounds, output=output)
 
     datasource_root = root / "MAPZEN"
-    mock_gdal_json.assert_called_once_with(
-        "gdalinfo -json", str(datasource_root / "MAPZEN.vrt")
-    )
     # the clip is the last call, after the one call per cached tile
     source, destination = mock_translate.call_args.args
     assert source == str(datasource_root / "MAPZEN.vrt")
     assert destination == output
+    # the default options are the ones of the cached tiles
     assert mock_translate.call_args.kwargs["options"] == (
-        f"-q {datasource.DEFAULT_GDAL_OPTIONS} -co PREDICTOR=2"
-        " -projwin 13.1 44.9 14.9 43.1"
+        f"{spatial.PREDICTOR2_TILE_GDAL_OPTIONS} -projwin 13.1 44.9 14.9 43.1"
+    )
+
+
+def test_clip_remote(mocker: MockerFixture, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    bounds = (12.4, 41.8, 12.5, 41.9)
+    output = tmp_path / "out.tif"
+    mocker.patch("subprocess.check_call")
+    mock_translate = mocker.patch(
+        "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
+    )
+
+    datasource.clip(cache_dir=root, bounds=bounds, output=output, product="GLO-30")
+
+    assert mock_translate.call_args.kwargs["options"] == (
+        f"{spatial.PREDICTOR3_TILE_GDAL_OPTIONS} -projwin 12.4 41.9 12.5 41.8"
     )
 
 
@@ -421,34 +431,14 @@ def test_clip_gdal_options(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_translate = mocker.patch(
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
-    mock_gdal_json = mocker.patch("elevation.spatial.gdal_json")
 
     datasource.clip(
         cache_dir=root, bounds=bounds, output=output, gdal_options="-co COMPRESS=LZW"
     )
 
-    # the options given are used as they are, without looking at the DEM data type
-    mock_gdal_json.assert_not_called()
+    # the options given replace the ones of the cached tiles
     assert mock_translate.call_args.kwargs["options"] == (
-        "-q -co COMPRESS=LZW -projwin 13.1 44.9 14.9 43.1"
-    )
-
-
-def test_default_gdal_options(tmp_path: Path) -> None:
-    vrt_template = (
-        '<VRTDataset rasterXSize="1" rasterYSize="1">'
-        '<VRTRasterBand dataType="{}" band="1"/></VRTDataset>'
-    )
-    integer_dem = tmp_path / "integer.vrt"
-    integer_dem.write_text(vrt_template.format("Int16"))
-    float_dem = tmp_path / "float.vrt"
-    float_dem.write_text(vrt_template.format("Float32"))
-
-    assert datasource.default_gdal_options(str(integer_dem)) == (
-        f"{datasource.DEFAULT_GDAL_OPTIONS} -co PREDICTOR=2"
-    )
-    assert datasource.default_gdal_options(str(float_dem)) == (
-        f"{datasource.DEFAULT_GDAL_OPTIONS} -co PREDICTOR=3"
+        "-co COMPRESS=LZW -projwin 13.1 44.9 14.9 43.1"
     )
 
 

@@ -172,8 +172,8 @@ def seed(
     "--gdal-options",
     help=(
         "GDAL creation options of the output file, e.g. '-co COMPRESS=LZW'. "
-        f"The default is '{elevation.DEFAULT_GDAL_OPTIONS} -co PREDICTOR=2', "
-        "with PREDICTOR=3 for floating point DEMs."
+        "The default is the options of the product cached tiles: DEFLATE "
+        "compression with the predictor that suits the product."
     ),
     show_default=False,
     show_envvar=True,
