@@ -380,6 +380,18 @@ def build_bounds(
     return bounds
 
 
+def default_gdal_options(source: str) -> str:
+    """Return ``DEFAULT_GDAL_OPTIONS`` with the predictor that suits the *source* DEM.
+
+    :param source: Path of the DEM, the product VRT.
+    :return: The creation options with ``PREDICTOR=3``, the floating point predictor,
+        for a floating point DEM and ``PREDICTOR=2``, horizontal differencing, otherwise.
+    """
+    data_type = spatial.gdal_json("gdalinfo -json", source)["bands"][0]["type"]
+    predictor = 3 if data_type.startswith("Float") else 2
+    return f"{DEFAULT_GDAL_OPTIONS} -co PREDICTOR={predictor}"
+
+
 def clip(
     bounds: tuple[float, float, float, float],
     output: str | Path = DEFAULT_OUTPUT,
@@ -387,7 +399,7 @@ def clip(
     product: str = DEFAULT_PRODUCT,
     *,
     cache_dir: str | Path | None = None,
-    gdal_options: str = DEFAULT_GDAL_OPTIONS,
+    gdal_options: str | None = None,
     max_download_tiles: int = MAX_DOWNLOAD_TILES,
 ) -> None:
     """Clip the DEM to given bounds.
@@ -397,7 +409,9 @@ def clip(
     :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
     :param product: DEM product choice.
     :param cache_dir: Root of the DEM cache folder.
-    :param gdal_options: GDAL creation options of the output file, e.g. '-co COMPRESS=LZW'.
+    :param gdal_options: GDAL creation options of the output file, e.g. '-co COMPRESS=LZW',
+        the default is ``DEFAULT_GDAL_OPTIONS`` with the predictor that suits the data
+        type of the DEM.
     :param max_download_tiles: Maximum number of tiles to download.
     """
     output = Path(output).resolve()
@@ -409,9 +423,11 @@ def clip(
         max_download_tiles=max_download_tiles,
     )
     left, bottom, right, top = bounds
-    options = f"-q {gdal_options} -projwin {left} {top} {right} {bottom}"
     source = str(datasource_root / f"{product}.vrt")
     with cache.lock_vrt(datasource_root, product):
+        if gdal_options is None:
+            gdal_options = default_gdal_options(source)
+        options = f"-q {gdal_options} -projwin {left} {top} {right} {bottom}"
         spatial.call_gdal_translate(source, output, options=options)
 
 

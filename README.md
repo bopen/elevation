@@ -230,10 +230,11 @@ Options:
                                   source as output bounds.  [env var:
                                   EIO_CLIP_REFERENCE]
   --gdal-options TEXT             GDAL creation options of the output file, e.g.
-                                  '-co COMPRESS=LZW'.  [env var:
-                                  EIO_CLIP_GDAL_OPTIONS; default: -co TILED=YES
-                                  -co COMPRESS=DEFLATE -co ZLEVEL=9 -co
-                                  NUM_THREADS=ALL_CPUS]
+                                  '-co COMPRESS=LZW'. The default is '-co
+                                  TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9
+                                  -co NUM_THREADS=ALL_CPUS -co PREDICTOR=2',
+                                  with PREDICTOR=3 for floating point DEMs.
+                                  [env var: EIO_CLIP_GDAL_OPTIONS]
   --max_download_tiles INTEGER    Maximum number of tiles to download.  [env
                                   var: EIO_CLIP_MAX_DOWNLOAD_TILES; default: 25]
   --help                          Show this message and exit.

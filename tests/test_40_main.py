@@ -145,10 +145,14 @@ def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     options = f"--cache_dir {root!s} clip --bounds 12.5 42 12.5 42"
     mock_check_call = mocker.patch("subprocess.check_call")
     mock_translate = mocker.patch("elevation.spatial.call_gdal_translate")
+    mocker.patch(
+        "elevation.spatial.gdal_json", return_value={"bands": [{"type": "Float32"}]}
+    )
     result = runner.invoke(__main__.app, options.split())
     assert not result.exception
     assert mock_check_call.call_count == 1
     assert mock_translate.call_count == 1
+    assert "-co PREDICTOR=3" in mock_translate.call_args.kwargs["options"]
 
     mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(__main__.app, ["clip"])

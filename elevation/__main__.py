@@ -170,8 +170,12 @@ def seed(
 )
 @click.option(
     "--gdal-options",
-    default=elevation.DEFAULT_GDAL_OPTIONS,
-    help="GDAL creation options of the output file, e.g. '-co COMPRESS=LZW'.",
+    help=(
+        "GDAL creation options of the output file, e.g. '-co COMPRESS=LZW'. "
+        f"The default is '{elevation.DEFAULT_GDAL_OPTIONS} -co PREDICTOR=2', "
+        "with PREDICTOR=3 for floating point DEMs."
+    ),
+    show_default=False,
     show_envvar=True,
 )
 @max_download_tiles_option
@@ -182,7 +186,7 @@ def clip(
     bounds: tuple[float, float, float, float] | None,
     margin: str,
     reference: Path | None,
-    gdal_options: str,
+    gdal_options: str | None,
     max_download_tiles: int,
 ) -> None:
     """Clip the DEM to given bounds."""

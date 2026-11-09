@@ -393,16 +393,62 @@ def test_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     mock_translate = mocker.patch(
         "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
     )
+    mock_gdal_json = mocker.patch(
+        "elevation.spatial.gdal_json", return_value={"bands": [{"type": "Int16"}]}
+    )
 
     datasource.clip(cache_dir=root, bounds=bounds, output=output)
 
     datasource_root = root / "MAPZEN"
+    mock_gdal_json.assert_called_once_with(
+        "gdalinfo -json", str(datasource_root / "MAPZEN.vrt")
+    )
     # the clip is the last call, after the one call per cached tile
     source, destination = mock_translate.call_args.args
     assert source == str(datasource_root / "MAPZEN.vrt")
     assert destination == output
     assert mock_translate.call_args.kwargs["options"] == (
-        f"-q {datasource.DEFAULT_GDAL_OPTIONS} -projwin 13.1 44.9 14.9 43.1"
+        f"-q {datasource.DEFAULT_GDAL_OPTIONS} -co PREDICTOR=2"
+        " -projwin 13.1 44.9 14.9 43.1"
+    )
+
+
+def test_clip_gdal_options(mocker: MockerFixture, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    bounds = (13.1, 43.1, 14.9, 44.9)
+    output = tmp_path / "out.tif"
+    mocker.patch("subprocess.check_call")
+    mock_translate = mocker.patch(
+        "elevation.spatial.call_gdal_translate", side_effect=write_ready_tile
+    )
+    mock_gdal_json = mocker.patch("elevation.spatial.gdal_json")
+
+    datasource.clip(
+        cache_dir=root, bounds=bounds, output=output, gdal_options="-co COMPRESS=LZW"
+    )
+
+    # the options given are used as they are, without looking at the DEM data type
+    mock_gdal_json.assert_not_called()
+    assert mock_translate.call_args.kwargs["options"] == (
+        "-q -co COMPRESS=LZW -projwin 13.1 44.9 14.9 43.1"
+    )
+
+
+def test_default_gdal_options(tmp_path: Path) -> None:
+    vrt_template = (
+        '<VRTDataset rasterXSize="1" rasterYSize="1">'
+        '<VRTRasterBand dataType="{}" band="1"/></VRTDataset>'
+    )
+    integer_dem = tmp_path / "integer.vrt"
+    integer_dem.write_text(vrt_template.format("Int16"))
+    float_dem = tmp_path / "float.vrt"
+    float_dem.write_text(vrt_template.format("Float32"))
+
+    assert datasource.default_gdal_options(str(integer_dem)) == (
+        f"{datasource.DEFAULT_GDAL_OPTIONS} -co PREDICTOR=2"
+    )
+    assert datasource.default_gdal_options(str(float_dem)) == (
+        f"{datasource.DEFAULT_GDAL_OPTIONS} -co PREDICTOR=3"
     )
 
 
