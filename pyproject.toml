@@ -36,7 +36,7 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering :: GIS"
 ]
-dependencies = ["fasteners>=0.18", "platformdirs>=2.6.0", "typer>=0.26.7"]
+dependencies = ["click>=8.1", "fasteners>=0.18", "platformdirs>=2.6.0"]
 description = "Download, cache and clip global terrain digital elevation models: Mapzen terrain tiles, Copernicus DEM, ALOS World 3D, GEDTM30 and SRTM 30m and 90m DEMs."
 dynamic = ["version"]
 keywords = [
@@ -93,9 +93,7 @@ ignore = [
   # pydocstyle: Missing Docstrings
   "D1",
   # flake8-bugbear: Mutable argument defaults are safe if not mutated
-  "B006",
-  # flake8-bugbear: typer.Option is called in argument defaults by design
-  "B008"
+  "B006"
 ]
 select = [
   # pyflakes

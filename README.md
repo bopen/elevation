@@ -187,66 +187,56 @@ The `eio` command has the following sub-commands and options:
 
 ```text
 $ eio --help
+Usage: eio [OPTIONS] COMMAND [ARGS]...
 
- Usage: eio [OPTIONS] COMMAND [ARGS]...
+Options:
+  --version                       Show the version and exit.
+  --product [MAPZEN|GLO-30|AW3D30|SRTM1_GEOID|SRTM1_ELLIP|GEDTM30|GLO-90|SRTM3]
+                                  DEM product choice.  [env var: EIO_PRODUCT;
+                                  default: MAPZEN]
+  --cache_dir DIRECTORY           Root of the DEM cache folder.  [env var:
+                                  EIO_CACHE_DIR; default: <user cache folder>]
+  --help                          Show this message and exit.
 
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --version                                                 Show the version and exit.             │
-│                                                           [env var: EIO_VERSION]                 │
-│ --product          [MAPZEN|GLO-30|AW3D30|SRTM1_GEOID|SRT  DEM product choice.                    │
-│                    M1_ELLIP|GEDTM30|GLO-90|SRTM3]         [env var: EIO_PRODUCT]                 │
-│                                                           [default: MAPZEN]                      │
-│ --cache_dir        <directory>                            Root of the DEM cache folder.          │
-│                                                           [env var: EIO_CACHE_DIR]               │
-│                                                           [default: <user cache folder>]         │
-│ --help                                                    Show this message and exit.            │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
-│ selfcheck  Audit the system for common issues.                                                   │
-│ info       Show info about the product cache.                                                    │
-│ dataset    Show the STAC metadata of the datasets.                                               │
-│ seed       Seed the DEM to given bounds.                                                         │
-│ clip       Clip the DEM to given bounds.                                                         │
-│ clean      Clean up the product cache from temporary files.                                      │
-│ distclean  Remove the product cache entirely.                                                    │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+Commands:
+  selfcheck  Audit the system for common issues.
+  info       Show info about the product cache.
+  dataset    Show the STAC metadata of the datasets.
+  seed       Seed the DEM to given bounds.
+  clip       Clip the DEM to given bounds.
+  clean      Clean up the product cache from temporary files.
+  distclean  Remove the product cache entirely.
 ```
 
 The `clip` sub-command:
 
 ```text
 $ eio clip --help
+Usage: eio clip [OPTIONS]
 
- Usage: eio clip [OPTIONS]
+  Clip the DEM to given bounds.
 
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --output              -o      <file>                        Path to output file. Existing files  │
-│                                                             will be overwritten.                 │
-│                                                             [env var: EIO_CLIP_OUTPUT]           │
-│                                                             [default: out.tif]                   │
-│ --bounds                      <float float float float>...  Output bounds in 'left bottom right  │
-│                                                             top' order.                          │
-│                                                             [env var: EIO_CLIP_BOUNDS]           │
-│ --margin              -m      <str>                         Decimal degree margin added to the   │
-│                                                             bounds. Use '%' for percent margin.  │
-│                                                             [env var: EIO_CLIP_MARGIN]           │
-│                                                             [default: 0]                         │
-│ --reference           -r      <path>                        Use the extent of a reference        │
-│                                                             GDAL/OGR data source as output       │
-│                                                             bounds.                              │
-│                                                             [env var: EIO_CLIP_REFERENCE]        │
-│ --gdal-options                <str>                         GDAL creation options of the output  │
-│                                                             file, e.g. '-co COMPRESS=LZW'.       │
-│                                                             [env var: EIO_CLIP_GDAL_OPTIONS]     │
-│                                                             [default: -co TILED=YES -co          │
-│                                                             COMPRESS=DEFLATE -co ZLEVEL=9 -co    │
-│                                                             NUM_THREADS=ALL_CPUS]                │
-│ --max_download_tiles          <int>                         Maximum number of tiles to download. │
-│                                                             [env var:                            │
-│                                                             EIO_CLIP_MAX_DOWNLOAD_TILES]         │
-│                                                             [default: 25]                        │
-│ --help                                                      Show this message and exit.          │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+Options:
+  -o, --output FILE               Path to output file. Existing files will be
+                                  overwritten.  [env var: EIO_CLIP_OUTPUT;
+                                  default: out.tif]
+  --bounds <FLOAT FLOAT FLOAT FLOAT>...
+                                  Output bounds in 'left bottom right top'
+                                  order.  [env var: EIO_CLIP_BOUNDS]
+  -m, --margin TEXT               Decimal degree margin added to the bounds. Use
+                                  '%' for percent margin.  [env var:
+                                  EIO_CLIP_MARGIN; default: 0]
+  -r, --reference PATH            Use the extent of a reference GDAL/OGR data
+                                  source as output bounds.  [env var:
+                                  EIO_CLIP_REFERENCE]
+  --gdal-options TEXT             GDAL creation options of the output file, e.g.
+                                  '-co COMPRESS=LZW'.  [env var:
+                                  EIO_CLIP_GDAL_OPTIONS; default: -co TILED=YES
+                                  -co COMPRESS=DEFLATE -co ZLEVEL=9 -co
+                                  NUM_THREADS=ALL_CPUS]
+  --max_download_tiles INTEGER    Maximum number of tiles to download.  [env
+                                  var: EIO_CLIP_MAX_DOWNLOAD_TILES; default: 25]
+  --help                          Show this message and exit.
 ```
 
 The `seed` sub-command downloads and caches the tiles that cover the bounds
@@ -254,23 +244,20 @@ without producing any output file:
 
 ```text
 $ eio seed --help
+Usage: eio seed [OPTIONS]
 
- Usage: eio seed [OPTIONS]
+  Seed the DEM to given bounds.
 
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --bounds                      <float float float float>...  Output bounds in 'left bottom right  │
-│                                                             top' order.                          │
-│                                                             [env var: EIO_SEED_BOUNDS]           │
-│ --margin              -m      <str>                         Decimal degree margin added to the   │
-│                                                             bounds. Use '%' for percent margin.  │
-│                                                             [env var: EIO_SEED_MARGIN]           │
-│                                                             [default: 0]                         │
-│ --max_download_tiles          <int>                         Maximum number of tiles to download. │
-│                                                             [env var:                            │
-│                                                             EIO_SEED_MAX_DOWNLOAD_TILES]         │
-│                                                             [default: 25]                        │
-│ --help                                                      Show this message and exit.          │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+Options:
+  --bounds <FLOAT FLOAT FLOAT FLOAT>...
+                                  Output bounds in 'left bottom right top'
+                                  order.  [env var: EIO_SEED_BOUNDS]
+  -m, --margin TEXT               Decimal degree margin added to the bounds. Use
+                                  '%' for percent margin.  [env var:
+                                  EIO_SEED_MARGIN; default: 0]
+  --max_download_tiles INTEGER    Maximum number of tiles to download.  [env
+                                  var: EIO_SEED_MAX_DOWNLOAD_TILES; default: 25]
+  --help                          Show this message and exit.
 ```
 
 Defaults can be defined by setting environment variables prefixed with `EIO`,
