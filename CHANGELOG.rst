@@ -6,6 +6,9 @@
   on the EGM2008 geoid, distributed by OpenTopography as a single cloud-optimized
   GeoTIFF that is read in place.
 - Improve GDAL performance by skipping testing sidecar files.
+- Replace ``typer`` with ``click`` for the ``eio`` command, dropping ``rich``,
+  ``pygments`` and four more dependencies: the commands, options and ``EIO_*``
+  environment variables are the same, the help and the errors are plain text.
 
 2.0.1 (2026-10-21)
 ------------------

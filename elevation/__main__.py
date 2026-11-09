@@ -13,63 +13,71 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import importlib.metadata
 from pathlib import Path
+from typing import Any
 
-import typer
+import click
 
 import elevation
 
 from . import spatial
 
-CONTEXT_SETTINGS = {"auto_envvar_prefix": "EIO"}
+CONTEXT_SETTINGS = {"auto_envvar_prefix": "EIO", "show_default": True}
+PRODUCTS_METAVAR = "[" + "|".join(elevation.PRODUCTS) + "]"
 
-app = typer.Typer(
-    context_settings=CONTEXT_SETTINGS,
-    add_completion=False,
-    no_args_is_help=True,
+# the options shared by seed and clip
+bounds_option = click.option(
+    "--bounds",
+    type=(float, float, float, float),
+    help="Output bounds in 'left bottom right top' order.",
+    show_envvar=True,
+)
+margin_option = click.option(
+    "-m",
+    "--margin",
+    default=elevation.MARGIN,
+    help="Decimal degree margin added to the bounds. Use '%' for percent margin.",
+    show_envvar=True,
+)
+max_download_tiles_option = click.option(
+    "--max_download_tiles",
+    default=elevation.MAX_DOWNLOAD_TILES,
+    help="Maximum number of tiles to download.",
+    show_envvar=True,
 )
 
 
-def version_callback(value: bool) -> None:
-    if value:
-        version = importlib.metadata.version("elevation")
-        typer.echo(f"eio, version {version}")
-        raise typer.Exit()
+class OrderedGroup(click.Group):
+    """List the commands in the order they are defined, not alphabetically."""
+
+    def list_commands(self, ctx: click.Context) -> list[str]:
+        return list(self.commands)
 
 
-@app.callback()
-def main(
-    ctx: typer.Context,
-    version: bool = typer.Option(
-        False,
-        "--version",
-        callback=version_callback,
-        is_eager=True,
-        help="Show the version and exit.",
-    ),
-    product: str = typer.Option(
-        elevation.DEFAULT_PRODUCT,
-        "--product",
-        metavar="[" + "|".join(elevation.PRODUCTS) + "]",
-        help="DEM product choice.",
-    ),
-    cache_dir: Path = typer.Option(
-        elevation.CACHE_DIR,
-        "--cache_dir",
-        file_okay=False,
-        # typer annotates path_type as "type[str] | type[bytes] | None" while
-        # TyperPath accepts any type at runtime.
-        path_type=Path,  # type: ignore[arg-type]
-        help="Root of the DEM cache folder.",
-    ),
-) -> None:
+@click.group("eio", cls=OrderedGroup, context_settings=CONTEXT_SETTINGS)
+@click.version_option(package_name="elevation", prog_name="eio")
+@click.option(
+    "--product",
+    default=elevation.DEFAULT_PRODUCT,
+    metavar=PRODUCTS_METAVAR,
+    help="DEM product choice.",
+    show_envvar=True,
+)
+@click.option(
+    "--cache_dir",
+    type=click.Path(file_okay=False, path_type=Path),
+    default=elevation.CACHE_DIR,
+    help="Root of the DEM cache folder.",
+    show_envvar=True,
+)
+@click.pass_context
+def app(ctx: click.Context, product: str, cache_dir: Path) -> None:
     if product in elevation.RETIRED_PRODUCTS:
-        raise typer.BadParameter(
+        raise click.BadParameter(
             elevation.RETIRED_PRODUCTS[product], param_hint="--product"
         )
     if product not in elevation.PRODUCTS:
-        raise typer.BadParameter(
+        raise click.BadParameter(
             f"{product!r} is not one of "
             f"{', '.join(repr(item) for item in elevation.PRODUCTS)}.",
             param_hint="--product",
@@ -80,115 +88,106 @@ def main(
     }
 
 
-@app.command(short_help="Audit the system for common issues.")
-def selfcheck(
-    verbose: bool = typer.Option(
-        False,
-        "--verbose",
-        help="Report each tool as it is tested.",
-    ),
-) -> None:
-    typer.echo(elevation.selfcheck(verbose=verbose))
+@app.command()
+@click.option(
+    "--verbose",
+    is_flag=True,
+    help="Report each tool as it is tested.",
+    show_envvar=True,
+)
+def selfcheck(verbose: bool) -> None:
+    """Audit the system for common issues."""
+    click.echo(elevation.selfcheck(verbose=verbose))
 
 
-@app.command(short_help="Show info about the product cache.")
-def info(ctx: typer.Context) -> None:
-    typer.echo(elevation.info(**ctx.obj))
+@app.command()
+@click.pass_obj
+def info(obj: dict[str, Any]) -> None:
+    """Show info about the product cache."""
+    click.echo(elevation.info(**obj))
 
 
-@app.command(short_help="Show the STAC metadata of the datasets.")
-def dataset(
-    dataset: str | None = typer.Argument(
-        None,
-        metavar="[" + "|".join(elevation.PRODUCTS) + "]",
-        help="Dataset choice, all of them if not given.",
-    ),
-) -> None:
+@app.command()
+@click.argument("dataset", required=False)
+def dataset(dataset: str | None) -> None:
+    """Show the STAC metadata of the datasets.
+
+    \b
+    Arguments:
+      DATASET  Dataset choice, one of the --product values, all of them if not given.
+    """  # noqa: D301 click needs the backspace in "\b" to keep the lines
     if dataset is not None and dataset not in elevation.PRODUCTS:
-        raise typer.BadParameter(
+        raise click.BadParameter(
             f"{dataset!r} is not one of "
             f"{', '.join(repr(item) for item in elevation.PRODUCTS)}.",
             param_hint="dataset",
         )
-    typer.echo(elevation.dataset(dataset))
+    click.echo(elevation.dataset(dataset))
 
 
-@app.command(short_help="Seed the DEM to given bounds.")
+@app.command()
+@bounds_option
+@margin_option
+@max_download_tiles_option
+@click.pass_obj
 def seed(
-    ctx: typer.Context,
-    bounds: tuple[float, float, float, float] | None = typer.Option(
-        None,
-        "--bounds",
-        help="Output bounds in 'left bottom right top' order.",
-    ),
-    margin: str = typer.Option(
-        elevation.MARGIN,
-        "-m",
-        "--margin",
-        help="Decimal degree margin added to the bounds. Use '%' for percent margin.",
-    ),
-    max_download_tiles: int = typer.Option(
-        elevation.MAX_DOWNLOAD_TILES,
-        "--max_download_tiles",
-        help="Maximum number of tiles to download.",
-    ),
+    obj: dict[str, Any],
+    bounds: tuple[float, float, float, float] | None,
+    margin: str,
+    max_download_tiles: int,
 ) -> None:
+    """Seed the DEM to given bounds."""
     if bounds is None:
-        raise typer.BadParameter(
+        raise click.BadParameter(
             message="--bounds must be supplied.",
             param_hint="--bounds",
         )
     elevation.seed(
-        **ctx.obj,
+        **obj,
         bounds=bounds,
         margin=margin,
         max_download_tiles=max_download_tiles,
     )
 
 
-@app.command(short_help="Clip the DEM to given bounds.")
+@app.command()
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=elevation.DEFAULT_OUTPUT,
+    help="Path to output file. Existing files will be overwritten.",
+    show_envvar=True,
+)
+@bounds_option
+@margin_option
+@click.option(
+    "-r",
+    "--reference",
+    type=click.Path(exists=True, path_type=Path),
+    help="Use the extent of a reference GDAL/OGR data source as output bounds.",
+    show_envvar=True,
+)
+@click.option(
+    "--gdal-options",
+    default=elevation.DEFAULT_GDAL_OPTIONS,
+    help="GDAL creation options of the output file, e.g. '-co COMPRESS=LZW'.",
+    show_envvar=True,
+)
+@max_download_tiles_option
+@click.pass_obj
 def clip(
-    ctx: typer.Context,
-    output: Path = typer.Option(
-        elevation.DEFAULT_OUTPUT,
-        "-o",
-        "--output",
-        dir_okay=False,
-        path_type=Path,  # type: ignore[arg-type]
-        help="Path to output file. Existing files will be overwritten.",
-    ),
-    bounds: tuple[float, float, float, float] | None = typer.Option(
-        None,
-        "--bounds",
-        help="Output bounds in 'left bottom right top' order.",
-    ),
-    margin: str = typer.Option(
-        elevation.MARGIN,
-        "-m",
-        "--margin",
-        help="Decimal degree margin added to the bounds. Use '%' for percent margin.",
-    ),
-    reference: Path | None = typer.Option(
-        None,
-        "-r",
-        "--reference",
-        exists=True,
-        path_type=Path,  # type: ignore[arg-type]
-        help="Use the extent of a reference GDAL/OGR data source as output bounds.",
-    ),
-    gdal_options: str = typer.Option(
-        elevation.DEFAULT_GDAL_OPTIONS,
-        "--gdal-options",
-        help="GDAL creation options of the output file, e.g. '-co COMPRESS=LZW'.",
-    ),
-    max_download_tiles: int = typer.Option(
-        elevation.MAX_DOWNLOAD_TILES,
-        "--max_download_tiles",
-        help="Maximum number of tiles to download.",
-    ),
+    obj: dict[str, Any],
+    output: Path,
+    bounds: tuple[float, float, float, float] | None,
+    margin: str,
+    reference: Path | None,
+    gdal_options: str,
+    max_download_tiles: int,
 ) -> None:
+    """Clip the DEM to given bounds."""
     if bounds is None and reference is None:
-        raise typer.BadParameter(
+        raise click.BadParameter(
             message="One of --bounds or --reference must be supplied.",
             param_hint="--bounds",
         )
@@ -201,18 +200,22 @@ def clip(
         margin=margin,
         gdal_options=gdal_options,
         max_download_tiles=max_download_tiles,
-        **ctx.obj,
+        **obj,
     )
 
 
-@app.command(short_help="Clean up the product cache from temporary files.")
-def clean(ctx: typer.Context) -> None:
-    elevation.clean(**ctx.obj)
+@app.command()
+@click.pass_obj
+def clean(obj: dict[str, Any]) -> None:
+    """Clean up the product cache from temporary files."""
+    elevation.clean(**obj)
 
 
-@app.command(short_help="Remove the product cache entirely.")
-def distclean(ctx: typer.Context) -> None:
-    elevation.distclean(**ctx.obj)
+@app.command()
+@click.pass_obj
+def distclean(obj: dict[str, Any]) -> None:
+    """Remove the product cache entirely."""
+    elevation.distclean(**obj)
 
 
 if __name__ == "__main__":
