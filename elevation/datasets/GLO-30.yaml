@@ -37,7 +37,7 @@ providers:
 - name: DLR and Airbus Defence and Space (TanDEM-X)
   roles:
   - producer
-  url: https://www.dlr.de/en/eoc/research-and-development/tandem-x
+  url: https://www.dlr.de/en/research-and-transfer/projects-and-missions/tandem-x
 - name: European Union and ESA (Copernicus)
   roles:
   - licensor

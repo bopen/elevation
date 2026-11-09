@@ -29,10 +29,10 @@ Elevation provides easy download, cache and access of the global datasets:
 - `SRTM3`: [SRTM global 90m v4.1](https://bigdata.cgiar.org/srtm-90m-digital-elevation-database/)
   produced and hosted by CGIAR-CSI, with 90m heights on the EGM96 geoid.
 
-<img src="https://raw.githubusercontent.com/bopen/elevation/main/rome-compare-dems.jpg" alt="Hillshades of the Tiber valley in Rome from the SRTM1_GEOID, AW3D30 and GLO-30 products" width="500">
+<img src="https://raw.githubusercontent.com/bopen/elevation/main/rome-compare-dems.jpg" alt="Hillshades of the Tiber valley in Rome from the SRTM1_GEOID, AW3D30, GEDTM30 and GLO-30 products" width="668">
 
 The Tiber in Rome: SRTM sets the baseline, ALOS World 3D picks out the buildings of EUR,
-Copernicus DEM draws the river.
+GEDTM30 strips the city back to bare earth and Copernicus DEM draws the river sharpest.
 
 Note that any download policies and attribution requirements of the respective providers apply.
 
@@ -49,7 +49,7 @@ $ pip install elevation
 
 The following dependencies need to be installed and working:
 
-- [GDAL](https://www.gdal.org/) command line tools, i.e. `gdal_translate`, `gdalbuildvrt`,
+- [GDAL](https://gdal.org/) command line tools, i.e. `gdal_translate`, `gdalbuildvrt`,
   `gdalinfo` and `ogrinfo`
 
 The following command runs some basic checks and reports common issues:
@@ -65,7 +65,7 @@ Your system is ready.
 
 The best way to install GDAL command line tools varies across operating systems
 and distributions, please refer to the
-[GDAL install documentation](https://trac.osgeo.org/gdal/wiki/DownloadingGdalBinaries).
+[GDAL download page](https://gdal.org/en/stable/download.html).
 
 Note that *elevation* v2.0 requires Python 3.11 or later.
 
@@ -121,6 +121,9 @@ For the Global Ensemble Digital Terrain Model 30m v1.2 use:
 ```console
 $ eio --product GEDTM30 clip -o Rome-GEDTM30-DEM.tif --bounds 12.35 41.8 12.65 42
 ```
+
+The `GEDTM30` product is a single cloud-optimized GeoTIFF that is read in place
+one window at a time, like the Earth Data Hub store, so it needs GDAL 3.8 or later too.
 
 For the SRTM global 90m v4.1 DEM use:
 
@@ -230,10 +233,10 @@ Options:
                                   source as output bounds.  [env var:
                                   EIO_CLIP_REFERENCE]
   --gdal-options TEXT             GDAL creation options of the output file, e.g.
-                                  '-co COMPRESS=LZW'.  [env var:
-                                  EIO_CLIP_GDAL_OPTIONS; default: -co TILED=YES
-                                  -co COMPRESS=DEFLATE -co ZLEVEL=9 -co
-                                  NUM_THREADS=ALL_CPUS]
+                                  '-co COMPRESS=LZW'. The default is the options
+                                  of the product cached tiles: DEFLATE
+                                  compression with the predictor that suits the
+                                  product.  [env var: EIO_CLIP_GDAL_OPTIONS]
   --max_download_tiles INTEGER    Maximum number of tiles to download.  [env
                                   var: EIO_CLIP_MAX_DOWNLOAD_TILES; default: 25]
   --help                          Show this message and exit.

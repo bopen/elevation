@@ -23,6 +23,7 @@ from typing import Any, NotRequired, TypedDict
 from . import cache, spatial
 
 DEFAULT_OUTPUT = "out.tif"
+# public since 2.0.0, clip now defaults to the options of the product cached tiles
 DEFAULT_GDAL_OPTIONS = (
     "-co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co NUM_THREADS=ALL_CPUS"
 )
@@ -172,6 +173,7 @@ class DatasourceSpec(TypedDict):
     cached_tiles_kwargs: NotRequired[dict[str, Any]]
     prepare_tile: Callable[..., str]
     prepare_tile_kwargs: dict[str, Any]
+    source_gdal_options: NotRequired[str]
     tile_gdal_options: NotRequired[str]
     empty_on_notfound: NotRequired[bool]
 
@@ -199,6 +201,7 @@ SRTM1_ELLIP_SPEC: DatasourceSpec = {
     "prepare_tile_kwargs": {
         "gdal_source": "/vsicurl/https://opentopography.s3.sdsc.edu/raster/SRTM_GL1_Ellip/SRTM_GL1_Ellip_srtm",
     },
+    "tile_gdal_options": spatial.PREDICTOR3_TILE_GDAL_OPTIONS,
     "cached_tiles": srtm_ellip_tiles,
 }
 
@@ -229,7 +232,7 @@ GLO_30_SPEC: DatasourceSpec = {
         "gdal_source": 'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu/copernicus-dem/GLO-30-v1.zarr":/dsm',
         "chunks": (3600, 1800),
     },
-    "tile_gdal_options": spatial.FLOAT_TILE_GDAL_OPTIONS,
+    "tile_gdal_options": spatial.PREDICTOR3_TILE_GDAL_OPTIONS,
     "empty_on_notfound": False,
     "cached_tiles": zarr_tiles,
     "cached_tiles_kwargs": {"transform": EDH_L2_CHUNK_INDECES_TRANSFORM},
@@ -241,7 +244,7 @@ GLO_90_SPEC: DatasourceSpec = {
         "gdal_source": 'ZARR:"/vsicurl/https://data.earthdatahub.destine.eu/copernicus-dem/GLO-90-v1.zarr":/dsm',
         "chunks": (2400, 2400),
     },
-    "tile_gdal_options": spatial.FLOAT_TILE_GDAL_OPTIONS,
+    "tile_gdal_options": spatial.PREDICTOR3_TILE_GDAL_OPTIONS,
     "empty_on_notfound": False,
     "cached_tiles": zarr_tiles,
     "cached_tiles_kwargs": {"transform": EDH_L1_CHUNK_INDECES_TRANSFORM},
@@ -253,7 +256,8 @@ GEDTM30_SPEC: DatasourceSpec = {
         "gdal_source": "/vsicurl/https://opentopography.s3.sdsc.edu/raster/GEDTM30/GEDTM30_be/gedtm_rf_m_30m_s_20060101_20151231_go_epsg.4326.3855_v1.2.tif",
         "chunks": (4096, 4096),
     },
-    "tile_gdal_options": spatial.FLOAT_TILE_GDAL_OPTIONS,
+    # the float heights are on a 0.1 m grid, so PREDICTOR=2 compresses them better than 3
+    "tile_gdal_options": spatial.PREDICTOR2_TILE_GDAL_OPTIONS,
     "empty_on_notfound": False,
     "cached_tiles": zarr_tiles,
     "cached_tiles_kwargs": {"transform": GEDTM30_CHUNK_INDECES_TRANSFORM},
@@ -345,12 +349,18 @@ def seed(
 
     prepare_tile = spec["prepare_tile"]
     prepare_tile_kwargs = spec.get("prepare_tile_kwargs", {})
+    tile_gdal_options = spec.get(
+        "tile_gdal_options", spatial.PREDICTOR2_TILE_GDAL_OPTIONS
+    )
+    source_gdal_options = spec.get(
+        "source_gdal_options", spatial.SKIP_SIDECARS_GDAL_OPTIONS
+    )
     with cache.lock_tiles(datasource_root, [name for _, name in downloads]):
         cache.ensure_tiles(
             datasource_root,
             downloads,
             prepare_tile=prepare_tile,
-            gdal_options=spec.get("tile_gdal_options", spatial.INT_TILE_GDAL_OPTIONS),
+            gdal_options=f"{tile_gdal_options} {source_gdal_options}",
             empty_on_notfound=spec.get("empty_on_notfound", True),
             **prepare_tile_kwargs,
         )
@@ -387,7 +397,7 @@ def clip(
     product: str = DEFAULT_PRODUCT,
     *,
     cache_dir: str | Path | None = None,
-    gdal_options: str = DEFAULT_GDAL_OPTIONS,
+    gdal_options: str | None = None,
     max_download_tiles: int = MAX_DOWNLOAD_TILES,
 ) -> None:
     """Clip the DEM to given bounds.
@@ -397,7 +407,8 @@ def clip(
     :param margin: Decimal degree margin added to the bounds. Use '%' for percent margin.
     :param product: DEM product choice.
     :param cache_dir: Root of the DEM cache folder.
-    :param gdal_options: GDAL creation options of the output file, e.g. '-co COMPRESS=LZW'.
+    :param gdal_options: GDAL creation options of the output file, e.g. '-co COMPRESS=LZW',
+        the default is the options of the product cached tiles, the best for its data.
     :param max_download_tiles: Maximum number of tiles to download.
     """
     output = Path(output).resolve()
@@ -408,8 +419,14 @@ def clip(
         margin=margin,
         max_download_tiles=max_download_tiles,
     )
+    if gdal_options is None:
+        # the cached tiles options, -q included
+        spec = PRODUCTS_SPECS[product]
+        gdal_options = spec.get(
+            "tile_gdal_options", spatial.PREDICTOR2_TILE_GDAL_OPTIONS
+        )
     left, bottom, right, top = bounds
-    options = f"-q {gdal_options} -projwin {left} {top} {right} {bottom}"
+    options = f"{gdal_options} -projwin {left} {top} {right} {bottom}"
     source = str(datasource_root / f"{product}.vrt")
     with cache.lock_vrt(datasource_root, product):
         spatial.call_gdal_translate(source, output, options=options)

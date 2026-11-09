@@ -22,14 +22,14 @@ from pathlib import Path
 from typing import Any
 
 DEFAULT_GDAL_OPTIONS = "-q"
-# the hosts do not list folders, so GDAL would probe ~50 sidecar files per tile
 TILE_GDAL_OPTIONS = (
     DEFAULT_GDAL_OPTIONS
     + " -co TILED=YES -co COMPRESS=DEFLATE -co ZLEVEL=9 -co NUM_THREADS=ALL_CPUS"
-    + " --config GDAL_DISABLE_READDIR_ON_OPEN EMPTY_DIR"
 )
-INT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=2"
-FLOAT_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=3"
+PREDICTOR2_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=2"
+PREDICTOR3_TILE_GDAL_OPTIONS = TILE_GDAL_OPTIONS + " -co PREDICTOR=3"
+# the hosts do not list folders, so GDAL would probe ~50 sidecar files per tile
+SKIP_SIDECARS_GDAL_OPTIONS = "--config GDAL_DISABLE_READDIR_ON_OPEN EMPTY_DIR"
 # the remote file of a /vsizip chain is the archive, not the member
 VSICURL_PATTERN = re.compile(r"/vsicurl/([^\s\"]+?\.zip(?=/)|[^\s\"]+)")
 TOOLS: list[tuple[str, str]] = [

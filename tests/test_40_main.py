@@ -149,6 +149,7 @@ def test_eio_clip(mocker: MockerFixture, tmp_path: Path) -> None:
     assert not result.exception
     assert mock_check_call.call_count == 1
     assert mock_translate.call_count == 1
+    assert "-co PREDICTOR=2" in mock_translate.call_args.kwargs["options"]
 
     mock_check_call = mocker.patch("subprocess.check_call")
     result = runner.invoke(__main__.app, ["clip"])

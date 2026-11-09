@@ -21,6 +21,7 @@ import elevation
 PRODUCTS = [
     ("SRTM1_GEOID", "SRTM GL1"),
     ("AW3D30", "ALOS World 3D"),
+    ("GEDTM30", "Ensemble DTM"),
     ("GLO-30", "Copernicus DEM"),
 ]
 # the README example
@@ -86,9 +87,11 @@ def main(output_folder: Path, full_size: bool = False) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         shades = [shade(product, Path(tmp)) for product, _ in PRODUCTS]
         height = Image.open(shades[0][0]).height
-        # three panels side by side in a 4:3 image
+        # every panel keeps the footprint of the original 4:3 image of three panels,
+        # cropped to the west of the area, and the image widens with the products
         width = (height * 4 // 3 - 2 * GAP) // 3
-        canvas = Image.new("RGB", (3 * width + 2 * GAP, height), "white")
+        count = len(PRODUCTS)
+        canvas = Image.new("RGB", (count * width + (count - 1) * GAP, height), "white")
         for index, (product, name) in enumerate(PRODUCTS):
             hillshade, relief = shades[index]
             tile = panel(hillshade, relief, f"{name}\n{product}", width)
