@@ -12,6 +12,7 @@
 - Replace `typer` with `click` for the `eio` command, dropping `rich`,
   `pygments` and four more dependencies: the commands, options and `EIO_*`
   environment variables are the same, the help and the errors are plain text.
+- Support macOS and Windows as well as Linux, all three tested in the CI.
 
 ## 2.0.1 (2026-10-21)
 

@@ -11,9 +11,9 @@ https://github.com/bopen/elevation
 :caption: Table of Contents
 
 Quickstart <quickstart>
-What's new <whats-new>
 migration
 API Reference <_api/elevation/index>
+What's new <whats-new>
 ```
 
 # Indices and tables
